@@ -40,11 +40,11 @@
         "label": "件作品"
       },
       {
-        "value": "4",
+        "value": "6",
         "label": "条日常"
       },
       {
-        "value": "2",
+        "value": "3",
         "label": "个进行中"
       },
       {
@@ -54,6 +54,37 @@
     ]
   },
   "daily": [
+    {
+      "type": "album",
+      "files": [
+        "content/daily/不爱出门的旅游/上海.jpg",
+        "content/daily/不爱出门的旅游/上海外滩.jpg",
+        "content/daily/不爱出门的旅游/南京.jpg",
+        "content/daily/不爱出门的旅游/南京先锋书店.jpg",
+        "content/daily/不爱出门的旅游/南京步行街.jpg",
+        "content/daily/不爱出门的旅游/南京超大的popmart.jpg",
+        "content/daily/不爱出门的旅游/我的发射器们.jpg",
+        "content/daily/不爱出门的旅游/校园晚霞.jpg",
+        "content/daily/不爱出门的旅游/江南古镇.jpg",
+        "content/daily/不爱出门的旅游/非常非常难喝的绿豆汤（里面加了薄荷）.jpg"
+      ],
+      "title": "不爱出门的旅游",
+      "date": "",
+      "desc": "",
+      "size": "10 张"
+    },
+    {
+      "type": "album",
+      "files": [
+        "content/daily/在青岛的海边随手拍/周末散步.svg",
+        "content/daily/在青岛的海边随手拍/晚霞海岸.svg",
+        "content/daily/在青岛的海边随手拍/装机日常.svg"
+      ],
+      "title": "在青岛的海边随手拍",
+      "date": "",
+      "desc": "",
+      "size": "3 张"
+    },
     {
       "type": "video",
       "file": "content/daily/工坊小动画.gif",
@@ -74,14 +105,13 @@
     {
       "type": "album",
       "files": [
-        "content/daily/海边随手拍/周末散步.svg",
-        "content/daily/海边随手拍/晚霞海岸.svg",
-        "content/daily/海边随手拍/装机日常.svg"
+        "content/daily/美食就是好吃的意思！/兼职的美味杂货面.jpg",
+        "content/daily/美食就是好吃的意思！/蟹黄面.jpg"
       ],
-      "title": "海边随手拍",
+      "title": "美食就是好吃的意思！",
       "date": "",
-      "desc": "一组青岛海边的随手拍（示例说明）——把多张照片放进同一个文件夹，网站会自动显示成“共 N 张”的相册卡片。",
-      "size": "3 张"
+      "desc": "",
+      "size": "2 张"
     },
     {
       "type": "image",
@@ -168,6 +198,14 @@
       "progress": 80,
       "expected": "一个可以直接发布上线、随时更新内容的个人网站",
       "learned": "大模型真好用！"
+    },
+    {
+      "name": "水弹的魔法",
+      "desc": "完全依靠agent来实现小程序/软件的制作，帮助玩家们理解圈子内各式各样的零件及其总成",
+      "goal": "满足新手玩家们理解wargame水弹产品的组装需求",
+      "progress": 30,
+      "expected": "能够包含市面上绝大多数的原厂品牌和三方配件，辅助玩家搭配",
+      "learned": "程序制作没学到什么，提示词和指令输入倒是熟练精进了不少"
     }
   ]
 }
