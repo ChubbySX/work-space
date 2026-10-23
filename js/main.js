@@ -65,9 +65,17 @@
     $("#heroName").textContent = name;
     $("#heroSub").textContent = p.tagline || "";
     $("#heroQuote").textContent = p.quote || "";
+    if (p.heroKicker) $("#heroKicker").textContent = p.heroKicker;
     $("#aboutName").textContent = name;
     $("#aboutAlias").textContent = [p.enName, p.nickname].filter(Boolean).join(" · ");
     if (p.avatar) $("#avatar").src = p.avatar;
+
+    // 开场动画文字
+    if (p.intro) {
+      if (p.intro.mark) $("#introMark").textContent = p.intro.mark;
+      if (p.intro.name) $("#introName").textContent = p.intro.name;
+      if (p.intro.sub) $("#introSub").textContent = p.intro.sub;
+    }
 
     // 标签
     const tags = p.tags || [];
