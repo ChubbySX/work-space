@@ -84,9 +84,9 @@ window.SITE_DATA = {
       "file": "content/works/video/宿舍.mp4",
       "title": "宿舍",
       "date": "",
-      "desc": "",
+      "desc": "大学宿舍的复刻，因为时间和精力有限，所以并没有让所有东西都出现在场景中，其中耗时最大的是显示器下面那个不起眼的移动电源，正浩家的，因为宿舍每天都会准时断电，所以用来做UPS。",
       "poster": "content/works/video/宿舍.poster.jpg",
-      "size": "6.7 MB"
+      "size": "9.2 MB"
     },
     {
       "type": "video",
@@ -95,14 +95,14 @@ window.SITE_DATA = {
       "date": "",
       "desc": "LTP1.2 微动火控的复刻，由于没有标准数据，所以这个只适配我自己的非标2号波箱",
       "poster": "content/works/video/火控.poster.jpg",
-      "size": "39.0 MB"
+      "size": "986.3 KB"
     },
     {
       "type": "image",
-      "file": "content/works/image/宿舍.png",
-      "title": "宿舍",
+      "file": "content/works/image/摆大型.png",
+      "title": "摆大型",
       "date": "",
-      "desc": "摆弄了一下摄像头，算是宿舍所有内容大合集",
+      "desc": "",
       "size": "11.7 MB"
     },
     {

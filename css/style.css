@@ -1238,6 +1238,29 @@ code {
   .music-card { right: 14px; bottom: 72px; width: 260px; }
 }
 
+/* 视频倍速控制 */
+.video-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: center;
+}
+.vc-label { color: rgba(255, 255, 255, .6); font-size: .82rem; }
+.vc-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  background: rgba(255, 255, 255, .08);
+  color: rgba(255, 255, 255, .8);
+  font-size: .82rem;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all .2s;
+}
+.vc-btn:hover { background: rgba(255, 255, 255, .15); }
+.vc-btn.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
 /* ---------- 动效偏好：减弱动态 ---------- */
 @media (prefers-reduced-motion: reduce) {
   /* 系统/浏览器节电或“减弱动态效果”时：静态品牌页 + 仍保留轻量的扫描加载条 */

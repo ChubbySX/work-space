@@ -1,173 +1,200 @@
 # -*- coding: utf-8 -*-
 """
-生成三段环境背景音乐（纯 Python 合成 WAV → MP3）：
-  1. 海风海浪  2. 春日鸟鸣  3. 都市喧嚣
-无外部依赖，用 numpy 合成波形，再用内置 ffmpeg 转 mp3。
+生成三段更自然的背景音乐（FFT 滤波 + 谐波合成 + 乐器模仿）：
+  1. 海风海浪 — 颂钵冥想音 + 多频段海浪噪声 + 水滴
+  2. 春日鸟鸣 — 五声音阶笛声旋律 + 风铃 + FM 鸟鸣 + 微风
+  3. 都市喧嚣 — 低频脉动 + 多普勒车流 + 鸣笛 + 城市嗡鸣
 """
-import os, struct, wave, math, random
+import os, wave, random
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 AUDIO = os.path.join(ROOT, "content", "audio")
 os.makedirs(AUDIO, exist_ok=True)
+SR = 44100
+DUR = 60
 
-SR = 44100  # 采样率
-DUR = 30    # 每段时长（秒），循环播放
+# ====== 工具 ======
 
-def save_wav(path, samples):
-    """samples: float32 numpy array [-1,1], mono"""
-    samples = np.clip(samples, -1, 1)
-    data = (samples * 32767).astype(np.int16)
-    with wave.open(path, 'w') as w:
-        w.setnchannels(1)
-        w.setsampwidth(2)
-        w.setframerate(SR)
-        w.writeframes(data.tobytes())
-    print(f"  WAV: {os.path.basename(path)} ({len(data)/SR:.1f}s)")
+def bandpass(sig, low, high):
+    spec = np.fft.rfft(sig)
+    freqs = np.fft.rfftfreq(len(sig), 1.0/SR)
+    spec[(freqs < low) | (freqs > high)] = 0
+    return np.fft.irfft(spec, len(sig)).astype(np.float32)
 
-def to_mp3(wav_path, mp3_path):
-    """用 ffmpeg 将 wav 转 mp3"""
-    import subprocess
-    # 尝试 imageio-ffmpeg
-    try:
-        import imageio_ffmpeg
-        ff = imageio_ffmpeg.get_ffmpeg_exe()
-    except Exception:
-        import shutil
-        ff = shutil.which("ffmpeg")
-    if not ff:
-        print(f"  [!] 无 ffmpeg，保留 WAV: {os.path.basename(wav_path)}")
-        return False
-    subprocess.run([ff, '-y', '-i', wav_path, '-codec:a', 'libmp3lame',
-                    '-b:a', '128k', mp3_path],
-                   capture_output=True, timeout=30)
-    if os.path.exists(mp3_path) and os.path.getsize(mp3_path) > 100:
-        os.remove(wav_path)
-        print(f"  MP3: {os.path.basename(mp3_path)} ({os.path.getsize(mp3_path)//1024}KB)")
-        return True
-    return False
+def fade_io(audio, sec=2):
+    f = int(SR * sec)
+    audio[:f] *= np.linspace(0, 1, f)
+    audio[-f:] *= np.linspace(1, 0, f)
+    return audio
 
-# ======================== 1. 海风海浪 ========================
-def gen_ocean():
-    print("[1/3] 合成：海风海浪")
-    n = SR * DUR
+def flute(freq, dur, vol=0.3):
+    n = int(dur * SR)
     t = np.arange(n) / SR
-    # 多层海浪：不同频率的正弦叠加模拟涨落
-    wave1 = np.sin(2*np.pi * 0.13 * t)    # 慢周期涨落
-    wave2 = np.sin(2*np.pi * 0.07 * t + 1.3)
-    swell = (wave1 * 0.5 + wave2 * 0.3 + 0.2)  # 0~1 包络
-    swell = np.clip(swell, 0, 1)
-    # 白噪声 = 海浪声 + 风声
-    noise = np.random.randn(n).astype(np.float32)
-    # 低通滤波（简易：滑动平均）
-    kern = 80
-    noise = np.convolve(noise, np.ones(kern)/kern, mode='same')
-    # 用 swell 调制噪声幅度 → 涨潮声音大、退潮声音小
-    audio = noise * swell * 0.6
-    # 叠加风声（高频成分）
-    wind_noise = np.random.randn(n).astype(np.float32)
-    wind_noise = np.convolve(wind_noise, np.ones(20)/20, mode='same')
-    audio += wind_noise * 0.15 * (0.5 + 0.5*np.sin(2*np.pi*0.05*t))
-    # 淡入淡出
-    fade = int(SR * 2)
-    audio[:fade] *= np.linspace(0, 1, fade)
-    audio[-fade:] *= np.linspace(1, 0, fade)
-    audio = audio.astype(np.float32) * 0.7
-    wav = os.path.join(AUDIO, "ocean_temp.wav")
-    mp3 = os.path.join(AUDIO, "海风海浪.mp3")
-    save_wav(wav, audio)
-    to_mp3(wav, mp3)
+    vib = 4 * np.sin(2*np.pi*5*t)
+    phase = 2*np.pi * np.cumsum(freq + vib) / SR
+    tone = np.sin(phase) + 0.4*np.sin(phase*2) + 0.15*np.sin(phase*3) + 0.06*np.sin(phase*4)
+    env = np.ones(n)
+    a, r = int(SR*0.06), min(int(SR*0.25), n//3)
+    env[:a] = np.linspace(0, 1, a)
+    env[-r:] = np.linspace(1, 0, r)
+    tone += 0.015 * np.random.randn(n)
+    return (tone * env * vol / 1.61).astype(np.float32)
 
-# ======================== 2. 春日鸟鸣 ========================
-def gen_spring():
-    print("[2/3] 合成：春日鸟鸣")
+def chime(freq, dur, vol=0.2):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    tone = (np.sin(2*np.pi*freq*t) + 0.5*np.sin(2*np.pi*freq*2.0*t) +
+            0.3*np.sin(2*np.pi*freq*2.4*t) + 0.12*np.sin(2*np.pi*freq*3.5*t))
+    return (tone * np.exp(-2.5*t/max(dur,0.1)) * vol / 1.92).astype(np.float32)
+
+def bell(freq, dur, vol=0.15):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    tone = (np.sin(2*np.pi*freq*t) + 0.5*np.sin(2*np.pi*freq*2*t) +
+            0.35*np.sin(2*np.pi*freq*3*t) + 0.2*np.sin(2*np.pi*freq*4.2*t) +
+            0.1*np.sin(2*np.pi*freq*5.4*t))
+    return (tone * np.exp(-0.8*t/max(dur,0.1)) * vol / 2.15).astype(np.float32)
+
+def bird_chirp(f0, dur, vol=0.25):
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    freq = f0 + (f0 * 0.3) * np.linspace(0, 1, n)
+    mod = 3 * np.sin(2*np.pi*30*t)
+    carrier = np.sin(2*np.pi * np.cumsum(freq + mod) / SR)
+    env = np.ones(n)
+    f = min(40, n//4)
+    env[:f] = np.linspace(0, 1, f)
+    env[-f:] = np.linspace(1, 0, f)
+    return (carrier * env * vol).astype(np.float32)
+
+def save_mp3(audio, name):
+    audio = np.clip(audio, -1, 1)
+    wav_path = os.path.join(AUDIO, name + "_temp.wav")
+    mp3_path = os.path.join(AUDIO, name + ".mp3")
+    data = (audio * 32767).astype(np.int16)
+    with wave.open(wav_path, 'w') as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+        w.writeframes(data.tobytes())
+    import subprocess, shutil
+    ff = None
+    try:
+        import imageio_ffmpeg; ff = imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:
+        ff = shutil.which("ffmpeg")
+    if ff:
+        subprocess.run([ff, '-y', '-i', wav_path, '-codec:a', 'libmp3lame',
+                        '-b:a', '128k', mp3_path], capture_output=True, timeout=120)
+        if os.path.exists(mp3_path) and os.path.getsize(mp3_path) > 100:
+            os.remove(wav_path)
+            print(f"  MP3: {name}.mp3 ({os.path.getsize(mp3_path)//1024}KB)")
+            return
+    print(f"  WAV: {name}.wav")
+
+# ====== 1. 海风海浪 ======
+def gen_ocean():
+    print("[1/3] 海风海浪")
     n = SR * DUR
     t = np.arange(n) / SR
     audio = np.zeros(n, dtype=np.float32)
-    # 鸟鸣：随机短促的频率调制正弦
-    random.seed(42)
-    for _ in range(45):
-        start = random.randint(SR, n - SR * 3)
-        dur_bird = random.randint(int(SR*0.15), int(SR*0.5))
-        f0 = random.uniform(2000, 4500)
-        # 频率上扫
-        freq = f0 + random.uniform(200, 800) * np.linspace(0, 1, dur_bird)
-        phase = 2*np.pi * np.cumsum(freq) / SR
-        tweet = np.sin(phase) * 0.25
-        # 包络（快速淡入淡出）
-        env = np.ones(dur_bird)
-        fade = min(50, dur_bird//4)
-        env[:fade] = np.linspace(0, 1, fade)
-        env[-fade:] = np.linspace(1, 0, fade)
-        tweet *= env
-        end = min(start + dur_bird, n)
-        audio[start:end] += tweet[:end-start]
-    # 背景风声 + 树叶沙沙
-    bg = np.random.randn(n).astype(np.float32)
-    bg = np.convolve(bg, np.ones(60)/60, mode='same') * 0.08
-    bg *= 0.5 + 0.5 * np.sin(2*np.pi*0.03*t)
-    audio += bg
-    # 淡入淡出
-    fade = int(SR * 2)
-    audio[:fade] *= np.linspace(0, 1, fade)
-    audio[-fade:] *= np.linspace(1, 0, fade)
-    audio = np.clip(audio, -1, 1) * 0.6
-    wav = os.path.join(AUDIO, "spring_temp.wav")
-    mp3 = os.path.join(AUDIO, "春日鸟鸣.mp3")
-    save_wav(wav, audio)
-    to_mp3(wav, mp3)
+    # 颂钵冥想音
+    drone = bell(110, DUR, 0.06) + 0.5 * bell(164.81, DUR, 0.03)
+    drone *= (0.6 + 0.4 * np.sin(2*np.pi*0.04*t))
+    audio += drone
+    # 多频段海浪
+    noise = np.random.randn(n).astype(np.float32)
+    waves = (bandpass(noise.copy(), 20, 80) * 0.35 +
+             bandpass(noise.copy(), 200, 900) * 0.30 +
+             bandpass(noise.copy(), 2000, 8000) * 0.12)
+    swell = np.clip(0.5 + 0.3*np.sin(2*np.pi*0.12*t) +
+             0.15*np.sin(2*np.pi*0.07*t+1.3) + 0.08*np.sin(2*np.pi*0.19*t), 0, 1)
+    audio += waves * swell
+    # 水滴
+    random.seed(7)
+    for _ in range(8):
+        pos = random.randint(SR, n - SR)
+        d = int(SR*0.3)
+        audio[pos:pos+d] += chime(random.choice([1047,1319,1568,1760]), 0.3, 0.04)
+    audio = fade_io(audio, 2)
+    save_mp3(audio * 0.7, "海风海浪")
 
-# ======================== 3. 都市喧嚣 ========================
+# ====== 2. 春日鸟鸣 ======
+def gen_spring():
+    print("[2/3] 春日鸟鸣")
+    n = SR * DUR
+    t = np.arange(n) / SR
+    audio = np.zeros(n, dtype=np.float32)
+    random.seed(42)
+    # 五声音阶笛声旋律
+    penta = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25]
+    pos = SR
+    while pos < n - SR * 3:
+        note = random.choice(penta)
+        dur = random.uniform(0.6, 1.5)
+        d = int(dur*SR)
+        audio[pos:pos+d] += flute(note, dur, 0.18)
+        pos += d + random.randint(int(SR*0.3), int(SR*1.5))
+    # 鸟鸣
+    for _ in range(40):
+        p = random.randint(SR, n - SR)
+        d = int(random.uniform(0.12, 0.35) * SR)
+        audio[p:p+d] += bird_chirp(random.uniform(2500, 4500), d/SR, 0.12)
+    # 风铃
+    for _ in range(15):
+        p = random.randint(SR, n - SR*2)
+        f = random.choice([1046.5, 1318.5, 1568.0, 1760.0, 2093.0])
+        d = int(random.uniform(1.5, 3.5) * SR)
+        audio[p:p+d] += chime(f, d/SR, 0.06)
+    # 微风
+    breeze = bandpass(np.random.randn(n).astype(np.float32), 300, 2000) * 0.05
+    breeze *= (0.5 + 0.3*np.sin(2*np.pi*0.03*t))
+    audio += breeze
+    audio = fade_io(audio, 2)
+    save_mp3(audio * 0.65, "春日鸟鸣")
+
+# ====== 3. 都市喧嚣 ======
 def gen_city():
-    print("[3/3] 合成：都市喧嚣")
+    print("[3/3] 都市喧嚣")
     n = SR * DUR
     t = np.arange(n) / SR
     audio = np.zeros(n, dtype=np.float32)
     random.seed(99)
-    # 低频底噪（交通嗡嗡声）
-    rumble = np.random.randn(n).astype(np.float32)
-    rumble = np.convolve(rumble, np.ones(200)/200, mode='same') * 0.15
-    audio += rumble
-    # 汽车驶过：带通噪声 + 多普勒效应模拟
-    for _ in range(12):
-        start = random.randint(0, n - SR * 4)
-        dur_car = random.randint(int(SR*2), int(SR*4))
-        car = np.random.randn(dur_car).astype(np.float32)
-        car = np.convolve(car, np.ones(30)/30, mode='same')
-        # 多普勒：频率先升后降
-        dop = np.sin(2*np.pi * (0.5 + 0.3*np.sin(np.linspace(0, np.pi, dur_car))) * np.arange(dur_car)/SR)
-        car = car * (0.4 + 0.3 * np.sin(np.linspace(0, np.pi, dur_car)))  # 驶近→远离
-        end = min(start + dur_car, n)
-        audio[start:end] += car[:end-start] * 0.3
-    # 远处鸣笛（短促中频音）
-    for _ in range(5):
-        start = random.randint(SR, n - SR)
-        horn_dur = int(SR * 0.8)
-        f = random.choice([400, 500, 450])
-        horn = np.sin(2*np.pi*f*np.arange(horn_dur)/SR) * 0.15
-        horn *= np.hanning(horn_dur)  # 平滑包络
-        end = min(start + horn_dur, n)
-        audio[start:end] += horn[:end-start]
-    # 人群杂音
-    crowd = np.random.randn(n).astype(np.float32)
-    crowd = np.convolve(crowd, np.ones(100)/100, mode='same') * 0.06
+    # 城市嗡鸣 pad
+    audio += (np.sin(2*np.pi*110*t) + 0.5*np.sin(2*np.pi*164.81*t)) * 0.04 * (0.7+0.2*np.sin(2*np.pi*0.02*t))
+    # 交通底噪
+    audio += bandpass(np.random.randn(n).astype(np.float32), 40, 250) * 0.15
+    # 节奏脉动 60BPM
+    for beat in range(0, n, SR):
+        pd = int(SR*0.15)
+        pulse = np.sin(2*np.pi*55*t[:pd]) * np.exp(-8*np.arange(pd)/SR)
+        audio[beat:beat+pd] += pulse * 0.04
+    # 汽车驶过
+    for _ in range(10):
+        start = random.randint(0, max(1, n - SR*5))
+        dur = random.randint(SR*2, SR*4)
+        cn = np.random.randn(dur).astype(np.float32)
+        cn = bandpass(cn, 100, 400)
+        cn *= (0.35 + 0.25*np.sin(np.linspace(0, np.pi, dur))) * 0.3
+        end = min(start+dur, n)
+        audio[start:end] += cn[:end-start]
+    # 鸣笛
+    for _ in range(4):
+        p = random.randint(SR, n - SR)
+        d = int(SR*0.9)
+        audio[p:p+d] += flute(random.choice([400,440,500]), 0.9, 0.12)
+    # 人群
+    crowd = bandpass(np.random.randn(n).astype(np.float32), 200, 3000) * 0.04
+    crowd *= (0.6 + 0.3*np.sin(2*np.pi*0.05*t))
     audio += crowd
-    # 淡入淡出
-    fade = int(SR * 2)
-    audio[:fade] *= np.linspace(0, 1, fade)
-    audio[-fade:] *= np.linspace(1, 0, fade)
-    audio = np.clip(audio, -1, 1) * 0.55
-    wav = os.path.join(AUDIO, "city_temp.wav")
-    mp3 = os.path.join(AUDIO, "都市喧嚣.mp3")
-    save_wav(wav, audio)
-    to_mp3(wav, mp3)
+    audio = fade_io(audio, 2)
+    save_mp3(audio * 0.6, "都市喧嚣")
 
 if __name__ == "__main__":
-    print("开始生成背景音乐...")
+    print("生成背景音乐（增强版）...")
     gen_ocean()
     gen_spring()
     gen_city()
-    print("\n完成！文件在 content/audio/")
+    print("\n完成！")
     for f in sorted(os.listdir(AUDIO)):
         if f.endswith('.mp3'):
             print(f"  {f}  ({os.path.getsize(os.path.join(AUDIO,f))//1024}KB)")
