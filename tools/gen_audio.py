@@ -138,13 +138,17 @@ def gen_spring():
     for _ in range(40):
         p = random.randint(SR, n - SR)
         d = int(random.uniform(0.12, 0.35) * SR)
-        audio[p:p+d] += bird_chirp(random.uniform(2500, 4500), d/SR, 0.12)
+        chirp = bird_chirp(random.uniform(2500, 4500), d/SR, 0.12)
+        end = min(p + len(chirp), n)
+        audio[p:end] += chirp[:end-p]
     # 风铃
     for _ in range(15):
         p = random.randint(SR, n - SR*2)
         f = random.choice([1046.5, 1318.5, 1568.0, 1760.0, 2093.0])
         d = int(random.uniform(1.5, 3.5) * SR)
-        audio[p:p+d] += chime(f, d/SR, 0.06)
+        ch = chime(f, d/SR, 0.06)
+        end = min(p + len(ch), n)
+        audio[p:end] += ch[:end-p]
     # 微风
     breeze = bandpass(np.random.randn(n).astype(np.float32), 300, 2000) * 0.05
     breeze *= (0.5 + 0.3*np.sin(2*np.pi*0.03*t))
