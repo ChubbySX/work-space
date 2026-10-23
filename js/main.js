@@ -749,6 +749,35 @@
     setTimeout(tryAutoPlay, 3000);
   }
 
+  /* ---------- 渲染：我正在做的（项目卡片） ---------- */
+  function renderProjects(projects) {
+    const grid = $("#projectsGrid");
+    if (!projects || !projects.length) {
+      grid.innerHTML = '<div class="empty-state">还没有项目～ 把项目信息写成 .json 文件放进 <code>content/projects/</code> 后运行 <code>node build.js</code></div>';
+      return;
+    }
+    grid.innerHTML = projects
+      .map(function (p, i) {
+        var progress = Math.max(0, Math.min(100, p.progress || 0));
+        return (
+          '<article class="project-card reveal" style="--p:' + progress + '%;transition-delay:' + ((i % 4) * 80) + 'ms">' +
+            '<div class="project-body">' +
+              '<h3 class="project-name">' + esc(p.name) + '</h3>' +
+              (p.desc ? '<p class="project-desc">' + esc(p.desc) + '</p>' : '') +
+              (p.goal ? '<div class="project-field"><span class="project-label">目标</span><span class="project-value">' + esc(p.goal) + '</span></div>' : '') +
+              '<div class="project-field"><span class="project-label">进度</span>' +
+                '<div class="project-progress-wrap"><span class="project-progress"><i></i></span>' +
+                '<span class="project-progress-val">' + progress + '%</span></div>' +
+              '</div>' +
+              (p.expected ? '<div class="project-field"><span class="project-label">期望结果</span><span class="project-value">' + esc(p.expected) + '</span></div>' : '') +
+              (p.learned ? '<div class="project-field"><span class="project-label">我收获了什么</span><span class="project-value">' + esc(p.learned) + '</span></div>' : '') +
+            '</div>' +
+          '</article>'
+        );
+      })
+      .join("");
+  }
+
   /* ---------- 启动 ---------- */
   initIntro();
   setupChrome();
@@ -760,6 +789,7 @@
     renderProfile(p);
     renderDaily(DATA.daily);
     renderWorks(DATA.works);
+    renderProjects(DATA.projects);
     setupFilters(DATA.works);
     renderContact(p.contact);
     setupTyped();
