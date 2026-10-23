@@ -37,11 +37,11 @@ window.SITE_DATA = {
     },
     "stats": [
       {
-        "value": "7",
+        "value": "10",
         "label": "件作品"
       },
       {
-        "value": "7",
+        "value": "4",
         "label": "条日常"
       },
       {
@@ -69,25 +69,8 @@ window.SITE_DATA = {
       ],
       "title": "不爱出门的旅游",
       "date": "",
-      "desc": "",
+      "desc": "去探索、去涉足那些别人赖以生活的地域",
       "size": "8 张"
-    },
-    {
-      "type": "video",
-      "file": "content/daily/工坊小动画.gif",
-      "title": "工坊小动画",
-      "date": "",
-      "desc": "工坊小动画（示例视频）——日常板块支持视频，可以配上这段说明文字。换成真实 .mp4 就能直接播放。",
-      "poster": "content/daily/工坊小动画.gif",
-      "size": "12.0 KB"
-    },
-    {
-      "type": "image",
-      "src": "content/daily/工坊时光.svg",
-      "title": "工坊时光",
-      "date": "",
-      "desc": "",
-      "size": "1.0 KB"
     },
     {
       "type": "album",
@@ -96,7 +79,7 @@ window.SITE_DATA = {
       ],
       "title": "我的小玩具们",
       "date": "",
-      "desc": "",
+      "desc": "我真的是太爱发射器了，这或许会是我为数不多的终身爱好（我的终身爱好真的不多吗？）",
       "size": "1 张"
     },
     {
@@ -117,16 +100,8 @@ window.SITE_DATA = {
       ],
       "title": "青岛在青理",
       "date": "",
-      "desc": "",
+      "desc": "校园随手拍",
       "size": "1 张"
-    },
-    {
-      "type": "image",
-      "src": "content/daily/骑行路上.svg",
-      "title": "骑行路上",
-      "date": "",
-      "desc": "",
-      "size": "1.0 KB"
     }
   ],
   "works": [
@@ -149,6 +124,15 @@ window.SITE_DATA = {
       "size": "973.0 KB"
     },
     {
+      "type": "video",
+      "file": "content/works/video/狐狸森林.mp4",
+      "title": "狐狸森林",
+      "date": "",
+      "desc": "选KurTips做入门老师，真的是我的荣幸，同师门的师兄师弟应该都是以狐狸森林为第一款作品",
+      "poster": "content/works/video/狐狸森林.poster.jpg",
+      "size": "6.6 MB"
+    },
+    {
       "type": "image",
       "file": "content/works/image/宿舍.jpg",
       "title": "宿舍",
@@ -163,6 +147,22 @@ window.SITE_DATA = {
       "date": "",
       "desc": "定形，打完光的产品展示图",
       "size": "78.4 KB"
+    },
+    {
+      "type": "image",
+      "file": "content/works/image/高中宿舍与一堆练习册.jpg",
+      "title": "高中宿舍与一堆练习册",
+      "date": "",
+      "desc": "现在看来真的非常非常简陋的高中宿舍",
+      "size": "183.0 KB"
+    },
+    {
+      "type": "image",
+      "file": "content/works/image/高中食堂一楼简装展示.jpg",
+      "title": "高中食堂一楼简装展示",
+      "date": "",
+      "desc": "高中食堂会议中的复刻",
+      "size": "154.6 KB"
     },
     {
       "type": "doc",

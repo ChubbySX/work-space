@@ -1293,8 +1293,42 @@ code {
 .vol-val { font-size: .75rem; color: rgba(255, 255, 255, .6); width: 28px; text-align: right; flex-shrink: 0; }
 .music-hint { font-size: .72rem; color: rgba(255, 255, 255, .4); margin-top: 10px; line-height: 1.4; }
 
+/* 音乐卡片收起后的聊天气泡提示 */
+.music-bubble {
+  position: fixed;
+  right: 90px;
+  bottom: 92px;
+  background: var(--ink);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 14px 4px 14px 14px;
+  font-size: .82rem;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .3);
+  opacity: 0;
+  transform: translateX(14px);
+  transition: opacity .35s ease, transform .35s ease;
+  z-index: 116;
+  pointer-events: none;
+  max-width: 240px;
+  white-space: normal;
+  text-align: center;
+}
+.music-bubble.is-show { opacity: 1; transform: none; }
+.music-bubble::after {
+  content: "";
+  position: absolute;
+  right: -7px;
+  bottom: 16px;
+  width: 0; height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid var(--ink);
+}
+
 @media (max-width: 640px) {
   .music-card { right: 14px; bottom: 72px; width: 260px; }
+  .music-bubble { right: 74px; bottom: 82px; max-width: 200px; }
 }
 
 /* 视频倍速控制 */
