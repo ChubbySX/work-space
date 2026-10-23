@@ -613,9 +613,9 @@
   /* ---------- 背景音乐播放器 ---------- */
   function setupMusic() {
     const TRACKS = [
-      { name: "海风海浪", icon: "🌊", file: "content/audio/海风海浪.mp3" },
-      { name: "春日鸟鸣", icon: "🌿", file: "content/audio/春日鸟鸣.mp3" },
-      { name: "都市喧嚣", icon: "🏙️", file: "content/audio/都市喧嚣.mp3" },
+      { name: "海风海浪", icon: "🌊", file: "content/audio/海风海浪.mp3?v=2" },
+      { name: "春日鸟鸣", icon: "🌿", file: "content/audio/春日鸟鸣.mp3?v=2" },
+      { name: "都市喧嚣", icon: "🏙️", file: "content/audio/都市喧嚣.mp3?v=2" },
     ];
 
     const audio = $("#bgMusic");
