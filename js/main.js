@@ -15,6 +15,8 @@
   let lightboxIndex = 0;
   let videoVolume = 0.8;    // 视频音量（由音乐卡片控制）
   let bgMusicWasPlaying = false;  // 灯箱打开前背景音乐是否在播放
+  const MAX_MUSIC_VOL = 0.55;    // 音乐音量上限（拉满也不刺耳）
+  let musicVolume = 0;           // 当前音乐音量（0~MAX_MUSIC_VOL）
 
   /* ---------- 数据加载：优先 window.SITE_DATA（file:// 也能用） ---------- */
   function loadData() {
@@ -279,7 +281,13 @@
       const srcFile = item.file || item.src || "";
       if (kind === "video" || isVideoFile(srcFile)) {
         inner = srcFile
-          ? `<video src="${esc(srcFile)}" controls autoplay></video>`
+          ? `<video src="${esc(srcFile)}" controls autoplay></video>
+             <div class="video-controls">
+               <span class="vc-label">倍速</span>
+               <button class="vc-btn" data-rate="0.5">0.5×</button>
+               <button class="vc-btn is-active" data-rate="1">1×</button>
+               <button class="vc-btn" data-rate="2">2×</button>
+             </div>`
           : `<div style="color:#fff;text-align:center;padding:30px">🎬 示例占位<br><small>把真实视频文件放进 content/works/video/ 后重新构建</small></div>`;
       } else {
         inner = `<img src="${esc(srcFile)}" alt="${esc(item.title)}">`;
@@ -298,6 +306,14 @@
         } else {
           bgMusicWasPlaying = false;
         }
+        // 倍速控制
+        $$(".vc-btn", $("#lightboxBody")).forEach(function (b) {
+          b.addEventListener("click", function () {
+            $$(".vc-btn", $("#lightboxBody")).forEach(function (x) { x.classList.remove("is-active"); });
+            b.classList.add("is-active");
+            vid.playbackRate = parseFloat(b.dataset.rate);
+          });
+        });
       }
       const cap = item.title || "";
       $("#lightboxCaption").innerHTML = cap
@@ -328,6 +344,7 @@
       if (bgMusicWasPlaying) {
         const bg = $("#bgMusic");
         if (bg) {
+          bg.volume = musicVolume;
           bg.play().catch(function () {});
           const btn = $("#musicPlay");
           if (btn) { btn.classList.add("is-playing"); btn.textContent = "⏸"; }
@@ -616,23 +633,25 @@
     let currentTrack = 0;
     let isPlaying = false;
 
-    // 设置当前曲目图标
+    // 实际音量 = 滑块值 × 上限（拉满也不刺耳）
+    function calcVol() {
+      return (parseInt(musicVol.value, 10) / 100) * MAX_MUSIC_VOL;
+    }
+
     function updateIcon() {
       if (musicIcon) musicIcon.textContent = TRACKS[currentTrack].icon;
     }
 
-    // 切换曲目
     function switchTrack(idx) {
       currentTrack = idx;
       audio.src = TRACKS[idx].file;
-      $$(".track-btn", tracksEl).forEach((b, i) =>
-        b.classList.toggle("is-active", i === idx)
-      );
+      $$(".track-btn", tracksEl).forEach(function (b, i) {
+        b.classList.toggle("is-active", i === idx);
+      });
       updateIcon();
       if (isPlaying) audio.play().catch(function () {});
     }
 
-    // 更新播放/暂停 UI
     function setPlaying(playing) {
       isPlaying = playing;
       playBtn.classList.toggle("is-playing", playing);
@@ -640,11 +659,45 @@
       card.classList.toggle("is-playing", playing);
     }
 
+    // 渐入：从 0 平滑升到目标音量（约 3 秒）
+    function fadeIn() {
+      var target = calcVol();
+      musicVolume = target;
+      audio.volume = 0;
+      var step = 0, total = 60;
+      var timer = setInterval(function () {
+        step++;
+        audio.volume = Math.min(target, target * (step / total));
+        if (step >= total) { audio.volume = target; clearInterval(timer); }
+      }, 50);
+    }
+
+    // 自动播放（开场动画结束后触发；被拦截则等首次交互）
+    function tryAutoPlay() {
+      if (!audio.src) switchTrack(0);
+      audio.volume = 0;
+      audio.play().then(function () {
+        setPlaying(true);
+        fadeIn();
+      }).catch(function () {
+        var onInteract = function () {
+          document.removeEventListener("click", onInteract);
+          document.removeEventListener("touchstart", onInteract);
+          audio.volume = 0;
+          audio.play().then(function () { setPlaying(true); fadeIn(); }).catch(function () {});
+        };
+        document.addEventListener("click", onInteract, { once: true });
+        document.addEventListener("touchstart", onInteract, { once: true });
+      });
+    }
+
     // 播放/暂停
-    playBtn.addEventListener("click", () => {
+    playBtn.addEventListener("click", function () {
       if (!audio.src) switchTrack(0);
       if (audio.paused) {
-        audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+        audio.volume = calcVol();
+        musicVolume = calcVol();
+        audio.play().then(function () { setPlaying(true); }).catch(function () { setPlaying(false); });
       } else {
         audio.pause();
         setPlaying(false);
@@ -652,45 +705,48 @@
     });
 
     // 曲目选择
-    $$(".track-btn", tracksEl).forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const idx = parseInt(btn.dataset.track, 10);
+    $$(".track-btn", tracksEl).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var idx = parseInt(btn.dataset.track, 10);
         if (idx !== currentTrack || !isPlaying) {
           switchTrack(idx);
           if (!isPlaying) {
-            audio.play().then(() => setPlaying(true)).catch(() => {});
+            audio.volume = calcVol();
+            musicVolume = calcVol();
+            audio.play().then(function () { setPlaying(true); }).catch(function () {});
           }
         }
       });
     });
 
-    // 音乐音量
-    musicVol.addEventListener("input", () => {
-      const v = parseInt(musicVol.value, 10) / 100;
-      audio.volume = v;
+    // 音乐音量（上限限制）
+    musicVol.addEventListener("input", function () {
+      musicVolume = calcVol();
+      audio.volume = musicVolume;
       musicVolVal.textContent = musicVol.value;
     });
-    audio.volume = parseInt(musicVol.value, 10) / 100;
+    musicVolume = calcVol();
+    audio.volume = musicVolume;
 
-    // 视频音量（控制灯箱中的视频 + 页面所有 video 元素）
-    videoVol.addEventListener("input", () => {
+    // 视频音量
+    videoVol.addEventListener("input", function () {
       videoVolume = parseInt(videoVol.value, 10) / 100;
       videoVolVal.textContent = videoVol.value;
-      // 实时更新正在播放的视频
-      document.querySelectorAll("video").forEach((v) => { v.volume = videoVolume; });
+      document.querySelectorAll("video").forEach(function (v) { v.volume = videoVolume; });
     });
 
     // 收起/展开
     function toggleCollapse() { card.classList.toggle("is-collapsed"); }
-    if (collapseBtn) collapseBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleCollapse(); });
-    card.addEventListener("click", (e) => {
-      if (card.classList.contains("is-collapsed")) { toggleCollapse(); }
+    if (collapseBtn) collapseBtn.addEventListener("click", function (e) { e.stopPropagation(); toggleCollapse(); });
+    card.addEventListener("click", function () {
+      if (card.classList.contains("is-collapsed")) toggleCollapse();
     });
 
-    // 播放结束自动继续（loop 属性已设置，但保险）
-    audio.addEventListener("ended", () => { if (isPlaying) audio.play().catch(function () {}); });
+    audio.addEventListener("ended", function () { if (isPlaying) audio.play().catch(function () {}); });
 
     updateIcon();
+    // 入场动画结束后自动渐入播放
+    setTimeout(tryAutoPlay, 3000);
   }
 
   /* ---------- 启动 ---------- */
