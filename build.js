@@ -231,6 +231,26 @@ function readProfile() {
   }
 }
 
+/* ---------- 扫描"我正在做的"项目（content/projects/*.json） ---------- */
+function scanProjects() {
+  const dir = path.join(CONTENT, "projects");
+  return listDir(dir)
+    .filter((f) => /\.json$/i.test(f))
+    .map((f) => {
+      const full = path.join(dir, f);
+      try {
+        const p = JSON.parse(readText(full));
+        if (!p.name) p.name = f.replace(/\.json$/i, "");
+        if (typeof p.progress !== "number") p.progress = 0;
+        return p;
+      } catch (e) {
+        console.error("⚠ 项目解析失败 " + f + "：" + e.message);
+        return null;
+      }
+    })
+    .filter((p) => p && p.name);
+}
+
 /* ---------- 输出 ---------- */
 function writeData(data) {
   const json = JSON.stringify(data, null, 2);
@@ -247,28 +267,31 @@ function writeData(data) {
 const profile = readProfile();
 const works = scanWorks();
 const daily = scanDaily();
+const projects = scanProjects();
 
-/* 未在 profile.json 里自定义统计数字时，自动按实际内容统计 */
-if (!profile.stats || !profile.stats.length) {
-  profile.stats = [
-    { value: String(works.length), label: "件作品" },
-    { value: String(daily.length), label: "条日常" },
-    { value: String((profile.tags || []).length), label: "个标签" },
-  ];
-}
+/* 始终按实际内容自动统计（覆盖 profile.json 里的 stats） */
+profile.stats = [
+  { value: String(works.length), label: "件作品" },
+  { value: String(daily.length), label: "条日常" },
+  { value: String(projects.length), label: "个进行中" },
+  { value: String((profile.tags || []).length), label: "个标签" },
+];
 
 const data = {
   profile,
   daily,
   works,
+  projects,
 };
 
 writeData(data);
 
 console.log("✅ 构建完成：");
-console.log("   日常照片   " + data.daily.length + " 张");
+console.log("   日常       " + data.daily.length + " 条");
 console.log("   作品       " + data.works.length + " 个（" +
   data.works.filter(w => w.type === "video").length + " 视频 / " +
   data.works.filter(w => w.type === "image").length + " 图片 / " +
   data.works.filter(w => w.type === "doc").length + " 文档）");
+console.log("   项目       " + data.projects.length + " 个");
+console.log("   输出：data.json + js/data.js");
 console.log("   输出：data.json + js/data.js");

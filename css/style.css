@@ -388,7 +388,7 @@ code {
 .stats {
   margin-top: 30px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 14px;
 }
 .stat {
@@ -400,6 +400,65 @@ code {
 }
 .stat b { display: block; font-size: 1.5rem; color: var(--accent); }
 .stat span { font-size: .85rem; color: var(--ink-faint); }
+
+/* ---------- 我正在做的（项目卡片） ---------- */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 22px;
+}
+.project-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform .3s, box-shadow .3s;
+  display: flex;
+  flex-direction: column;
+}
+.project-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.project-card::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.35) 50%, transparent 60%);
+  transform: translateX(-130%); transition: transform .9s ease; pointer-events: none;
+}
+.project-card:hover::after { transform: translateX(130%); }
+
+.project-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.project-name { font-size: 1.2rem; font-weight: 800; color: var(--ink); }
+.project-desc { font-size: .92rem; color: var(--ink-soft); line-height: 1.65; }
+
+.project-field { display: flex; flex-direction: column; gap: 4px; }
+.project-label {
+  font-size: .72rem; font-weight: 700; letter-spacing: 1px;
+  color: var(--accent); text-transform: uppercase;
+}
+.project-value { font-size: .9rem; color: var(--ink-soft); line-height: 1.6; }
+
+.project-progress-wrap { display: flex; align-items: center; gap: 10px; }
+.project-progress {
+  flex: 1; height: 8px; border-radius: 4px;
+  background: var(--line); overflow: hidden;
+}
+.project-progress i {
+  display: block; height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), #e0933a);
+  transition: width .8s cubic-bezier(.2,.8,.25,1);
+}
+.project-progress-val {
+  font-size: .85rem; font-weight: 700; color: var(--accent);
+  min-width: 36px; text-align: right;
+}
+
+/* 进度条入场动画 */
+.project-card .project-progress i { width: 0; }
+.project-card.is-visible .project-progress i { width: var(--p); }
+
+@media (max-width: 640px) {
+  .projects-grid { grid-template-columns: 1fr; }
+}
 
 /* ---------- 日常（瀑布流） ---------- */
 .daily-grid {
