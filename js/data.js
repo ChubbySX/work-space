@@ -1,0 +1,141 @@
+/* 自动生成，请勿手改 —— 由 node build.js 生成 */
+window.SITE_DATA = {
+  "profile": {
+    "name": "钟智轩",
+    "enName": "Chubby",
+    "nickname": "小典",
+    "tagline": "大学生 · 机械 · 建模 · 动手爱好者",
+    "quote": "把想法变成看得见、摸得着的东西。",
+    "avatar": "content/avatar.svg",
+    "bio": [
+      "大家好，我是钟智轩，英文名 Chubby，外号小典，一名在校大学生。我喜欢机械、3D 建模和各种动手实践——把脑子里的想法，一步步变成看得见、摸得着的东西。",
+      "坐标青岛，一个依山傍海的城市。傍晚的海边、晚霞和灯光是我最喜欢的风景，这个主页的封面就是那时拍下的心情。",
+      "如果你也对机械、建模、手工感兴趣，或者想找我聊聊，欢迎随时联系我！"
+    ],
+    "tags": [
+      "机械",
+      "3D建模",
+      "动手DIY",
+      "视频剪辑",
+      "文档写作",
+      "PPT设计"
+    ],
+    "contact": {
+      "email": "chubbysx@qq.com",
+      "wechat": "ChubbyXS369"
+    },
+    "stats": [
+      {
+        "value": "7",
+        "label": "件作品"
+      },
+      {
+        "value": "4",
+        "label": "条日常"
+      },
+      {
+        "value": "6",
+        "label": "个标签"
+      }
+    ]
+  },
+  "daily": [
+    {
+      "type": "video",
+      "file": "content/daily/工坊小动画.gif",
+      "title": "工坊小动画",
+      "date": "",
+      "desc": "工坊小动画（示例视频）——日常板块支持视频，可以配上这段说明文字。换成真实 .mp4 就能直接播放。",
+      "poster": "content/daily/工坊小动画.gif",
+      "size": "12.0 KB"
+    },
+    {
+      "type": "image",
+      "src": "content/daily/工坊时光.svg",
+      "title": "工坊时光",
+      "date": "",
+      "desc": "",
+      "size": "1.0 KB"
+    },
+    {
+      "type": "album",
+      "files": [
+        "content/daily/海边随手拍/周末散步.svg",
+        "content/daily/海边随手拍/晚霞海岸.svg",
+        "content/daily/海边随手拍/装机日常.svg"
+      ],
+      "title": "海边随手拍",
+      "date": "",
+      "desc": "一组青岛海边的随手拍（示例说明）——把多张照片放进同一个文件夹，网站会自动显示成“共 N 张”的相册卡片。",
+      "size": "3 张"
+    },
+    {
+      "type": "image",
+      "src": "content/daily/骑行路上.svg",
+      "title": "骑行路上",
+      "date": "",
+      "desc": "",
+      "size": "1.0 KB"
+    }
+  ],
+  "works": [
+    {
+      "type": "video",
+      "file": "content/works/video/宿舍.mp4",
+      "title": "宿舍",
+      "date": "",
+      "desc": "",
+      "poster": "content/works/video/宿舍.poster.jpg",
+      "size": "6.7 MB"
+    },
+    {
+      "type": "video",
+      "file": "content/works/video/火控.mp4",
+      "title": "火控",
+      "date": "",
+      "desc": "LTP1.2 微动火控的复刻，由于没有标准数据，所以这个只适配我自己的非标2号波箱",
+      "poster": "content/works/video/火控.poster.jpg",
+      "size": "39.0 MB"
+    },
+    {
+      "type": "image",
+      "file": "content/works/image/宿舍.png",
+      "title": "宿舍",
+      "date": "",
+      "desc": "摆弄了一下摄像头，算是宿舍所有内容大合集",
+      "size": "11.7 MB"
+    },
+    {
+      "type": "image",
+      "file": "content/works/image/火控.png",
+      "title": "火控",
+      "date": "",
+      "desc": "定形，打完光的产品展示图",
+      "size": "7.1 MB"
+    },
+    {
+      "type": "doc",
+      "file": "content/works/doc/示例作品说明文档.docx",
+      "title": "示例作品说明文档",
+      "date": "",
+      "desc": "",
+      "size": "36.1 KB"
+    },
+    {
+      "type": "doc",
+      "file": "content/works/doc/示例数据表格.xlsx",
+      "title": "示例数据表格",
+      "date": "",
+      "desc": "",
+      "size": "5.0 KB"
+    },
+    {
+      "type": "doc",
+      "file": "content/works/doc/示例演示文稿.pptx",
+      "title": "示例演示文稿",
+      "date": "",
+      "desc": "",
+      "size": "30.9 KB"
+    }
+  ]
+};

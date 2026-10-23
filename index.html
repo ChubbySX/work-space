@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>钟智轩 Chubby · 个人主页</title>
+<meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
+<link rel="icon" href="content/avatar.svg" type="image/svg+xml">
+<script>document.documentElement.classList.add("js");</script>
+<link rel="stylesheet" href="css/style.css?v=6">
+</head>
+<body>
+
+<!-- ============ 入场过渡动画 ============ -->
+<div class="intro" id="intro" aria-hidden="true">
+  <div class="intro-inner">
+    <div class="intro-mark">鐘</div>
+    <p class="intro-name">ZHONG ZHIXUAN · CHUBBY</p>
+    <p class="intro-sub">小典 · 机械 · 建模 · 动手爱好者</p>
+    <div class="intro-load" aria-hidden="true"><i></i></div>
+  </div>
+  <button class="intro-skip" id="introSkip" type="button">跳过 →</button>
+</div>
+
+<!-- ============ 顶部导航 ============ -->
+<header class="site-header" id="siteHeader">
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+  <nav class="nav container">
+    <a class="brand" href="#home">
+      <span class="brand-mark">钟</span>
+      <span class="brand-text">钟智轩 <em>Chubby</em></span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#home" class="nav-link is-active">首页</a></li>
+      <li><a href="#about" class="nav-link">关于我</a></li>
+      <li><a href="#daily" class="nav-link">日常</a></li>
+      <li><a href="#works" class="nav-link">作品</a></li>
+      <li><a href="#contact" class="nav-link">联系</a></li>
+    </ul>
+    <button class="nav-toggle" id="navToggle" aria-label="打开菜单">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+</header>
+
+<!-- ============ 左侧章节导航 ============ -->
+<nav class="side-nav" id="sideNav" aria-label="页面章节导航">
+  <span class="side-track" aria-hidden="true"></span>
+  <span class="side-fill" id="sideFill" aria-hidden="true"></span>
+  <a href="#home" class="side-dot" style="top:0%" data-label="首页">
+    <span class="side-label">首页</span>
+  </a>
+  <a href="#about" class="side-dot" style="top:25%" data-label="关于我">
+    <span class="side-label">关于我</span>
+  </a>
+  <a href="#daily" class="side-dot" style="top:50%" data-label="日常">
+    <span class="side-label">日常</span>
+  </a>
+  <a href="#works" class="side-dot" style="top:75%" data-label="作品">
+    <span class="side-label">作品</span>
+  </a>
+  <a href="#contact" class="side-dot" style="top:100%" data-label="联系">
+    <span class="side-label">联系</span>
+  </a>
+</nav>
+
+<main>
+<!-- ============ 首屏 Hero ============ -->
+<section class="hero" id="home">
+  <div class="hero-bg" aria-hidden="true">
+    <img class="hero-photo" src="content/hero-dusk.jpg?v=2" alt="青岛海边黄昏" fetchpriority="high">
+    <div class="hero-blob b1"></div>
+    <div class="hero-blob b2"></div>
+  </div>
+  <div class="container hero-inner">
+    <p class="hero-kicker hero-stagger">嗨，欢迎来到我的主页 👋</p>
+    <h1 class="hero-title hero-stagger">我是 <span class="accent" id="heroName">钟智轩</span></h1>
+    <p class="hero-sub hero-stagger" id="heroSub">大学生 · 机械 · 建模 · 动手爱好者</p>
+    <p class="hero-quote hero-stagger" id="heroQuote">把想法变成看得见、摸得着的东西。</p>
+    <p class="hero-typed hero-stagger">热爱 <span class="typed-wrap"><span id="typedText"></span><span class="typed-caret"></span></span></p>
+    <div class="hero-actions hero-stagger">
+      <a class="btn btn-primary" href="#works">查看我的作品</a>
+      <a class="btn btn-ghost" href="#about">认识我</a>
+    </div>
+    <div class="hero-scroll hero-stagger" aria-hidden="true"><span></span></div>
+  </div>
+</section>
+
+<!-- ============ 关于我 ============ -->
+<section class="section" id="about">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="section-tag">About</p>
+      <h2 class="section-title">关于我</h2>
+      <p class="section-desc">一个喜欢捣鼓机械、建模和手工的大学生</p>
+    </div>
+
+    <div class="about-grid">
+      <div class="about-card reveal">
+        <div class="avatar-frame">
+          <img id="avatar" src="content/avatar.svg" alt="钟智轩">
+        </div>
+        <h3 id="aboutName">钟智轩</h3>
+        <p class="about-alias" id="aboutAlias">Chubby · 小典</p>
+        <div class="tag-list" id="tagList"></div>
+      </div>
+
+      <div class="about-body reveal">
+        <div class="bio" id="bio"></div>
+        <div class="stats" id="stats"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 日常 ============ -->
+<section class="section section-alt" id="daily">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="section-tag">Daily</p>
+      <h2 class="section-title">我的日常</h2>
+      <p class="section-desc">记录生活里那些有意思的瞬间</p>
+    </div>
+    <div class="daily-grid" id="dailyGrid">
+      <div class="empty-state">还没有日常照片～ 请把图片放进 <code>content/daily/</code> 文件夹后运行 <code>node build.js</code></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 作品 ============ -->
+<section class="section" id="works">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="section-tag">Works</p>
+      <h2 class="section-title">我的作品</h2>
+      <p class="section-desc">视频 · 图片 · 文档，都是我想给你看的</p>
+    </div>
+
+    <div class="filter-bar reveal" id="filterBar">
+      <button class="filter-btn is-active" data-filter="all">全部</button>
+      <button class="filter-btn" data-filter="video">🎬 视频</button>
+      <button class="filter-btn" data-filter="image">🖼️ 图片</button>
+      <button class="filter-btn" data-filter="doc">📄 文档</button>
+    </div>
+
+    <div class="works-grid" id="worksGrid">
+      <div class="empty-state">还没有作品～ 把文件放进 <code>content/works/video|image|doc/</code> 后运行 <code>node build.js</code></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 联系 ============ -->
+<section class="section section-alt" id="contact">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="section-tag">Contact</p>
+      <h2 class="section-title">找到我</h2>
+      <p class="section-desc">欢迎交流机械、建模，或任何有趣的想法</p>
+    </div>
+    <div class="contact-grid" id="contactGrid"></div>
+    <p class="contact-note reveal">数据来源：<code>content/profile.json</code>，编辑后运行 <code>node build.js</code> 即可更新。</p>
+  </div>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <p>© <span id="year"></span> 钟智轩 Chubby · 用心搭建的个人主页</p>
+  </div>
+</footer>
+
+<!-- ============ 回到顶部 ============ -->
+<button class="to-top" id="toTop" aria-label="回到顶部">↑</button>
+
+<!-- ============ 背景音乐播放器 ============ -->
+<div class="music-card" id="musicCard">
+  <div class="music-header" id="musicHeader">
+    <span class="music-icon" id="musicIcon">🎵</span>
+    <span class="music-title">背景音乐</span>
+    <button class="music-play" id="musicPlay" aria-label="播放/暂停">▶</button>
+    <button class="music-collapse" id="musicCollapse" aria-label="收起/展开">—</button>
+  </div>
+  <div class="music-body" id="musicBody">
+    <div class="music-tracks" id="musicTracks">
+      <button class="track-btn is-active" data-track="0">🌊 海风海浪</button>
+      <button class="track-btn" data-track="1">🌿 春日鸟鸣</button>
+      <button class="track-btn" data-track="2">🏙️ 都市喧嚣</button>
+    </div>
+    <div class="music-volumes">
+      <div class="vol-row">
+        <span class="vol-label">🎵 音乐</span>
+        <input type="range" class="vol-slider" id="musicVol" min="0" max="100" value="35">
+        <span class="vol-val" id="musicVolVal">35</span>
+      </div>
+      <div class="vol-row">
+        <span class="vol-label">🎬 视频</span>
+        <input type="range" class="vol-slider" id="videoVol" min="0" max="100" value="80">
+        <span class="vol-val" id="videoVolVal">80</span>
+      </div>
+    </div>
+    <p class="music-hint">视频音量控制日常与作品板块中所有视频</p>
+  </div>
+</div>
+<audio id="bgMusic" loop preload="none"></audio>
+
+<!-- ============ 灯箱 ============ -->
+<div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="lightbox-close" id="lightboxClose" aria-label="关闭">✕</button>
+  <button class="lightbox-prev" id="lightboxPrev" aria-label="上一个">‹</button>
+  <button class="lightbox-next" id="lightboxNext" aria-label="下一个">›</button>
+  <div class="lightbox-body" id="lightboxBody"></div>
+  <p class="lightbox-caption" id="lightboxCaption"></p>
+</div>
+
+<script src="js/data.js?v=11"></script>
+<script src="js/main.js?v=6"></script>
+</body>
+</html>
