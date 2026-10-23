@@ -41,7 +41,7 @@ window.SITE_DATA = {
         "label": "件作品"
       },
       {
-        "value": "6",
+        "value": "7",
         "label": "条日常"
       },
       {
@@ -64,27 +64,13 @@ window.SITE_DATA = {
         "content/daily/不爱出门的旅游/南京先锋书店.jpg",
         "content/daily/不爱出门的旅游/南京步行街.jpg",
         "content/daily/不爱出门的旅游/南京超大的popmart.jpg",
-        "content/daily/不爱出门的旅游/我的发射器们.jpg",
-        "content/daily/不爱出门的旅游/校园晚霞.jpg",
         "content/daily/不爱出门的旅游/江南古镇.jpg",
         "content/daily/不爱出门的旅游/非常非常难喝的绿豆汤（里面加了薄荷）.jpg"
       ],
       "title": "不爱出门的旅游",
       "date": "",
       "desc": "",
-      "size": "10 张"
-    },
-    {
-      "type": "album",
-      "files": [
-        "content/daily/在青岛的海边随手拍/周末散步.svg",
-        "content/daily/在青岛的海边随手拍/晚霞海岸.svg",
-        "content/daily/在青岛的海边随手拍/装机日常.svg"
-      ],
-      "title": "在青岛的海边随手拍",
-      "date": "",
-      "desc": "",
-      "size": "3 张"
+      "size": "8 张"
     },
     {
       "type": "video",
@@ -106,6 +92,16 @@ window.SITE_DATA = {
     {
       "type": "album",
       "files": [
+        "content/daily/我的小玩具们/我的发射器们.jpg"
+      ],
+      "title": "我的小玩具们",
+      "date": "",
+      "desc": "",
+      "size": "1 张"
+    },
+    {
+      "type": "album",
+      "files": [
         "content/daily/美食就是好吃的意思！/兼职的美味杂货面.jpg",
         "content/daily/美食就是好吃的意思！/蟹黄面.jpg"
       ],
@@ -113,6 +109,16 @@ window.SITE_DATA = {
       "date": "",
       "desc": "",
       "size": "2 张"
+    },
+    {
+      "type": "album",
+      "files": [
+        "content/daily/青岛在青理/校园晚霞.jpg"
+      ],
+      "title": "青岛在青理",
+      "date": "",
+      "desc": "",
+      "size": "1 张"
     },
     {
       "type": "image",
@@ -144,19 +150,19 @@ window.SITE_DATA = {
     },
     {
       "type": "image",
-      "file": "content/works/image/摆大型.png",
-      "title": "摆大型",
+      "file": "content/works/image/宿舍.jpg",
+      "title": "宿舍",
       "date": "",
-      "desc": "",
-      "size": "11.7 MB"
+      "desc": "个人从众多渲染图中，比较喜欢的一张，像是相机拍摄的",
+      "size": "181.8 KB"
     },
     {
       "type": "image",
-      "file": "content/works/image/火控.png",
+      "file": "content/works/image/火控.jpg",
       "title": "火控",
       "date": "",
       "desc": "定形，打完光的产品展示图",
-      "size": "7.1 MB"
+      "size": "78.4 KB"
     },
     {
       "type": "doc",
