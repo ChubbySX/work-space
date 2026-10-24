@@ -1,28 +1,23 @@
 /* 自动生成，请勿手改 —— 由 node build.js 生成 */
 window.SITE_DATA = {
   "profile": {
-    "_说明": "★★★ 这是网站的「文字控制台」——改这里的文字，双击 构建网站.bat 即可生效 ★★★",
     "name": "钟智轩",
     "enName": "Chubby",
     "nickname": "小典",
     "tagline": "本科生 · 机械 · 建模 · 动手爱好者",
     "quote": "把想法变成看得见、摸得着的东西。",
-    "_说明_hero": "↓ 首页（Hero）区域的文字",
     "heroKicker": "嗨，欢迎来到我的主页 👋",
-    "_说明_intro": "↓ 开场动画的文字（进入网站时闪过的品牌页）",
     "intro": {
       "mark": "鐘",
       "name": "ZHONG ZHIXUAN · CHUBBY",
       "sub": "典 · 机械 · 建模 · 动手爱好者"
     },
     "avatar": "content/avatar.svg",
-    "_说明_bio": "↓ 关于我板块的简介，每段一个字符串",
     "bio": [
       "大家好，我是钟智轩，英文名 Chubby，一名在校本科生。涉猎机械、3D 建模和各种动手操作——把脑子里的想法，一步步变成看得见、摸得着的东西。",
       "坐标青岛，一个依山傍海的城市。傍晚的海边、晚霞和灯光是我最喜欢的风景，主页的封面就是我对于这座城市的心绪。",
       "如果你也对机械、建模、手工感兴趣，或者想找我聊聊，欢迎随时联系我！"
     ],
-    "_说明_tags": "↓ 关于我卡片里的标签",
     "tags": [
       "机械",
       "3D建模",
@@ -30,14 +25,30 @@ window.SITE_DATA = {
       "视频剪辑",
       "动画渲染"
     ],
-    "_说明_contact": "↓ 联系板块，不写的字段自动隐藏",
     "contact": {
       "email": "chubbysx@qq.com",
       "wechat": "ChubbyXS369"
     },
+    "wishlist": [
+      {
+        "text": "购买一台属于自己的3D打印机，并学会打印操作",
+        "importance": 3,
+        "attraction": 4
+      },
+      {
+        "text": "买一台运动相机（虽然但是，其实没什么大用）",
+        "importance": 1,
+        "attraction": 3
+      },
+      {
+        "text": "再搭建一个网站，用于介绍我的女朋友",
+        "importance": 4,
+        "attraction": 4
+      }
+    ],
     "stats": [
       {
-        "value": "10",
+        "value": "7",
         "label": "件作品"
       },
       {
@@ -163,30 +174,6 @@ window.SITE_DATA = {
       "date": "",
       "desc": "高中食堂会议中的复刻",
       "size": "154.6 KB"
-    },
-    {
-      "type": "doc",
-      "file": "content/works/doc/示例作品说明文档.docx",
-      "title": "示例作品说明文档",
-      "date": "",
-      "desc": "",
-      "size": "36.1 KB"
-    },
-    {
-      "type": "doc",
-      "file": "content/works/doc/示例数据表格.xlsx",
-      "title": "示例数据表格",
-      "date": "",
-      "desc": "",
-      "size": "5.0 KB"
-    },
-    {
-      "type": "doc",
-      "file": "content/works/doc/示例演示文稿.pptx",
-      "title": "示例演示文稿",
-      "date": "",
-      "desc": "",
-      "size": "30.9 KB"
     }
   ],
   "projects": [
@@ -213,6 +200,23 @@ window.SITE_DATA = {
       "progress": 30,
       "expected": "能够包含市面上绝大多数的原厂品牌和三方配件，辅助玩家搭配",
       "learned": "程序制作没学到什么，提示词和指令输入倒是熟练精进了不少"
+    }
+  ],
+  "wishlist": [
+    {
+      "text": "购买一台属于自己的3D打印机，并学会打印操作",
+      "importance": 3,
+      "attraction": 4
+    },
+    {
+      "text": "买一台运动相机（虽然但是，其实没什么大用）",
+      "importance": 1,
+      "attraction": 3
+    },
+    {
+      "text": "再搭建一个网站，用于介绍我的女朋友",
+      "importance": 4,
+      "attraction": 4
     }
   ]
 };

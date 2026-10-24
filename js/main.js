@@ -755,6 +755,39 @@
     updateIcon();
     // 入场动画结束后自动渐入播放
     setTimeout(tryAutoPlay, 3000);
+
+    // ====== 5秒后或首次页面交互后自动收起 + 气泡提示 ======
+    var autoCollapsed = false;
+    function autoCollapse() {
+      if (autoCollapsed) return;
+      autoCollapsed = true;
+      card.classList.add("is-collapsed");
+      // 弹出气泡，3 秒后消失
+      var bubble = document.createElement("div");
+      bubble.className = "music-bubble";
+      bubble.textContent = "背景音乐调节设置藏在这里哦~";
+      document.body.appendChild(bubble);
+      requestAnimationFrame(function () { bubble.classList.add("is-show"); });
+      setTimeout(function () {
+        bubble.classList.remove("is-show");
+        setTimeout(function () { if (bubble.parentNode) bubble.remove(); }, 400);
+      }, 3000);
+    }
+    // 开场动画约 3 秒，计时和交互监听都在动画结束后才开始
+    // 5 秒后自动收起（= 开场结束 + 5 秒展示时间）
+    setTimeout(autoCollapse, 8000);
+    // 首次点击/触摸/滚动（不在音乐卡片上）也触发收起
+    function onInteract(e) {
+      if (autoCollapsed) return;
+      if (e && e.target && card.contains(e.target)) return;
+      setTimeout(autoCollapse, 50);
+    }
+    // 延迟到开场动画结束后再监听，避免开场期间误触
+    setTimeout(function () {
+      document.addEventListener("click", onInteract, { passive: true });
+      document.addEventListener("touchstart", onInteract, { passive: true });
+      document.addEventListener("scroll", onInteract, { passive: true });
+    }, 3500);
   }
 
   /* ---------- 渲染：我正在做的（项目卡片） ---------- */
@@ -786,6 +819,36 @@
       .join("");
   }
 
+  /* ---------- 渲染：我还想做的（清单卡片） ---------- */
+  function renderWishlist(items) {
+    var grid = $("#wishlistGrid");
+    if (!items || !items.length) {
+      grid.innerHTML = '<div class="empty-state">还没有内容～ 编辑 <code>content/wishlist.json</code> 后运行 <code>node build.js</code></div>';
+      return;
+    }
+    grid.innerHTML = items
+      .map(function (item, i) {
+        var imp = Math.max(0, Math.min(5, item.importance || 0));
+        var att = Math.max(0, Math.min(5, item.attraction || 0));
+        var impDots = "";
+        var attDots = "";
+        for (var j = 1; j <= 5; j++) {
+          impDots += '<i class="' + (j <= imp ? "on" : "") + '"></i>';
+          attDots += '<i class="' + (j <= att ? "on" : "") + '"></i>';
+        }
+        return (
+          '<div class="wishlist-item reveal" style="transition-delay:' + ((i % 6) * 60) + 'ms">' +
+            '<p class="wishlist-text">' + esc(item.text) + '</p>' +
+            '<div class="wishlist-ratings">' +
+              '<span class="wr"><label>重要性</label><span class="rating-dots">' + impDots + '</span></span>' +
+              '<span class="wr"><label>吸引度</label><span class="rating-dots">' + attDots + '</span></span>' +
+            '</div>' +
+          '</div>'
+        );
+      })
+      .join("");
+  }
+
   /* ---------- 启动 ---------- */
   initIntro();
   setupChrome();
@@ -798,6 +861,7 @@
     renderDaily(DATA.daily);
     renderWorks(DATA.works);
     renderProjects(DATA.projects);
+    renderWishlist(DATA.wishlist);
     setupFilters(DATA.works);
     renderContact(p.contact);
     setupTyped();

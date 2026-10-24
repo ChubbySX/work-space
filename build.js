@@ -269,6 +269,18 @@ const works = scanWorks();
 const daily = scanDaily();
 const projects = scanProjects();
 
+/* "我还想做的"清单从 profile.json 读取（统一在一个文件里管理） */
+const wishlist = (profile.wishlist || []).map(function (item) {
+  return {
+    text: item.text || item.name || "",
+    importance: Math.max(0, Math.min(5, Number(item.importance) || 0)),
+    attraction: Math.max(0, Math.min(5, Number(item.attraction) || 0)),
+  };
+}).filter(function (item) { return item.text; });
+
+/* 清除 profile 里的 _说明 注释字段（只用于 profile.json 内部，不输出到数据） */
+Object.keys(profile).forEach(function (k) { if (k.startsWith("_")) delete profile[k]; });
+
 /* 始终按实际内容自动统计（覆盖 profile.json 里的 stats） */
 profile.stats = [
   { value: String(works.length), label: "件作品" },
@@ -282,6 +294,7 @@ const data = {
   daily,
   works,
   projects,
+  wishlist,
 };
 
 writeData(data);
