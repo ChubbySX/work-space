@@ -306,5 +306,5 @@ console.log("   作品       " + data.works.length + " 个（" +
   data.works.filter(w => w.type === "image").length + " 图片 / " +
   data.works.filter(w => w.type === "doc").length + " 文档）");
 console.log("   项目       " + data.projects.length + " 个");
-console.log("   输出：data.json + js/data.js");
+console.log("   清单       " + data.wishlist.length + " 条");
 console.log("   输出：data.json + js/data.js");
