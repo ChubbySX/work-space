@@ -32,17 +32,21 @@ for (const line of lines) {
   else if (/\.(js|css|html|bat)$/.test(file) && !file.startsWith("content/")) c.code++;
 }
 
-/* 2. 生成分点概述 */
+/* 2. 生成分点概述（编号 + 具体描述）*/
 const points = [];
-if (c.daily) points.push("日常 +" + c.daily);
-if (c.video) points.push("视频作品 +" + c.video);
-if (c.image) points.push("图片作品 +" + c.image);
-if (c.doc) points.push("文档作品 +" + c.doc);
-if (c.project) points.push("项目更新 " + c.project);
+if (c.daily || c.video) {
+  const parts = [];
+  if (c.daily) parts.push(c.daily + "张日常照");
+  if (c.video) parts.push(c.video + "个视频");
+  points.push("新增" + parts.join("+"));
+}
+if (c.image) points.push("增加了" + c.image + "张作品图");
+if (c.doc) points.push("增加了" + c.doc + "份文档");
+if (c.project) points.push("更新了" + c.project + "个项目");
 if (c.profile) points.push("个人资料更新");
-if (c.code) points.push("网站功能/样式调整");
-let summary = points.join("；");
-if (!summary) summary = "内容更新";
+if (c.code) points.push("修改了部分代码、调整了网页样式");
+let summary = points.map((p, i) => (i + 1) + "." + p).join("；");
+if (!points.length) summary = "1.内容更新";
 
 /* 3. 记录到 changelog.json */
 const now = new Date();

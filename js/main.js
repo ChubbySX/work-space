@@ -11,6 +11,7 @@
 
   let DATA = null;          // 站点数据
   let currentFilter = "all";
+  let currentTag = null;     // 主题标签筛选
   let lightboxList = [];    // 当前灯箱可切换的条目
   let lightboxIndex = 0;
   let videoVolume = 0.8;    // 视频音量（由音乐卡片控制）
@@ -144,17 +145,13 @@
       el.addEventListener("click", () => {
         const item = daily[+el.dataset.index];
         if (!item) return;
-        const slides = [];
+        // 图片组用卡片堆叠查看器，单图/视频用灯箱
         if (item.type === "album") {
-          item.files.forEach((f, k) =>
-            slides.push({
-              type: "image",
-              file: f,
-              title: item.title,
-              desc: item.desc ? `${item.desc}（${k + 1}/${item.files.length}）` : `${k + 1}/${item.files.length}`,
-            })
-          );
-        } else if (item.type === "video") {
+          openCardStack(item);
+          return;
+        }
+        const slides = [];
+        if (item.type === "video") {
           slides.push({ type: "video", file: item.file, title: item.title, desc: item.desc });
         } else {
           slides.push({ type: "image", file: item.src, title: item.title, desc: item.desc });
@@ -169,9 +166,41 @@
 
   function renderWorks(works) {
     const grid = $("#worksGrid");
-    const list = (works || []).filter(
-      (w) => currentFilter === "all" || w.type === currentFilter
-    );
+    // 收集所有标签
+    var allTags = [];
+    (works || []).forEach(function (w) {
+      (w.tags || []).forEach(function (t) { if (!allTags.includes(t)) allTags.push(t); });
+    });
+    // 渲染标签筛选栏（有标签时才显示）
+    var tagBar = $("#tagFilterBar");
+    if (tagBar) tagBar.remove();
+    if (allTags.length) {
+      tagBar = document.createElement("div");
+      tagBar.id = "tagFilterBar";
+      tagBar.className = "tag-filter-bar reveal";
+      var btns = '<button class="tag-filter-btn is-active" data-tag="">全部主题</button>';
+      allTags.forEach(function (t) {
+        btns += '<button class="tag-filter-btn' + (currentTag === t ? " is-active" : "") + '" data-tag="' + esc(t) + '">' + esc(t) + "</button>";
+      });
+      tagBar.innerHTML = btns;
+      var filterBar = $("#filterBar");
+      if (filterBar && filterBar.parentNode) filterBar.parentNode.insertBefore(tagBar, filterBar.nextSibling);
+      $$(".tag-filter-btn", tagBar).forEach(function (b) {
+        b.addEventListener("click", function () {
+          $$(".tag-filter-btn", tagBar).forEach(function (x) { x.classList.remove("is-active"); });
+          b.classList.add("is-active");
+          currentTag = b.dataset.tag || null;
+          renderWorks(DATA.works);
+          setupReveal();
+        });
+      });
+    }
+
+    const list = (works || []).filter(function (w) {
+      if (currentFilter !== "all" && w.type !== currentFilter) return false;
+      if (currentTag && !(w.tags || []).includes(currentTag)) return false;
+      return true;
+    });
 
     if (!list.length) {
       grid.innerHTML = `<div class="empty-state">${
@@ -186,6 +215,7 @@
       .map((w, i) => {
         const ext = fileExt(w.file);
         const badge = `<span class="work-badge ${w.type}">${TYPE_LABEL[w.type] || w.type}${ext ? " · " + ext : ""}</span>`;
+        const tagsHtml = (w.tags && w.tags.length) ? `<div class="work-tags">${w.tags.map((t) => `<span class="work-tag">#${esc(t)}</span>`).join("")}</div>` : "";
 
         if (w.type === "doc") {
           return `
@@ -207,6 +237,7 @@
                 <span class="doc-type ${ext}">${ext || "FILE"}</span>
                 <span>${w.date || ""}${w.size ? " · " + w.size : ""}</span>
               </div>
+              ${tagsHtml}
             </div>
           </article>`;
         }
@@ -228,6 +259,7 @@
                 <span>${esc(w.date || "")}</span>
                 <span>${w.size || ""}</span>
               </div>
+              ${tagsHtml}
             </div>
           </article>`;
         }
@@ -248,6 +280,7 @@
               <span>${esc(w.date || "")}</span>
               <span>${w.size || ""}</span>
             </div>
+            ${tagsHtml}
           </div>
         </article>`;
       })
@@ -284,12 +317,6 @@
       return '<' + tag + ' class="contact-item reveal"' + href + ' style="transition-delay:' + ((i % 4) * 80) + 'ms">' +
         '<div class="icon">' + icon + '</div><h4>' + label + '</h4><p>' + esc(value) + '</p></' + tag + '>';
     }).join("");
-
-    // 简历下载按钮
-    if (c.resume) {
-      html += '<a class="contact-item resume-btn reveal" href="' + esc(c.resume) + '" download style="transition-delay:' + ((items.length % 4) * 80) + 'ms">' +
-        '<div class="icon">📄</div><h4>下载简历</h4><p>PDF 格式</p></a>';
-    }
 
     $("#contactGrid").innerHTML = html;
   }

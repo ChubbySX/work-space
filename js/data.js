@@ -81,8 +81,7 @@ window.SITE_DATA = {
     "contact": {
       "email": "chubbysx@qq.com",
       "wechat": "ChubbyXS369",
-      "bilibili": "https://space.bilibili.com/",
-      "resume": "content/resume.pdf"
+      "bilibili": "https://space.bilibili.com/"
     },
     "wishlist": [
       {
@@ -207,6 +206,7 @@ window.SITE_DATA = {
       "title": "地铁",
       "date": "",
       "desc": "地铁花海也绝对是许多blender新手的入门练习作品之一，这里只有地铁、没有花海，因为生成花海后渲染会爆内存。（就是这里爱上了M3工具）",
+      "tags": [],
       "poster": "content/works/video/地铁.poster.jpg",
       "size": "7.2 MB"
     },
@@ -216,6 +216,7 @@ window.SITE_DATA = {
       "title": "宿舍",
       "date": "",
       "desc": "大学宿舍的复刻，因为时间和精力有限，所以并没有让所有东西都出现在场景中，其中耗时最大的是显示器下面那个不起眼的移动电源，正浩家的，因为宿舍每天都会准时断电，所以用来做UPS。",
+      "tags": [],
       "poster": "content/works/video/宿舍.poster.jpg",
       "size": "7.8 MB"
     },
@@ -225,6 +226,7 @@ window.SITE_DATA = {
       "title": "火控",
       "date": "",
       "desc": "LTP1.2 微动火控的复刻，由于没有标准数据，所以这个只适配我自己的非标2号波箱",
+      "tags": [],
       "poster": "content/works/video/火控.poster.jpg",
       "size": "973.0 KB"
     },
@@ -234,6 +236,7 @@ window.SITE_DATA = {
       "title": "狐狸森林",
       "date": "",
       "desc": "选KurTips做入门老师，真的是我的荣幸，同师门的师兄师弟应该都是以狐狸森林为第一款作品",
+      "tags": [],
       "poster": "content/works/video/狐狸森林.poster.jpg",
       "size": "6.6 MB"
     },
@@ -243,6 +246,7 @@ window.SITE_DATA = {
       "title": "宿舍",
       "date": "",
       "desc": "个人从众多渲染图中，比较喜欢的一张，像是相机拍摄的",
+      "tags": [],
       "size": "181.8 KB"
     },
     {
@@ -251,6 +255,7 @@ window.SITE_DATA = {
       "title": "火控",
       "date": "",
       "desc": "定形，打完光的产品展示图",
+      "tags": [],
       "size": "78.4 KB"
     },
     {
@@ -259,6 +264,7 @@ window.SITE_DATA = {
       "title": "高中宿舍与一堆练习册",
       "date": "",
       "desc": "现在看来真的非常非常简陋的高中宿舍",
+      "tags": [],
       "size": "183.0 KB"
     },
     {
@@ -267,6 +273,7 @@ window.SITE_DATA = {
       "title": "高中食堂一楼简装展示",
       "date": "",
       "desc": "高中食堂会议中的复刻",
+      "tags": [],
       "size": "154.6 KB"
     }
   ],
@@ -315,24 +322,24 @@ window.SITE_DATA = {
   ],
   "changelog": [
     {
-      "date": "2026-10-24 16:48",
-      "summary": "个人资料更新；网站功能/样式调整"
-    },
-    {
-      "date": "2026-10-24 16:27",
-      "summary": "个人资料更新；网站功能/样式调整"
+      "date": "2026-10-24 18:24",
+      "summary": "1.个人资料更新；2.修改了部分代码、调整了网页样式"
     },
     {
       "date": "2026-10-24 16:00",
-      "summary": "新增更新历史板块（网页末尾显示最近5次更新）+发布流程自动记录"
+      "summary": "1.新增更新历史板块（网页末尾显示最近5次更新）；2.发布上线自动分析改动并记录分点概述"
     },
     {
       "date": "2026-10-24 15:29",
-      "summary": "清理腾讯云/CDN/Vercel 脚本，项目只保留 GitHub 托管"
+      "summary": "1.清理腾讯云/CDN/Vercel 脚本；2.项目只保留 GitHub 托管"
     },
     {
       "date": "2026-10-24 14:52",
-      "summary": "新增日常与作品内容（地铁、狐狸森林等）"
+      "summary": "1.新增日常与作品内容（地铁、狐狸森林等）"
+    },
+    {
+      "date": "2026-10-24 11:30",
+      "summary": "1.压缩宿舍视频（4K→720p）与图片；2.首次成功上传 GitHub Pages"
     }
   ]
 };
