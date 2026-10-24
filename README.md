@@ -30,19 +30,24 @@ personal-website/
 ├── js/
 │   ├── main.js           # 页面交互逻辑
 │   └── data.js           # ★ 自动生成，别手改
-├── data.json             # ★ 自动生成，别手改
 ├── content/              # ★★★ 你要更新的都在这里 ★★★
-│   ├── profile.json      # 个人资料（姓名/简介/联系方式/统计）
-│   ├── hero-dusk.jpg     # 首页背景（Pexels 青岛落日海景实拍，可换成你拍的）
-│   ├── avatar.svg|jpg|png# 站点头像/favicon（可换成你的照片）
+│   ├── profile.json      # ★ 文字控制台：姓名/简介/联系/wishlist/开场动画文字
+│   ├── hero-dusk.jpg     # 首页背景（可换成你拍的照片）
+│   ├── avatar.svg        # 头像
+│   ├── audio/            # 背景音乐 MP3（三首）
 │   ├── daily/            # 日常：单图 / 图片组（子文件夹）/ 视频+说明
+│   ├── projects/         # 我正在做的：每个项目一个 .json
 │   └── works/
 │       ├── video/        # 视频作品（mp4/webm/mov…）
-│       ├── image/        # 图片作品（截图/渲染图/海报…）
+│       ├── image/        # 图片作品
 │       └── doc/          # 文档作品（docx/pdf/pptx/xlsx…）
-└── tools/                # 素材生成脚本
-    ├── make_demo_assets.py  # 示例素材生成器
-    └── regen_daily_demo.py  # 日常示例内容重建（单图/图片组/视频）
+├── 构建网站.bat           # ★ 双击：截视频封面 + 构建数据
+├── 启动预览.bat           # ★ 双击：启动服务器 + 打开浏览器
+├── 发布上线.bat           # 双击：发布到 GitHub Pages
+└── tools/
+    ├── make_posters.py     # 从视频截取封面帧（构建时自动调用）
+    ├── compress_assets.py  # 压缩大文件（视频 720p / 图片 1920px）
+    └── upload_to_cos.py   # 上传到腾讯云 COS
 ```
 
 ## 日常内容怎么加
