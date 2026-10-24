@@ -857,6 +857,8 @@ code {
 }
 .contact-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 .contact-item .icon { font-size: 1.6rem; }
+.contact-item .icon.icon-svg { font-size: 0; display: flex; align-items: center; justify-content: center; }
+.contact-item .icon.icon-svg svg { display: block; }
 .contact-item h4 { margin-top: 10px; font-size: 1rem; }
 .contact-item p { color: var(--ink-faint); font-size: .9rem; margin-top: 4px; word-break: break-all; }
 
@@ -1520,7 +1522,6 @@ code {
   .intro .intro-skip { animation: none; opacity: 1; }
   .intro-load i { animation: intro-load-sweep 1.6s ease-in-out infinite; }
   .hero-blob { animation: none; }
-  .typed-caret { animation: none; }
   .work-card::after, .daily-item::after, .contact-item::after { display: none; }
   .js .hero-stagger { opacity: 1; transform: none; filter: none; transition: none; }
   .reveal { transition: none; }
@@ -1581,48 +1582,83 @@ code {
 .skill-val { font-size: .78rem; font-weight: 700; color: var(--accent); min-width: 32px; }
 
 /* ---------- 时间线 ---------- */
-.timeline-list { max-width: 680px; margin: 0 auto; position: relative; padding-left: 28px; }
-.timeline-list::before {
-  content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px;
-  width: 2px; background: var(--line);
+/* ---------- 时间线（蜿蜒曲线 + 逐条浮现） ---------- */
+.timeline-list {
+  max-width: 680px; margin: 0 auto; position: relative;
+  padding-left: 90px;
 }
-.timeline-item { position: relative; padding: 0 0 28px 24px; }
+/* 蜿蜒连线由 JS 动态生成 SVG（每段弯度不同） */
+.timeline-wave {
+  position: absolute; left: 0; top: 0;
+  pointer-events: none; overflow: visible;
+  color: var(--ink-soft);
+  z-index: 0;
+}
+.timeline-item {
+  position: relative;
+  padding: 0 0 36px 0;
+}
 .timeline-item:last-child { padding-bottom: 0; }
 .timeline-item::before {
-  content: ""; position: absolute; left: -28px; top: 6px;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--accent); border: 3px solid var(--bg);
+  content: ""; position: absolute;
+  left: var(--dot-x, -81px); top: 4px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--bg);
   box-shadow: 0 0 0 2px var(--accent);
+  z-index: 1;
+  transition: left .3s;
+}
+/* 圆点出现时弹一下 */
+.timeline-item.is-visible::before {
+  animation: dot-pop .5s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes dot-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.35); }
+  100% { transform: scale(1); }
 }
 .timeline-date { font-size: .8rem; font-weight: 700; color: var(--accent); }
 .timeline-event { font-size: 1.05rem; font-weight: 700; margin-top: 2px; }
 .timeline-desc { font-size: .88rem; color: var(--ink-faint); margin-top: 2px; }
+/* 蜿蜒出现：从右侧滑入 + 淡入（覆盖默认 reveal 的 translateY） */
+.timeline-item.reveal { transform: translateX(40px); }
+.timeline-item.is-visible { transform: none; opacity: 1; }
 
 /* ---------- 卡片堆叠相册查看器 ---------- */
 .card-stack-overlay {
   position: fixed; inset: 0; z-index: 200;
-  background: rgba(12, 10, 8, .92);
+  background: rgba(12, 10, 8, .94);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity .3s;
 }
 .card-stack-overlay.is-open { opacity: 1; pointer-events: auto; }
 .card-stack-stage {
-  position: relative; width: min(440px, 88vw); height: min(560px, 70vh);
-  perspective: 1000px;
+  position: relative;
+  width: min(480px, 90vw);
+  height: min(620px, 72vh);
+  display: flex; align-items: center; justify-content: center;
 }
 .stack-card {
-  position: absolute; inset: 0;
+  position: absolute;
+  width: 360px; height: 460px;
   border-radius: 16px; overflow: hidden;
   box-shadow: 0 20px 50px rgba(0,0,0,.5);
-  transition: transform .5s cubic-bezier(.2,.8,.25,1), opacity .4s;
+  transition: transform .5s cubic-bezier(.2,.8,.25,1),
+              width .5s cubic-bezier(.2,.8,.25,1),
+              height .5s cubic-bezier(.2,.8,.25,1),
+              opacity .4s;
   cursor: pointer;
+  background: #1a1a1a;
 }
-.stack-card img { width: 100%; height: 100%; object-fit: cover; }
+.stack-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.stack-card.is-expanded img { object-fit: contain; }
 .stack-card-meta {
   position: absolute; left: 0; right: 0; bottom: 0;
   padding: 30px 20px 16px;
-  background: linear-gradient(transparent, rgba(0,0,0,.65));
-  color: #fff;
+  background: linear-gradient(transparent, rgba(0,0,0,.7));
+  color: #fff; pointer-events: none;
 }
 .stack-card-meta b { font-size: 1rem; }
 .stack-card-meta small { display: block; opacity: .75; font-size: .8rem; margin-top: 2px; }

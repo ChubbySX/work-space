@@ -299,23 +299,29 @@
   /* ---------- 渲染：联系 ---------- */
   function renderContact(c) {
     if (!c) return;
+    var LOGOS = {
+      wechat: '<svg viewBox="0 0 24 24" fill="#07c160" width="30" height="30"><path d="M9.5 4C5.36 4 2 6.69 2 10c0 1.89 1.02 3.56 2.62 4.66L4 17l2.84-1.5c.86.24 1.74.37 2.66.37.16 0 .31-.01.47-.02A5.7 5.7 0 0 1 9.7 14c0-3.14 2.91-5.7 6.5-5.7.16 0 .31.01.47.02C16.13 5.85 13.1 4 9.5 4zm-2.06 4.5a.94.94 0 1 1 0 1.88.94.94 0 0 1 0-1.88zm4.12 0a.94.94 0 1 1 0 1.88.94.94 0 0 1 0-1.88zm4.64 1.8c-3.04 0-5.5 2.1-5.5 4.7s2.46 4.7 5.5 4.7c.7 0 1.36-.11 1.96-.3L21 20l-.55-1.68c1.05-.86 1.7-2.04 1.7-3.32 0-2.6-2.46-4.7-5.5-4.7zm-1.8 2.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5zm3.6 0a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5z"/></svg>',
+      bilibili: '<svg viewBox="0 0 24 24" fill="#fb7299" width="30" height="30"><path d="M17.8 4.65h.85c1.51.05 2.77.46 3.77 1.21 1.25 1.05 1.88 2.68 1.88 4.91v6.43c0 2.23-.63 3.86-1.88 4.91-1 .75-2.26 1.16-3.77 1.21H6.04c-1.51-.06-2.77-.46-3.77-1.21C1.02 21.06.39 19.43.39 17.2V10.77c0-2.23.63-3.86 1.88-4.91 1-.75 2.26-1.16 3.77-1.21h11.76zM7.3 8.04a.93.93 0 0 0-.93.93v6.06a.93.93 0 0 0 .93.93h.07a.93.93 0 0 0 .93-.93V8.97a.93.93 0 0 0-.93-.93zm4.5 0a.93.93 0 0 0-.93.93v6.06a.93.93 0 0 0 .93.93h.07a.93.93 0 0 0 .93-.93V8.97a.93.93 0 0 0-.93-.93zM5.2 1.5l2.02 2.02a.7.7 0 0 1-.99.99L4.21 2.49a.7.7 0 0 1 .99-.99zm13.6 0a.7.7 0 0 1 .99.99l-2.02 2.02a.7.7 0 0 1-.99-.99z"/></svg>',
+      xhh: '<svg viewBox="0 0 24 24" width="30" height="30"><rect x="2" y="2" width="20" height="20" rx="5" fill="#1a1a1a"/><path d="M12 6.5L7 9.5v5l5 3 5-3v-5z" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="2" fill="#ff6b35"/></svg>'
+    };
     var items = [];
-    if (c.email) items.push(["📧", "邮箱", c.email, null]);
-    if (c.wechat) items.push(["💬", "微信", c.wechat, null]);
-    if (c.bilibili) items.push(["📺", "B 站", "点击访问主页", c.bilibili]);
-    if (c.douyin) items.push(["🎵", "抖音", "点击访问主页", c.douyin]);
-    if (c.zhihu) items.push(["💡", "知乎", "点击访问主页", c.zhihu]);
-    if (c.github) items.push(["🐙", "GitHub", "点击访问主页", c.github]);
-    if (c.phone) items.push(["📱", "电话", c.phone, null]);
-    if (c.location) items.push(["📍", "所在地", c.location, null]);
-    if (!items.length) items.push(["✉️", "联系我", "（在 content/profile.json 里填写联系方式）", null]);
+    if (c.email) items.push(["📧", "邮箱", c.email, null, false]);
+    if (c.wechat) items.push([LOGOS.wechat, "微信", c.wechat, null, true]);
+    if (c.bilibili) items.push([LOGOS.bilibili, "B 站", "点击访问主页", c.bilibili, true]);
+    if (c.xhh) items.push([LOGOS.xhh, "小黑盒", c.xhh, null, true]);
+    if (c.douyin) items.push(["🎵", "抖音", "点击访问主页", c.douyin, false]);
+    if (c.zhihu) items.push(["💡", "知乎", "点击访问主页", c.zhihu, false]);
+    if (c.github) items.push(["🐙", "GitHub", "点击访问主页", c.github, false]);
+    if (c.phone) items.push(["📱", "电话", c.phone, null, false]);
+    if (c.location) items.push(["📍", "所在地", c.location, null, false]);
+    if (!items.length) items.push(["✉️", "联系我", "（在 content/profile.json 里填写联系方式）", null, false]);
 
     var html = items.map(function (arr, i) {
-      var icon = arr[0], label = arr[1], value = arr[2], link = arr[3];
+      var icon = arr[0], label = arr[1], value = arr[2], link = arr[3], isSvg = arr[4];
       var tag = link ? "a" : "div";
       var href = link ? ' href="' + esc(link) + '" target="_blank" rel="noopener"' : "";
       return '<' + tag + ' class="contact-item reveal"' + href + ' style="transition-delay:' + ((i % 4) * 80) + 'ms">' +
-        '<div class="icon">' + icon + '</div><h4>' + label + '</h4><p>' + esc(value) + '</p></' + tag + '>';
+        '<div class="icon' + (isSvg ? " icon-svg" : "") + '">' + icon + '</div><h4>' + label + '</h4><p>' + esc(value) + '</p></' + tag + '>';
     }).join("");
 
     $("#contactGrid").innerHTML = html;
@@ -526,6 +532,7 @@
       document.body.style.overflow = "";
       hero.classList.add("is-ready");               // 首页元素开始逐帧入场
       setTimeout(() => intro.classList.add("is-hidden"), 800); // 等滑出动画收尾
+      document.dispatchEvent(new CustomEvent("intro-done"));
     };
 
     // 可选：同一会话内不再重播（file:// 无 sessionStorage 时每次都会播）
@@ -535,6 +542,7 @@
       if (seen) {
         intro.classList.add("is-hidden");
         hero.classList.add("is-ready");
+        document.dispatchEvent(new CustomEvent("intro-done"));
         return;
       }
       try { sessionStorage.setItem("intro-seen", "1"); } catch (e) {}
@@ -544,14 +552,20 @@
     const skipBtn = $("#introSkip");
     if (skipBtn) skipBtn.addEventListener("click", revealHome);
 
+    // 预加载图片：利用开场动画的时间提前加载 lazy 图片
+    document.querySelectorAll("img[loading=lazy]").forEach(function (im) {
+      im.removeAttribute("loading");
+    });
+
     // 系统开启“减弱动态效果”时：不播动画，短暂停留品牌页后直接进入
     if (reduced) {
       setTimeout(revealHome, 1600);
       return;
     }
 
-    // CSS 动画 2.4s 后自行滑出；这里同步触发首页入场 + 兜底
-    setTimeout(revealHome, 2500);
+    // 额外延长 2-4 秒（随机），让开场更有沉浸感
+    var extra = 2000 + Math.floor(Math.random() * 2000);
+    setTimeout(revealHome, 2500 + extra);
     intro.addEventListener("animationend", (e) => {
       if (e.animationName === "intro-exit") revealHome();
     });
@@ -577,10 +591,8 @@
   function setupTyped() {
     const el = $("#typedText");
     if (!el) return;
-    const reduced =
-      window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const words = (DATA.profile && DATA.profile.tags) || ["机械", "3D建模", "动手DIY"];
-    if (reduced) { el.textContent = words[0]; return; }
+    // 打字效果是文字内容，不受 reduced-motion 影响——始终运行
 
     let wi = 0, ci = 0, deleting = false;
     const tick = () => {
@@ -597,7 +609,18 @@
         setTimeout(tick, 45);
       }
     };
-    setTimeout(tick, 2300); // 等开场动画播完再开始
+    var started = false;
+    function startTick() { if (started) return; started = true; setTimeout(tick, 200); }
+    // 轮询检查开场动画是否结束（每 200ms 检查一次）
+    var checkIntro = setInterval(function () {
+      var introEl = document.getElementById("intro");
+      if (!introEl || introEl.classList.contains("is-hidden")) {
+        clearInterval(checkIntro);
+        startTick();
+      }
+    }, 200);
+    // 兜底：8 秒后无论如何都启动
+    setTimeout(function () { clearInterval(checkIntro); startTick(); }, 8000);
   }
 
   /* ---------- 统计数字滚动 ---------- */
@@ -929,6 +952,135 @@
         (t.desc ? '<div class="timeline-desc">' + esc(t.desc) + '</div>' : '') +
       '</div>';
     }).join("");
+
+    // 渲染后生成不规则蜿蜒 SVG 连线
+    requestAnimationFrame(function () {
+      var itemList = el.querySelectorAll(".timeline-item");
+      if (!itemList.length) return;
+      var NS = "http://www.w3.org/2000/svg";
+      // 测量每个圆点的中心 Y 坐标
+      var dotYs = [];
+      for (var k = 0; k < itemList.length; k++) {
+        dotYs.push(itemList[k].offsetTop + 4 + 7); // offsetTop + ::before top(4) + 半径(7)
+      }
+      var lastItem = itemList[itemList.length - 1];
+      var totalH = lastItem.offsetTop + lastItem.offsetHeight;
+
+      var svg = document.createElementNS(NS, "svg");
+      svg.setAttribute("class", "timeline-wave");
+      svg.setAttribute("width", "60");
+      svg.setAttribute("height", String(totalH));
+
+      var cx = 18; // 基准 X（道路右移4单位）
+      // 圆点偏移更大 + 弯度更大更曲折
+      var xOffs = [0, 18, -14, 22, -8, 16, -20, 10, 24, -12, 14, -18, 6, -22, 20];
+      var amps = [35, 60, 42, 70, 30, 55, 48, 65, 38, 68, 45, 58, 32, 62, 50];
+
+      // 计算每个圆点实际 X 坐标
+      var dotX = [];
+      for (var j = 0; j < dotYs.length; j++) {
+        dotX.push(cx + (xOffs[j % xOffs.length] || 0));
+        // 同步移动 CSS 圆点位置
+        itemList[j].style.setProperty("--dot-x", (-81 + (xOffs[j % xOffs.length] || 0)) + "px");
+      }
+
+      // ====== 用 Catmull-Rom 样条生成平滑路径（切线连续，小车不急转弯） ======
+      var pts = [{ x: dotX[0], y: 0 }];
+      for (var pi = 0; pi < dotYs.length; pi++) pts.push({ x: dotX[pi], y: dotYs[pi] });
+      pts.push({ x: dotX[dotX.length - 1], y: totalH + 10 });
+
+      var tension = 1.8; // 张力 > 1 弯更明显
+      var d = "M" + pts[1].x + "," + pts[1].y;
+      for (var si = 1; si < pts.length - 1; si++) {
+        var p0 = pts[Math.max(0, si - 1)];
+        var p1 = pts[si];
+        var p2 = pts[si + 1];
+        var p3 = pts[Math.min(pts.length - 1, si + 2)];
+        var bc1x = p1.x + (p2.x - p0.x) / 6 * tension;
+        var bc1y = p1.y + (p2.y - p0.y) / 6 * tension;
+        var bc2x = p2.x - (p3.x - p1.x) / 6 * tension;
+        var bc2y = p2.y - (p3.y - p1.y) / 6 * tension;
+        d += " C" + bc1x + "," + bc1y + " " + bc2x + "," + bc2y + " " + p2.x + "," + p2.y;
+      }
+
+      // ====== 双车道道路 ======
+      var ROAD_W = 9; // 半宽
+      // 路面底色（粗线）
+      var road = document.createElementNS(NS, "path");
+      road.setAttribute("d", d);
+      road.setAttribute("fill", "none");
+      road.setAttribute("stroke", "currentColor");
+      road.setAttribute("stroke-width", String(ROAD_W * 2));
+      road.setAttribute("stroke-linecap", "round");
+      road.setAttribute("opacity", "0.08");
+      svg.appendChild(road);
+      // 左边线
+      var edgeL = document.createElementNS(NS, "path");
+      edgeL.setAttribute("d", d);
+      edgeL.setAttribute("fill", "none");
+      edgeL.setAttribute("stroke", "currentColor");
+      edgeL.setAttribute("stroke-width", "2");
+      edgeL.setAttribute("opacity", "0.3");
+      edgeL.setAttribute("transform", "translate(" + (-ROAD_W) + ",0)");
+      svg.appendChild(edgeL);
+      // 右边线
+      var edgeR = document.createElementNS(NS, "path");
+      edgeR.setAttribute("d", d);
+      edgeR.setAttribute("fill", "none");
+      edgeR.setAttribute("stroke", "currentColor");
+      edgeR.setAttribute("stroke-width", "2");
+      edgeR.setAttribute("opacity", "0.3");
+      edgeR.setAttribute("transform", "translate(" + ROAD_W + ",0)");
+      svg.appendChild(edgeR);
+      // 中间虚线（同时作为小车运动路径）
+      var dash = document.createElementNS(NS, "path");
+      dash.setAttribute("d", d);
+      dash.setAttribute("id", "timeline-center-path");
+      dash.setAttribute("fill", "none");
+      dash.setAttribute("stroke", "#e0a060");
+      dash.setAttribute("stroke-width", "1.5");
+      dash.setAttribute("stroke-dasharray", "5 5");
+      dash.setAttribute("opacity", "0.45");
+      svg.appendChild(dash);
+
+      // ====== 小车沿路径行驶（横向绘制，rotate=auto 旋转后竖向行驶） ======
+      var car = document.createElementNS(NS, "g");
+      car.setAttribute("class", "timeline-car");
+      // 车身：横向矩形（宽16 高10），指向 +X 方向
+      var body = document.createElementNS(NS, "rect");
+      body.setAttribute("x", "-8"); body.setAttribute("y", "-5");
+      body.setAttribute("width", "16"); body.setAttribute("height", "10");
+      body.setAttribute("rx", "3");
+      body.setAttribute("fill", "#c96a2e");
+      car.appendChild(body);
+      // 挡风玻璃（前部=右侧）
+      var win = document.createElementNS(NS, "rect");
+      win.setAttribute("x", "1"); win.setAttribute("y", "-3.5");
+      win.setAttribute("width", "5"); win.setAttribute("height", "7");
+      win.setAttribute("rx", "1");
+      win.setAttribute("fill", "#fff");
+      win.setAttribute("opacity", "0.55");
+      car.appendChild(win);
+      // 车灯（最前端）
+      var light = document.createElementNS(NS, "rect");
+      light.setAttribute("x", "6.5"); light.setAttribute("y", "-3");
+      light.setAttribute("width", "1.5"); light.setAttribute("height", "6");
+      light.setAttribute("rx", "0.5");
+      light.setAttribute("fill", "#ffe08a");
+      car.appendChild(light);
+
+      var motion = document.createElementNS(NS, "animateMotion");
+      motion.setAttribute("dur", "22s");
+      motion.setAttribute("repeatCount", "indefinite");
+      motion.setAttribute("rotate", "auto");
+      var mpath = document.createElementNS(NS, "mpath");
+      mpath.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "#timeline-center-path");
+      motion.appendChild(mpath);
+      car.appendChild(motion);
+      svg.appendChild(car);
+
+      el.insertBefore(svg, el.firstChild);
+    });
   }
 
   /* ---------- 暗色模式切换 ---------- */
@@ -996,13 +1148,16 @@
   /* ---------- 卡片堆叠相册查看器 ---------- */
   function openCardStack(item) {
     if (!item || !item.files || !item.files.length) return;
+    var CARD_W = 360, CARD_H = 460;
+    var MAX_W = Math.min(600, window.innerWidth * 0.88);
+    var MAX_H = Math.min(700, window.innerHeight * 0.72);
+
     var overlay = document.createElement("div");
     overlay.className = "card-stack-overlay";
     var stage = document.createElement("div");
     stage.className = "card-stack-stage";
     var hint = document.createElement("p");
     hint.className = "card-stack-hint";
-    hint.textContent = "点击卡片翻到下一张 · " + item.files.length + " 张";
     var closeBtn = document.createElement("button");
     closeBtn.className = "card-stack-close";
     closeBtn.innerHTML = "✕";
@@ -1013,55 +1168,173 @@
     document.body.appendChild(overlay);
     document.body.style.overflow = "hidden";
 
+    // 预加载所有图片，缓存自然尺寸
+    var dims = {};
+    var loaded = 0;
+    item.files.forEach(function (src, i) {
+      var im = new Image();
+      im.onload = function () {
+        dims[i] = { w: im.naturalWidth, h: im.naturalHeight };
+        loaded++;
+      };
+      im.src = src;
+    });
+
+    // 根据图片自然尺寸计算展开后的目标宽高
+    function targetSize(i) {
+      var d = dims[i];
+      if (!d) return { w: CARD_W, h: CARD_H };
+      var ratio = d.w / d.h;
+      var w = MAX_W, h = MAX_W / ratio;
+      if (h > MAX_H) { h = MAX_H; w = MAX_H * ratio; }
+      return { w: Math.round(w), h: Math.round(h) };
+    }
+
     var idx = 0;
+    var zCounter = 10;
+    var cards = []; // 保存已创建的卡片元素
+
+    function makeCard(i) {
+      var card = document.createElement("div");
+      card.className = "stack-card";
+      card.dataset.idx = String(i);
+      var img = document.createElement("img");
+      img.src = item.files[i];
+      img.alt = item.title || "";
+      card.appendChild(img);
+      var meta = document.createElement("div");
+      meta.className = "stack-card-meta";
+      meta.innerHTML = "<b>" + esc(item.title || "") + "</b>" +
+        "<small>" + (i + 1) + "/" + item.files.length + (item.desc ? " · " + esc(item.desc) : "") + "</small>";
+      card.appendChild(meta);
+      card.addEventListener("click", function () { nextCard(); });
+      return card;
+    }
+
     function renderStack() {
       stage.innerHTML = "";
-      var showCount = Math.min(3, item.files.length - idx);
-      for (var i = showCount - 1; i >= 0; i--) {
-        var fileIdx = idx + i;
-        var card = document.createElement("div");
-        card.className = "stack-card";
-        card.style.zIndex = String(showCount - i);
-        if (i === 0) {
-          card.style.transform = "translate(0,0) rotate(0)";
+      cards = [];
+      // 底层：放 2-3 张牌作为牌堆背景，最新索引在最上面
+      var peekCount = Math.min(3, item.files.length);
+      var startIdx = (idx - peekCount + 1 + item.files.length * 10) % item.files.length;
+      var order = [];
+      for (var k = 0; k < peekCount; k++) {
+        order.push((startIdx + k) % item.files.length);
+      }
+      // 最后一张（order 末尾）是当前活跃卡片，展开显示
+      order.forEach(function (fi, pos) {
+        var card = makeCard(fi);
+        var isTop = (pos === order.length - 1);
+        if (isTop) {
+          card.classList.add("is-expanded");
+          card.style.zIndex = String(zCounter);
+          var ts = targetSize(fi);
+          card.style.width = ts.w + "px";
+          card.style.height = ts.h + "px";
+          card.style.transform = "translate(0, 0) rotate(0)";
+          card.style.opacity = "1";
+          cards.push(card);
         } else {
-          card.style.transform = "translate(" + (i * 6) + "px," + (i * 8) + "px) rotate(" + (i * 2) + "deg)";
-          card.style.opacity = String(1 - i * 0.15);
+          card.style.zIndex = String(zCounter - (peekCount - pos));
+          card.style.width = CARD_W + "px";
+          card.style.height = CARD_H + "px";
+          var off = (peekCount - 1 - pos);
+          card.style.transform = "translate(" + (off * 8) + "px, " + (off * 10) + "px) rotate(" + (off * 2.5) + "deg)";
+          card.style.opacity = String(1 - off * 0.15);
+          stage.appendChild(card);
         }
-        var img = document.createElement("img");
-        img.src = item.files[fileIdx];
-        img.alt = item.title || "";
-        card.appendChild(img);
-        var meta = document.createElement("div");
-        meta.className = "stack-card-meta";
-        meta.innerHTML = "<b>" + esc(item.title || "") + "</b>" +
-          "<small>" + (fileIdx + 1) + "/" + item.files.length + (item.desc ? " · " + esc(item.desc) : "") + "</small>";
-        card.appendChild(meta);
-        if (i === 0) {
-          card.addEventListener("click", function () { nextCard(); });
-        }
-        stage.appendChild(card);
-      }
-      hint.textContent = "点击卡片翻到下一张 · " + (idx + 1) + "/" + item.files.length;
+      });
+      // 把活跃卡片最后 append（最上层）
+      if (cards.length) stage.appendChild(cards[0]);
+      hint.textContent = "点击卡片从牌堆抽下一张 · " + (idx + 1) + "/" + item.files.length;
     }
+
+    // ====== 音效（Web Audio API 合成） ======
+    var audioCtx = null;
+    function getAudio() {
+      if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+      if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+      return audioCtx;
+    }
+    function playSound(type) {
+      var ctx = getAudio(); if (!ctx) return;
+      if (type === "draw") {
+        // 沙沙摩擦声：窄带噪声 + 幅度调制（模拟牌面摩擦颗粒感）
+        var dur = 0.45;
+        var buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+        var d = buf.getChannelData(0);
+        for (var i = 0; i < d.length; i++) {
+          var env = 1 - i / d.length;
+          var lfo = 0.5 + 0.5 * Math.sin(2 * Math.PI * 14 * i / ctx.sampleRate);
+          d[i] = (Math.random() * 2 - 1) * env * lfo * 0.8;
+        }
+        var src = ctx.createBufferSource(); src.buffer = buf;
+        var f = ctx.createBiquadFilter(); f.type = "bandpass";
+        f.frequency.setValueAtTime(1600, ctx.currentTime);
+        f.Q.setValueAtTime(1.5, ctx.currentTime);
+        var g = ctx.createGain(); g.gain.setValueAtTime(0.055, ctx.currentTime);
+        src.connect(f); f.connect(g); g.connect(ctx.destination); src.start();
+      } else if (type === "cover") {
+        // 覆盖声：tap（短促正弦波，频率下扫）
+        var osc = ctx.createOscillator(); osc.type = "sine";
+        osc.frequency.setValueAtTime(340, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(160, ctx.currentTime + 0.1);
+        var g2 = ctx.createGain();
+        g2.gain.setValueAtTime(0.1, ctx.currentTime);
+        g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.connect(g2); g2.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.15);
+      }
+    }
+
+    var isAnimating = false;
     function nextCard() {
-      var top = stage.querySelector(".stack-card:last-child") || stage.querySelector(".stack-card");
-      if (top) {
-        top.style.transform = "translateX(120%) rotate(25deg)";
-        top.style.opacity = "0";
-      }
+      if (isAnimating) return;  // 动画进行中，禁止连点
+      isAnimating = true;
+      var nextIdx = (idx + 1) % item.files.length;
+      // 创建新卡片，从底部滑上来覆盖
+      var newCard = makeCard(nextIdx);
+      newCard.style.width = CARD_W + "px";
+      newCard.style.height = CARD_H + "px";
+      newCard.style.zIndex = String(++zCounter);
+      // 初始：在牌堆底部下方，可见但半透明，稍微旋转缩小
+      newCard.style.transform = "translate(0, 340px) rotate(-4deg) scale(0.92)";
+      newCard.style.opacity = "0.4";
+      stage.appendChild(newCard);
+
+      // 音效：抽牌沙沙声
+      playSound("draw");
+
+      // 强制 reflow，确保初始状态生效后再触发过渡
+      void newCard.offsetWidth;
+
+      // 第一阶段：从底部滑上来覆盖（0→500ms）
+      newCard.style.transform = "translate(0, 0) rotate(0) scale(1)";
+      newCard.style.opacity = "1";
+
+      // 第二阶段：滑到位后展开到完整画面（520ms 后）+ 音效 tap
       setTimeout(function () {
-        idx++;
-        if (idx >= item.files.length) idx = 0;
+        playSound("cover");
+        newCard.classList.add("is-expanded");
+        var ts = targetSize(nextIdx);
+        newCard.style.width = ts.w + "px";
+        newCard.style.height = ts.h + "px";
+      }, 520);
+
+      // 第三阶段：展开完成后，重建牌堆并解锁点击
+      setTimeout(function () {
+        idx = nextIdx;
         renderStack();
-      }, 450);
+        isAnimating = false;
+      }, 1150);
     }
+
     function closeStack() {
       overlay.classList.remove("is-open");
       document.body.style.overflow = "";
       setTimeout(function () { if (overlay.parentNode) overlay.remove(); }, 300);
     }
-    // 点击背景关闭
+
     overlay.addEventListener("click", function (e) {
       if (e.target === overlay) closeStack();
     });
@@ -1070,8 +1343,17 @@
       if (e.key === "Escape") closeStack();
       if (e.key === "ArrowRight" || e.key === "Enter") nextCard();
     });
+
     requestAnimationFrame(function () { overlay.classList.add("is-open"); });
-    renderStack();
+    // 等图片预加载完再渲染（最多等 500ms）
+    function initRender() {
+      if (loaded >= item.files.length || dims[0]) {
+        renderStack();
+      } else {
+        setTimeout(initRender, 100);
+      }
+    }
+    setTimeout(initRender, 150);
   }
 
   /* ---------- 启动 ---------- */
