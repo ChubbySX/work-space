@@ -64,7 +64,8 @@
     const name = p.name || "钟智轩";
     $("#heroName").textContent = name;
     $("#heroSub").textContent = p.tagline || "";
-    $("#heroQuote").textContent = p.quote || "";
+    var hq = $("#heroQuote");
+    if (hq) hq.textContent = p.quote || "";
     if (p.heroKicker) $("#heroKicker").textContent = p.heroKicker;
     $("#aboutName").textContent = name;
     $("#aboutAlias").textContent = [p.enName, p.nickname].filter(Boolean).join(" · ");
@@ -77,9 +78,19 @@
       if (p.intro.sub) $("#introSub").textContent = p.intro.sub;
     }
 
-    // 标签
-    const tags = p.tags || [];
-    $("#tagList").innerHTML = tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("");
+    // 技能进度条（替代标签）
+    var skills = p.skills || [];
+    if (skills.length) {
+      $("#tagList").innerHTML = '<div class="skills">' + skills.map(function (s) {
+        var lvl = Math.max(0, Math.min(100, s.level || 0));
+        return '<div class="skill-row"><span class="skill-name">' + esc(s.name) + '</span>' +
+          '<span class="skill-track"><span class="skill-fill" style="--lvl:' + lvl + '%"></span></span>' +
+          '<span class="skill-val">' + lvl + '</span></div>';
+      }).join("") + '</div>';
+    } else {
+      var tags = p.tags || [];
+      $("#tagList").innerHTML = tags.map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join("");
+    }
 
     // 简介（数组或字符串）
     const bioEl = $("#bio");
@@ -255,24 +266,32 @@
   /* ---------- 渲染：联系 ---------- */
   function renderContact(c) {
     if (!c) return;
-    const items = [];
-    if (c.email) items.push(["📧", "邮箱", c.email]);
-    if (c.wechat) items.push(["💬", "微信", c.wechat]);
-    if (c.github) items.push(["🐙", "GitHub", c.github]);
-    if (c.phone) items.push(["📱", "电话", c.phone]);
-    if (c.location) items.push(["📍", "所在地", c.location]);
-    if (!items.length) items.push(["✉️", "联系我", "（在 content/profile.json 里填写联系方式）"]);
+    var items = [];
+    if (c.email) items.push(["📧", "邮箱", c.email, null]);
+    if (c.wechat) items.push(["💬", "微信", c.wechat, null]);
+    if (c.bilibili) items.push(["📺", "B 站", "点击访问主页", c.bilibili]);
+    if (c.douyin) items.push(["🎵", "抖音", "点击访问主页", c.douyin]);
+    if (c.zhihu) items.push(["💡", "知乎", "点击访问主页", c.zhihu]);
+    if (c.github) items.push(["🐙", "GitHub", "点击访问主页", c.github]);
+    if (c.phone) items.push(["📱", "电话", c.phone, null]);
+    if (c.location) items.push(["📍", "所在地", c.location, null]);
+    if (!items.length) items.push(["✉️", "联系我", "（在 content/profile.json 里填写联系方式）", null]);
 
-    $("#contactGrid").innerHTML = items
-      .map(
-        ([icon, label, value], i) => `
-      <div class="contact-item reveal" style="transition-delay:${(i % 4) * 80}ms">
-        <div class="icon">${icon}</div>
-        <h4>${label}</h4>
-        <p>${esc(value)}</p>
-      </div>`
-      )
-      .join("");
+    var html = items.map(function (arr, i) {
+      var icon = arr[0], label = arr[1], value = arr[2], link = arr[3];
+      var tag = link ? "a" : "div";
+      var href = link ? ' href="' + esc(link) + '" target="_blank" rel="noopener"' : "";
+      return '<' + tag + ' class="contact-item reveal"' + href + ' style="transition-delay:' + ((i % 4) * 80) + 'ms">' +
+        '<div class="icon">' + icon + '</div><h4>' + label + '</h4><p>' + esc(value) + '</p></' + tag + '>';
+    }).join("");
+
+    // 简历下载按钮
+    if (c.resume) {
+      html += '<a class="contact-item resume-btn reveal" href="' + esc(c.resume) + '" download style="transition-delay:' + ((items.length % 4) * 80) + 'ms">' +
+        '<div class="icon">📄</div><h4>下载简历</h4><p>PDF 格式</p></a>';
+    }
+
+    $("#contactGrid").innerHTML = html;
   }
 
   /* ---------- 灯箱 ---------- */
@@ -849,19 +868,203 @@
       .join("");
   }
 
+  /* ---------- 渲染：更新历史 ---------- */
+  function renderChangelog(logs) {
+    var grid = $("#changelogGrid");
+    if (!logs || !logs.length) {
+      grid.innerHTML = '<div class="empty-state">还没有更新记录～ 编辑 <code>content/changelog.json</code> 后运行 <code>node build.js</code></div>';
+      return;
+    }
+    grid.innerHTML = logs
+      .map(function (c, i) {
+        return (
+          '<div class="changelog-item reveal" style="transition-delay:' + ((i % 5) * 60) + 'ms">' +
+            '<span class="changelog-date">' + esc(c.date) + '</span>' +
+            '<p class="changelog-summary">' + esc(c.summary) + '</p>' +
+          '</div>'
+        );
+      })
+      .join("");
+  }
+
+  /* ---------- 渲染：成长轨迹 ---------- */
+  function renderTimeline(items) {
+    var el = $("#timelineGrid");
+    if (!el) return;
+    if (!items || !items.length) {
+      el.innerHTML = '<div class="empty-state">还没有记录～ 在 content/profile.json 的 timeline 字段里添加</div>';
+      return;
+    }
+    el.innerHTML = items.map(function (t, i) {
+      return '<div class="timeline-item reveal" style="transition-delay:' + ((i % 5) * 80) + 'ms">' +
+        '<div class="timeline-date">' + esc(t.date || "") + '</div>' +
+        '<div class="timeline-event">' + esc(t.event || "") + '</div>' +
+        (t.desc ? '<div class="timeline-desc">' + esc(t.desc) + '</div>' : '') +
+      '</div>';
+    }).join("");
+  }
+
+  /* ---------- 暗色模式切换 ---------- */
+  function setupThemeToggle() {
+    var btn = $("#themeToggle");
+    if (!btn) return;
+    var saved = null;
+    try { saved = localStorage.getItem("theme"); } catch (e) {}
+    if (saved === "dark") {
+      document.documentElement.setAttribute("data-theme", "dark");
+      btn.textContent = "☀️";
+    }
+    btn.addEventListener("click", function () {
+      var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      if (isDark) {
+        document.documentElement.removeAttribute("data-theme");
+        btn.textContent = "🌙";
+        try { localStorage.setItem("theme", "light"); } catch (e) {}
+      } else {
+        document.documentElement.setAttribute("data-theme", "dark");
+        btn.textContent = "☀️";
+        try { localStorage.setItem("theme", "dark"); } catch (e) {}
+      }
+    });
+  }
+
+  /* ---------- 访问统计（localStorage） ---------- */
+  function setupVisitCounter() {
+    var el = $("#visitCount");
+    if (!el) return;
+    var key = "visit-count";
+    var n = 0;
+    try {
+      n = parseInt(localStorage.getItem(key) || "0", 10);
+      n++;
+      localStorage.setItem(key, String(n));
+    } catch (e) { n = 1; }
+    el.textContent = "本站已被访问 " + n + " 次";
+  }
+
+  /* ---------- 节日彩蛋 ---------- */
+  function setupEasterEgg() {
+    var now = new Date();
+    var m = now.getMonth() + 1;
+    var d = now.getDate();
+    // 冬季（12月-2月）：飘雪
+    if (m === 12 || m === 1 || m === 2) {
+      var layer = document.createElement("div");
+      layer.id = "snow-layer";
+      document.body.appendChild(layer);
+      var chars = ["❄", "❅", "❆", "✦"];
+      for (var i = 0; i < 30; i++) {
+        var s = document.createElement("span");
+        s.className = "snowflake";
+        s.textContent = chars[Math.floor(Math.random() * chars.length)];
+        s.style.left = Math.random() * 100 + "%";
+        s.style.fontSize = (10 + Math.random() * 12) + "px";
+        s.style.animationDuration = (4 + Math.random() * 6) + "s";
+        s.style.animationDelay = Math.random() * 4 + "s";
+        layer.appendChild(s);
+      }
+    }
+  }
+
+  /* ---------- 卡片堆叠相册查看器 ---------- */
+  function openCardStack(item) {
+    if (!item || !item.files || !item.files.length) return;
+    var overlay = document.createElement("div");
+    overlay.className = "card-stack-overlay";
+    var stage = document.createElement("div");
+    stage.className = "card-stack-stage";
+    var hint = document.createElement("p");
+    hint.className = "card-stack-hint";
+    hint.textContent = "点击卡片翻到下一张 · " + item.files.length + " 张";
+    var closeBtn = document.createElement("button");
+    closeBtn.className = "card-stack-close";
+    closeBtn.innerHTML = "✕";
+    closeBtn.addEventListener("click", function () { closeStack(); });
+    overlay.appendChild(closeBtn);
+    overlay.appendChild(stage);
+    overlay.appendChild(hint);
+    document.body.appendChild(overlay);
+    document.body.style.overflow = "hidden";
+
+    var idx = 0;
+    function renderStack() {
+      stage.innerHTML = "";
+      var showCount = Math.min(3, item.files.length - idx);
+      for (var i = showCount - 1; i >= 0; i--) {
+        var fileIdx = idx + i;
+        var card = document.createElement("div");
+        card.className = "stack-card";
+        card.style.zIndex = String(showCount - i);
+        if (i === 0) {
+          card.style.transform = "translate(0,0) rotate(0)";
+        } else {
+          card.style.transform = "translate(" + (i * 6) + "px," + (i * 8) + "px) rotate(" + (i * 2) + "deg)";
+          card.style.opacity = String(1 - i * 0.15);
+        }
+        var img = document.createElement("img");
+        img.src = item.files[fileIdx];
+        img.alt = item.title || "";
+        card.appendChild(img);
+        var meta = document.createElement("div");
+        meta.className = "stack-card-meta";
+        meta.innerHTML = "<b>" + esc(item.title || "") + "</b>" +
+          "<small>" + (fileIdx + 1) + "/" + item.files.length + (item.desc ? " · " + esc(item.desc) : "") + "</small>";
+        card.appendChild(meta);
+        if (i === 0) {
+          card.addEventListener("click", function () { nextCard(); });
+        }
+        stage.appendChild(card);
+      }
+      hint.textContent = "点击卡片翻到下一张 · " + (idx + 1) + "/" + item.files.length;
+    }
+    function nextCard() {
+      var top = stage.querySelector(".stack-card:last-child") || stage.querySelector(".stack-card");
+      if (top) {
+        top.style.transform = "translateX(120%) rotate(25deg)";
+        top.style.opacity = "0";
+      }
+      setTimeout(function () {
+        idx++;
+        if (idx >= item.files.length) idx = 0;
+        renderStack();
+      }, 450);
+    }
+    function closeStack() {
+      overlay.classList.remove("is-open");
+      document.body.style.overflow = "";
+      setTimeout(function () { if (overlay.parentNode) overlay.remove(); }, 300);
+    }
+    // 点击背景关闭
+    overlay.addEventListener("click", function (e) {
+      if (e.target === overlay) closeStack();
+    });
+    document.addEventListener("keydown", function stackKey(e) {
+      if (!overlay.parentNode) { document.removeEventListener("keydown", stackKey); return; }
+      if (e.key === "Escape") closeStack();
+      if (e.key === "ArrowRight" || e.key === "Enter") nextCard();
+    });
+    requestAnimationFrame(function () { overlay.classList.add("is-open"); });
+    renderStack();
+  }
+
   /* ---------- 启动 ---------- */
   initIntro();
   setupChrome();
   setupSideNav();
   setupMusic();
+  setupThemeToggle();
+  setupVisitCounter();
+  setupEasterEgg();
   loadData().then((data) => {
     DATA = data || {};
     const p = DATA.profile || {};
     renderProfile(p);
+    renderTimeline(p.timeline);
     renderDaily(DATA.daily);
     renderWorks(DATA.works);
     renderProjects(DATA.projects);
     renderWishlist(DATA.wishlist);
+    if (typeof renderChangelog === "function") renderChangelog(DATA.changelog);
     setupFilters(DATA.works);
     renderContact(p.contact);
     setupTyped();

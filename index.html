@@ -7,7 +7,7 @@
 <meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
 <link rel="icon" href="content/chubby-logo.jpg" type="image/jpeg">
 <script>document.documentElement.classList.add("js");</script>
-<link rel="stylesheet" href="css/style.css?v=12">
+<link rel="stylesheet" href="css/style.css?v=13">
 </head>
 <body>
 
@@ -33,12 +33,15 @@
     <ul class="nav-links" id="navLinks">
       <li><a href="#home" class="nav-link is-active">首页</a></li>
       <li><a href="#about" class="nav-link">关于我</a></li>
+      <li><a href="#timeline" class="nav-link">成长轨迹</a></li>
       <li><a href="#projects" class="nav-link">我正在做的</a></li>
       <li><a href="#daily" class="nav-link">日常</a></li>
       <li><a href="#works" class="nav-link">作品</a></li>
       <li><a href="#wishlist" class="nav-link">我还想做的</a></li>
       <li><a href="#contact" class="nav-link">联系</a></li>
+      <li><a href="#changelog" class="nav-link">更新历史</a></li>
     </ul>
+    <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">🌙</button>
     <button class="nav-toggle" id="navToggle" aria-label="打开菜单">
       <span></span><span></span><span></span>
     </button>
@@ -52,19 +55,22 @@
   <a href="#home" class="side-dot" style="top:0%" data-label="首页">
     <span class="side-label">首页</span>
   </a>
-  <a href="#about" class="side-dot" style="top:20%" data-label="关于我">
+  <a href="#about" class="side-dot" style="top:14%" data-label="关于我">
     <span class="side-label">关于我</span>
   </a>
-  <a href="#projects" class="side-dot" style="top:40%" data-label="我正在做的">
+  <a href="#timeline" class="side-dot" style="top:29%" data-label="成长轨迹">
+    <span class="side-label">成长轨迹</span>
+  </a>
+  <a href="#projects" class="side-dot" style="top:43%" data-label="我正在做的">
     <span class="side-label">我正在做的</span>
   </a>
-  <a href="#daily" class="side-dot" style="top:50%" data-label="日常">
+  <a href="#daily" class="side-dot" style="top:57%" data-label="日常">
     <span class="side-label">日常</span>
   </a>
-  <a href="#works" class="side-dot" style="top:67%" data-label="作品">
+  <a href="#works" class="side-dot" style="top:71%" data-label="作品">
     <span class="side-label">作品</span>
   </a>
-  <a href="#wishlist" class="side-dot" style="top:83%" data-label="我还想做的">
+  <a href="#wishlist" class="side-dot" style="top:86%" data-label="我还想做的">
     <span class="side-label">我还想做的</span>
   </a>
   <a href="#contact" class="side-dot" style="top:100%" data-label="联系">
@@ -84,7 +90,6 @@
     <p class="hero-kicker hero-stagger" id="heroKicker">嗨，欢迎来到我的主页 👋</p>
     <h1 class="hero-title hero-stagger">我是 <span class="accent" id="heroName">钟智轩</span></h1>
     <p class="hero-sub hero-stagger" id="heroSub">大学生 · 机械 · 建模 · 动手爱好者</p>
-    <p class="hero-quote hero-stagger" id="heroQuote">把想法变成看得见、摸得着的东西。</p>
     <p class="hero-typed hero-stagger">热爱 <span class="typed-wrap"><span id="typedText"></span><span class="typed-caret"></span></span></p>
     <div class="hero-actions hero-stagger">
       <a class="btn btn-primary" href="#works">查看我的作品</a>
@@ -118,6 +123,18 @@
         <div class="stats" id="stats"></div>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ============ 成长轨迹 ============ -->
+<section class="section section-alt" id="timeline">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="section-tag">Journey</p>
+      <h2 class="section-title">成长轨迹</h2>
+      <p class="section-desc">一路走来的关键节点</p>
+    </div>
+    <div class="timeline-list" id="timelineGrid"></div>
   </div>
 </section>
 
@@ -197,11 +214,26 @@
     <p class="contact-note reveal">数据来源：<code>content/profile.json</code>，编辑后运行 <code>node build.js</code> 即可更新。</p>
   </div>
 </section>
+
+<!-- ============ 更新历史 ============ -->
+<section class="section section-alt" id="changelog">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="section-tag">Changelog</p>
+      <h2 class="section-title">更新历史</h2>
+      <p class="section-desc">网站的最近更新记录</p>
+    </div>
+    <div class="changelog-list" id="changelogGrid">
+      <div class="empty-state">还没有更新记录～ 编辑 <code>content/changelog.json</code> 后运行 <code>node build.js</code></div>
+    </div>
+  </div>
+</section>
 </main>
 
 <footer class="site-footer">
   <div class="container">
     <p>© <span id="year"></span> 钟智轩 Chubby · 用心搭建的个人主页</p>
+    <p class="visit-count" id="visitCount"></p>
   </div>
 </footer>
 
@@ -248,7 +280,7 @@
   <p class="lightbox-caption" id="lightboxCaption"></p>
 </div>
 
-<script src="js/data.js?v=16"></script>
-<script src="js/main.js?v=12"></script>
+<script src="js/data.js?v=17"></script>
+<script src="js/main.js?v=13"></script>
 </body>
 </html>

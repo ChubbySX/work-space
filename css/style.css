@@ -460,6 +460,52 @@ code {
   .projects-grid { grid-template-columns: 1fr; }
 }
 
+/* ---------- 更新历史 ---------- */
+.changelog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.changelog-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 22px;
+  box-shadow: var(--shadow);
+  transition: transform .3s, box-shadow .3s;
+  overflow: hidden;
+}
+.changelog-item:hover { transform: translateX(6px); box-shadow: var(--shadow-lg); }
+.changelog-item::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  border-radius: 4px 0 0 4px;
+}
+.changelog-date {
+  flex: 0 0 auto;
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--accent-dark);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+.changelog-summary {
+  flex: 1;
+  font-size: .95rem;
+  color: var(--ink);
+  line-height: 1.55;
+  margin: 0;
+}
+
 /* ---------- 我还想做的（清单卡片） ---------- */
 .wishlist-grid {
   display: flex;
@@ -1445,4 +1491,132 @@ code {
   .work-card::after, .daily-item::after, .contact-item::after { display: none; }
   .js .hero-stagger { opacity: 1; transform: none; filter: none; transition: none; }
   .reveal { transition: none; }
+}
+
+/* ============================================================
+   新增功能样式
+   ============================================================ */
+
+/* ---------- 深色模式 ---------- */
+[data-theme="dark"] {
+  --bg: #1a1510;
+  --surface: #241e18;
+  --ink: #f5ede0;
+  --ink-soft: #b8a890;
+  --ink-faint: #8a7a68;
+  --line: #38302a;
+  --accent: #e89050;
+  --accent-soft: #3a2818;
+  --accent-dark: #c47530;
+  --shadow: 0 10px 30px rgba(0, 0, 0, .3);
+  --shadow-lg: 0 18px 50px rgba(0, 0, 0, .4);
+}
+[data-theme="dark"] .site-header { background: rgba(26, 21, 16, .88); }
+[data-theme="dark"] .hero-bg::after { background: linear-gradient(180deg, rgba(10,8,5,.55), rgba(10,8,5,.25) 50%, rgba(10,8,5,.5)); }
+[data-theme="dark"] .code { background: #2a2218; }
+[data-theme="dark"] .scroll-progress { background: linear-gradient(90deg, var(--accent), #e89050); }
+
+/* 主题切换按钮 */
+.theme-toggle {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all .25s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover { border-color: var(--accent); transform: scale(1.08); }
+@media (max-width: 640px) { .theme-toggle { display: none; } }
+
+/* ---------- 技能进度条 ---------- */
+.skills { margin-top: 18px; display: flex; flex-direction: column; gap: 12px; }
+.skill-row { display: flex; align-items: center; gap: 10px; }
+.skill-name { font-size: .82rem; font-weight: 600; color: var(--ink-soft); width: 110px; flex-shrink: 0; text-align: right; }
+.skill-track {
+  flex: 1; height: 8px; border-radius: 4px;
+  background: var(--line); overflow: hidden;
+}
+.skill-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), #e0933a);
+  width: 0; transition: width 1s cubic-bezier(.2,.8,.25,1);
+}
+.about-card.is-visible .skill-fill { width: var(--lvl); }
+.skill-val { font-size: .78rem; font-weight: 700; color: var(--accent); min-width: 32px; }
+
+/* ---------- 时间线 ---------- */
+.timeline-list { max-width: 680px; margin: 0 auto; position: relative; padding-left: 28px; }
+.timeline-list::before {
+  content: ""; position: absolute; left: 8px; top: 8px; bottom: 8px;
+  width: 2px; background: var(--line);
+}
+.timeline-item { position: relative; padding: 0 0 28px 24px; }
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-item::before {
+  content: ""; position: absolute; left: -28px; top: 6px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); border: 3px solid var(--bg);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.timeline-date { font-size: .8rem; font-weight: 700; color: var(--accent); }
+.timeline-event { font-size: 1.05rem; font-weight: 700; margin-top: 2px; }
+.timeline-desc { font-size: .88rem; color: var(--ink-faint); margin-top: 2px; }
+
+/* ---------- 卡片堆叠相册查看器 ---------- */
+.card-stack-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(12, 10, 8, .92);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.card-stack-overlay.is-open { opacity: 1; pointer-events: auto; }
+.card-stack-stage {
+  position: relative; width: min(440px, 88vw); height: min(560px, 70vh);
+  perspective: 1000px;
+}
+.stack-card {
+  position: absolute; inset: 0;
+  border-radius: 16px; overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,.5);
+  transition: transform .5s cubic-bezier(.2,.8,.25,1), opacity .4s;
+  cursor: pointer;
+}
+.stack-card img { width: 100%; height: 100%; object-fit: cover; }
+.stack-card-meta {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 30px 20px 16px;
+  background: linear-gradient(transparent, rgba(0,0,0,.65));
+  color: #fff;
+}
+.stack-card-meta b { font-size: 1rem; }
+.stack-card-meta small { display: block; opacity: .75; font-size: .8rem; margin-top: 2px; }
+.card-stack-hint { color: rgba(255,255,255,.6); font-size: .85rem; margin-top: 18px; }
+.card-stack-close {
+  position: absolute; top: 18px; right: 22px;
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 0; background: rgba(255,255,255,.14); color: #fff; font-size: 18px; cursor: pointer;
+}
+.card-stack-close:hover { background: rgba(255,255,255,.3); }
+
+/* ---------- 访问统计 ---------- */
+.visit-count { margin-top: 6px; font-size: .78rem; color: var(--ink-faint); }
+
+/* ---------- 节日彩蛋 ---------- */
+#snow-layer { position: fixed; inset: 0; pointer-events: none; z-index: 90; overflow: hidden; }
+.snowflake {
+  position: absolute; top: -10px;
+  color: rgba(255,255,255,.7); font-size: 14px;
+  animation: snow-fall linear infinite;
+}
+@keyframes snow-fall {
+  0% { transform: translateY(0) translateX(0); opacity: .8; }
+  100% { transform: translateY(105vh) translateX(40px); opacity: .3; }
+}
+
+/* ---------- 移动端：隐藏滚动提示防重叠 ---------- */
+@media (max-width: 640px) {
+  .hero-scroll { display: none; }
 }
