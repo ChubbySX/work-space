@@ -33,5 +33,12 @@
   "contact": {
     "email": "chubbysx@qq.com",
     "wechat": "ChubbyXS369"
-  }
+  },
+
+  "_说明_wishlist": "↓ 我还想做的：每条 { text=事情, importance=重要性1-5, attraction=吸引度1-5 }",
+  "wishlist": [
+    { "text": "购买一台属于自己的3D打印机，并学会打印操作", "importance": 3, "attraction": 4 },
+    { "text": "买一台运动相机（虽然但是，其实没什么大用）", "importance": 1, "attraction": 3 },
+    { "text": "再搭建一个网站，用于介绍我的女朋友", "importance": 4, "attraction": 4 }
+  ]
 }

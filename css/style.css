@@ -460,6 +460,82 @@ code {
   .projects-grid { grid-template-columns: 1fr; }
 }
 
+/* ---------- 我还想做的（清单卡片） ---------- */
+.wishlist-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.wishlist-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 24px;
+  box-shadow: var(--shadow);
+  transition: transform .3s, box-shadow .3s;
+  overflow: hidden;
+}
+.wishlist-item:hover { transform: translateX(6px); box-shadow: var(--shadow-lg); }
+.wishlist-item::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  border-radius: 4px 0 0 4px;
+}
+.wishlist-text {
+  flex: 1;
+  font-size: .98rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.wishlist-ratings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.wr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wr label {
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--ink-faint);
+  letter-spacing: 1px;
+  width: 56px;
+  text-align: right;
+}
+.rating-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+.rating-dots i {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: background .3s;
+}
+.rating-dots i.on {
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(201, 106, 46, .35);
+}
+
+@media (max-width: 640px) {
+  .wishlist-item { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .wishlist-text { width: 100%; }
+}
+
 /* ---------- 日常（瀑布流） ---------- */
 .daily-grid {
   columns: 3 260px;
