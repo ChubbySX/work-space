@@ -25,9 +25,64 @@ window.SITE_DATA = {
       "视频剪辑",
       "动画渲染"
     ],
+    "skills": [
+      {
+        "name": "SolidWorks 建模",
+        "level": 85
+      },
+      {
+        "name": "Blender 渲染",
+        "level": 70
+      },
+      {
+        "name": "Arduino 编程",
+        "level": 55
+      },
+      {
+        "name": "3D 打印",
+        "level": 75
+      },
+      {
+        "name": "视频剪辑",
+        "level": 60
+      },
+      {
+        "name": "CNC 加工",
+        "level": 30
+      }
+    ],
+    "timeline": [
+      {
+        "date": "2023.09",
+        "event": "入学青岛理工大学",
+        "desc": "开启大学生活，进入机械相关专业"
+      },
+      {
+        "date": "2024.03",
+        "event": "学会 SolidWorks",
+        "desc": "从零开始系统学习三维建模"
+      },
+      {
+        "date": "2024.06",
+        "event": "完成第一个机械臂",
+        "desc": "用 3D 打印件 + Arduino 搭建六轴桌面机械臂"
+      },
+      {
+        "date": "2024.09",
+        "event": "涉猎内燃波箱",
+        "desc": "开始研究气枪 gearbox 的结构和复刻"
+      },
+      {
+        "date": "2024.10",
+        "event": "搭建个人网站",
+        "desc": "纯手写 HTML/CSS/JS，从零搭建这个主页"
+      }
+    ],
     "contact": {
       "email": "chubbysx@qq.com",
-      "wechat": "ChubbyXS369"
+      "wechat": "ChubbyXS369",
+      "bilibili": "https://space.bilibili.com/",
+      "resume": "content/resume.pdf"
     },
     "wishlist": [
       {
@@ -256,6 +311,28 @@ window.SITE_DATA = {
       "text": "再搭建一个网站，用于介绍我的女朋友",
       "importance": 4,
       "attraction": 4
+    }
+  ],
+  "changelog": [
+    {
+      "date": "2026-10-24 16:48",
+      "summary": "个人资料更新；网站功能/样式调整"
+    },
+    {
+      "date": "2026-10-24 16:27",
+      "summary": "个人资料更新；网站功能/样式调整"
+    },
+    {
+      "date": "2026-10-24 16:00",
+      "summary": "新增更新历史板块（网页末尾显示最近5次更新）+发布流程自动记录"
+    },
+    {
+      "date": "2026-10-24 15:29",
+      "summary": "清理腾讯云/CDN/Vercel 脚本，项目只保留 GitHub 托管"
+    },
+    {
+      "date": "2026-10-24 14:52",
+      "summary": "新增日常与作品内容（地铁、狐狸森林等）"
     }
   ]
 };

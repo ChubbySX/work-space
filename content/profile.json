@@ -26,13 +26,34 @@
     "如果你也对机械、建模、手工感兴趣，或者想找我聊聊，欢迎随时联系我！"
   ],
 
-  "_说明_tags": "↓ 关于我卡片里的标签",
-  "tags": ["机械", "3D建模", "动手DIY", "视频剪辑","动画渲染"],
+  "_说明_tags": "↓ 首页打字机循环显示的标签",
+  "tags": ["机械", "3D建模", "动手DIY", "视频剪辑", "动画渲染"],
+
+  "_说明_skills": "↓ 关于我板块的技能进度条，level=0-100",
+  "skills": [
+    { "name": "SolidWorks 建模", "level": 85 },
+    { "name": "Blender 渲染", "level": 70 },
+    { "name": "Arduino 编程", "level": 55 },
+    { "name": "3D 打印", "level": 75 },
+    { "name": "视频剪辑", "level": 60 },
+    { "name": "CNC 加工", "level": 30 }
+  ],
+
+  "_说明_timeline": "↓ 成长轨迹：每条 { date=日期, event=事件, desc=一句话描述 }",
+  "timeline": [
+    { "date": "2023.09", "event": "入学青岛理工大学", "desc": "开启大学生活，进入机械相关专业" },
+    { "date": "2024.03", "event": "学会 SolidWorks", "desc": "从零开始系统学习三维建模" },
+    { "date": "2024.06", "event": "完成第一个机械臂", "desc": "用 3D 打印件 + Arduino 搭建六轴桌面机械臂" },
+    { "date": "2024.09", "event": "涉猎内燃波箱", "desc": "开始研究气枪 gearbox 的结构和复刻" },
+    { "date": "2024.10", "event": "搭建个人网站", "desc": "纯手写 HTML/CSS/JS，从零搭建这个主页" }
+  ],
 
   "_说明_contact": "↓ 联系板块，不写的字段自动隐藏",
   "contact": {
     "email": "chubbysx@qq.com",
-    "wechat": "ChubbyXS369"
+    "wechat": "ChubbyXS369",
+    "bilibili": "https://space.bilibili.com/",
+    "resume": "content/resume.pdf"
   },
 
   "_说明_wishlist": "↓ 我还想做的：每条 { text=事情, importance=重要性1-5, attraction=吸引度1-5 }",

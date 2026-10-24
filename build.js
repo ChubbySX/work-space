@@ -251,6 +251,22 @@ function scanProjects() {
     .filter((p) => p && p.name);
 }
 
+/* ---------- 读取更新历史（content/changelog.json，取最近 5 条）---------- */
+function readChangelog() {
+  const f = path.join(CONTENT, "changelog.json");
+  if (!isFile(f)) return [];
+  try {
+    const arr = JSON.parse(readText(f));
+    if (!Array.isArray(arr)) return [];
+    return arr.slice(0, 5).map(function (c) {
+      return { date: String(c.date || ""), summary: String(c.summary || "") };
+    });
+  } catch (e) {
+    console.error("⚠ content/changelog.json 解析失败：" + e.message);
+    return [];
+  }
+}
+
 /* ---------- 输出 ---------- */
 function writeData(data) {
   const json = JSON.stringify(data, null, 2);
@@ -268,6 +284,7 @@ const profile = readProfile();
 const works = scanWorks();
 const daily = scanDaily();
 const projects = scanProjects();
+const changelog = readChangelog();
 
 /* "我还想做的"清单从 profile.json 读取（统一在一个文件里管理） */
 const wishlist = (profile.wishlist || []).map(function (item) {
@@ -295,6 +312,7 @@ const data = {
   works,
   projects,
   wishlist,
+  changelog,
 };
 
 writeData(data);
@@ -307,4 +325,5 @@ console.log("   作品       " + data.works.length + " 个（" +
   data.works.filter(w => w.type === "doc").length + " 文档）");
 console.log("   项目       " + data.projects.length + " 个");
 console.log("   清单       " + data.wishlist.length + " 条");
+console.log("   更新历史   " + data.changelog.length + " 条");
 console.log("   输出：data.json + js/data.js");
