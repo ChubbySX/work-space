@@ -21,13 +21,18 @@ echo [2/5] 暂存改动...
 git add .
 echo.
 
-echo [3/5] 分析改动并记录更新历史（自动生成分点概述）...
+echo [3/5] 分析改动并记录更新历史（自动概述）...
 "%NODE%" tools\analyze_and_record.js
 echo.
 
 echo [4/5] 构建网站内容...
 "%NODE%" build.js
-if errorlevel 1 (echo 构建失败！ & pause & exit /b 1)
+if errorlevel 1 (
+  echo.
+  echo *** 构建失败，请检查上面的错误 ***
+  pause
+  exit /b 1
+)
 git add .
 echo.
 
@@ -55,4 +60,4 @@ echo ============================================
 echo   发布完成！1-2分钟后刷新网页
 echo   https://chubbysx.github.io/work-space/
 echo ============================================
-pause
+exit /b 0
