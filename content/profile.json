@@ -52,8 +52,7 @@
   "contact": {
     "email": "chubbysx@qq.com",
     "wechat": "ChubbyXS369",
-    "bilibili": "https://space.bilibili.com/",
-    "resume": "content/resume.pdf"
+    "bilibili": "https://space.bilibili.com/"
   },
 
   "_说明_wishlist": "↓ 我还想做的：每条 { text=事情, importance=重要性1-5, attraction=吸引度1-5 }",

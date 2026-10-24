@@ -87,12 +87,19 @@ function sidecar(file) {
     const t = path.join(dir, base + "." + ext);
     if (isFile(t)) { desc = readText(t); break; }
   }
+  // 从描述里提取 #标签（如 #机械 #建模），并从描述文本中移除
+  const tags = [];
+  if (desc) {
+    const matches = desc.match(/#[^\s#]+/g);
+    if (matches) matches.forEach((t) => { const tag = t.slice(1); if (!tags.includes(tag)) tags.push(tag); });
+    desc = desc.replace(/#[^\s#]+/g, "").replace(/\s{2,}/g, " ").trim();
+  }
   let poster = "";
   for (const ext of ["jpg", "jpeg", "png", "webp", "svg", "gif"]) {
     const p = path.join(dir, base + ".poster." + ext);
     if (isFile(p)) { poster = rel(p); break; }
   }
-  return { desc, poster };
+  return { desc, poster, tags };
 }
 
 function rel(p) {
@@ -169,7 +176,7 @@ function scanWorks() {
     if (!VIDEO_EXT.test(f)) continue;
     const full = path.join(base, "video", f);
     const { title, date } = parseName(f);
-    const { desc, poster } = sidecar(full);
+    const { desc, poster, tags } = sidecar(full);
     const s = stat(full);
     out.push({
       type: "video",
@@ -177,6 +184,7 @@ function scanWorks() {
       title,
       date,
       desc,
+      tags,
       poster: poster || (/\.gif$/i.test(f) ? rel(full) : ""),
       size: s ? fmtSize(s.size) : "",
     });
@@ -187,7 +195,7 @@ function scanWorks() {
     if (!IMG_EXT.test(f)) continue;
     const full = path.join(base, "image", f);
     const { title, date } = parseName(f);
-    const { desc } = sidecar(full);
+    const { desc, tags } = sidecar(full);
     const s = stat(full);
     out.push({
       type: "image",
@@ -195,6 +203,7 @@ function scanWorks() {
       title,
       date,
       desc,
+      tags,
       size: s ? fmtSize(s.size) : "",
     });
   }
@@ -204,7 +213,7 @@ function scanWorks() {
     if (!DOC_EXT.test(f)) continue;
     const full = path.join(base, "doc", f);
     const { title, date } = parseName(f);
-    const { desc } = sidecar(full);
+    const { desc, tags } = sidecar(full);
     const s = stat(full);
     out.push({
       type: "doc",
@@ -212,6 +221,7 @@ function scanWorks() {
       title,
       date,
       desc,
+      tags,
       size: s ? fmtSize(s.size) : "",
     });
   }

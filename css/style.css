@@ -651,6 +651,39 @@ code {
   color: #fff;
 }
 
+/* 标签筛选栏 */
+.tag-filter-bar {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+.tag-filter-btn {
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+}
+.tag-filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tag-filter-btn.is-active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); }
+
+/* 卡片上的标签 */
+.work-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.work-tag {
+  font-size: .72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+
 .works-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
