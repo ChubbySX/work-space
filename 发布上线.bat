@@ -50,7 +50,7 @@ set ATTEMPT=0
 :PUSHRETRY1
 set /a ATTEMPT+=1
 echo   第 %ATTEMPT% 次推送...
-git push
+git push origin main
 if errorlevel 1 goto PUSHFAIL1
 goto PUSHDONE1
 :PUSHFAIL1
@@ -72,7 +72,7 @@ set ATTEMPT=0
 :PUSHRETRY2
 set /a ATTEMPT+=1
 echo   第 %ATTEMPT% 次推送版本号...
-git push
+git push origin main
 if errorlevel 1 goto PUSHFAIL2
 goto PUSHDONE2
 :PUSHFAIL2
