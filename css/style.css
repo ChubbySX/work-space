@@ -600,7 +600,7 @@ code {
 }
 .wishlist-box {
   flex-shrink: 0;
-  width: 110px;
+  width: 120px;
   position: sticky;
   top: 100px;
 }
