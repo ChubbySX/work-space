@@ -137,6 +137,7 @@
         "content/daily/不爱出门的旅游/江南古镇.jpg",
         "content/daily/不爱出门的旅游/非常非常难喝的绿豆汤（里面加了薄荷）.jpg"
       ],
+      "thumb": "content/.thumbs/daily/不爱出门的旅游/上海.webp",
       "title": "不爱出门的旅游",
       "date": "",
       "desc": "去探索、去涉足那些别人赖以生活的地域",
@@ -145,6 +146,7 @@
     {
       "type": "image",
       "src": "content/daily/回访校园.jpg",
+      "thumb": "content/.thumbs/daily/回访校园.webp",
       "title": "回访校园",
       "date": "",
       "desc": "",
@@ -155,6 +157,7 @@
       "files": [
         "content/daily/工作日记/实习与我的同事们.jpg"
       ],
+      "thumb": "content/.thumbs/daily/工作日记/实习与我的同事们.webp",
       "title": "工作日记",
       "date": "",
       "desc": "既然人们无法避免的要工作，那不如开心一点咯？",
@@ -168,6 +171,7 @@
         "content/daily/我的小玩具们/我的发射器们.jpg",
         "content/daily/我的小玩具们/灯厂的忠实粉丝.jpg"
       ],
+      "thumb": "content/.thumbs/daily/我的小玩具们/MCX-印花集（崭新出厂）.webp",
       "title": "我的小玩具们",
       "date": "",
       "desc": "我真的是太爱发射器了，这或许会是我为数不多的终身爱好（我的终身爱好真的不多吗？）",
@@ -179,6 +183,7 @@
         "content/daily/美食就是好吃的意思！/兼职的美味杂货面.jpg",
         "content/daily/美食就是好吃的意思！/蟹黄面.jpg"
       ],
+      "thumb": "content/.thumbs/daily/美食就是好吃的意思！/兼职的美味杂货面.webp",
       "title": "美食就是好吃的意思！",
       "date": "",
       "desc": "",
@@ -196,6 +201,7 @@
         "content/daily/青岛在青理/狗学长们爱晒太阳.jpg",
         "content/daily/青岛在青理/窗外风景（我真的很喜欢在走廊的窗户上趴着仰望外面）.jpg"
       ],
+      "thumb": "content/.thumbs/daily/青岛在青理/下雪了？.webp",
       "title": "青岛在青理",
       "date": "",
       "desc": "校园随手拍",
@@ -206,6 +212,7 @@
     {
       "type": "video",
       "file": "content/works/video/地铁.mp4",
+      "thumb": "content/.thumbs/works/video/地铁.poster.webp",
       "title": "地铁",
       "date": "",
       "desc": "地铁花海也绝对是许多blender新手的入门练习作品之一，这里只有地铁、没有花海，因为生成花海后渲染会爆内存。（就是这里爱上了M3工具）",
@@ -216,6 +223,7 @@
     {
       "type": "video",
       "file": "content/works/video/宿舍.mp4",
+      "thumb": "content/.thumbs/works/video/宿舍.poster.webp",
       "title": "宿舍",
       "date": "",
       "desc": "大学宿舍的复刻，因为时间和精力有限，所以并没有让所有东西都出现在场景中，其中耗时最大的是显示器下面那个不起眼的移动电源，正浩家的，因为宿舍每天都会准时断电，所以用来做UPS。",
@@ -226,6 +234,7 @@
     {
       "type": "video",
       "file": "content/works/video/火控.mp4",
+      "thumb": "content/.thumbs/works/video/火控.poster.webp",
       "title": "火控",
       "date": "",
       "desc": "LTP1.2 微动火控的复刻，由于没有标准数据，所以这个只适配我自己的非标2号波箱",
@@ -236,6 +245,7 @@
     {
       "type": "video",
       "file": "content/works/video/狐狸森林.mp4",
+      "thumb": "content/.thumbs/works/video/狐狸森林.poster.webp",
       "title": "狐狸森林",
       "date": "",
       "desc": "选KurTips做入门老师，真的是我的荣幸，同师门的师兄师弟应该都是以狐狸森林为第一款作品",
@@ -246,6 +256,7 @@
     {
       "type": "image",
       "file": "content/works/image/宿舍.jpg",
+      "thumb": "content/.thumbs/works/image/宿舍.webp",
       "title": "宿舍",
       "date": "",
       "desc": "个人从众多渲染图中，比较喜欢的一张，像是相机拍摄的",
@@ -255,6 +266,7 @@
     {
       "type": "image",
       "file": "content/works/image/火控.jpg",
+      "thumb": "content/.thumbs/works/image/火控.webp",
       "title": "火控",
       "date": "",
       "desc": "定形，打完光的产品展示图",
@@ -264,6 +276,7 @@
     {
       "type": "image",
       "file": "content/works/image/高中宿舍与一堆练习册.jpg",
+      "thumb": "content/.thumbs/works/image/高中宿舍与一堆练习册.webp",
       "title": "高中宿舍与一堆练习册",
       "date": "",
       "desc": "现在看来真的非常非常简陋的高中宿舍",
@@ -273,6 +286,7 @@
     {
       "type": "image",
       "file": "content/works/image/高中食堂一楼简装展示.jpg",
+      "thumb": "content/.thumbs/works/image/高中食堂一楼简装展示.webp",
       "title": "高中食堂一楼简装展示",
       "date": "",
       "desc": "高中食堂会议中的复刻",
@@ -325,6 +339,10 @@
   ],
   "changelog": [
     {
+      "date": "2026-10-25 16:20",
+      "summary": "1.调整了构建脚本、网页样式、站点数据、网页结构、页面交互逻辑、发布脚本；2.新增了代码"
+    },
+    {
       "date": "2026-10-25 11:01",
       "summary": "1.调整了站点数据、发布脚本"
     },
@@ -339,11 +357,7 @@
     {
       "date": "2026-10-24 23:14",
       "summary": "1.个人资料更新；2.调整了网页样式、站点数据、网页结构、页面交互逻辑、工具脚本、发布脚本"
-    },
-    {
-      "date": "2026-10-24 18:50",
-      "summary": "1.去除「下载简历」按钮及 resume 字段；2.优化更新历史概述（按文件功能+动作具体描述）"
     }
   ],
-  "version": "1.0.5.1"
+  "version": "1.0.18.18"
 }

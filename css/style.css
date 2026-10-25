@@ -453,22 +453,22 @@ code {
 }
 .project-card {
   position: relative;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  transition: transform .3s, box-shadow .3s;
+  perspective: 1000px;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
 }
-.project-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.project-card:hover .project-card-inner { box-shadow: var(--shadow-lg); }
 .project-card::after {
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.35) 50%, transparent 60%);
-  transform: translateX(-130%); transition: transform .9s ease; pointer-events: none;
+  background-size: 200% 100%; background-position: -50% 0;
+  transition: background-position .6s;
+  pointer-events: none; z-index: 10;
+  border-radius: var(--radius);
+  opacity: 0;
 }
-.project-card:hover::after { transform: translateX(130%); }
+.project-card:hover::after { background-position: 150% 0; opacity: 1; }
 
 .project-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
 .project-name { font-size: 1.2rem; font-weight: 800; color: var(--ink); }
@@ -501,11 +501,14 @@ code {
 .project-card.is-visible .project-progress i { width: var(--p); }
 
 /* 翻牌效果 */
-.project-card { perspective: 1000px; cursor: pointer; }
 .project-card-inner {
   position: relative; width: 100%; height: 100%;
   transition: transform .7s cubic-bezier(.4,.2,.2,1);
   transform-style: preserve-3d;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 .project-card.is-flipped .project-card-inner { transform: rotateY(180deg); }
 .project-back, .project-body {
@@ -517,11 +520,9 @@ code {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 14px; padding: 24px;
   background: linear-gradient(160deg, var(--surface), var(--accent-soft));
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  z-index: 2;
 }
 .project-back-mark {
   font-size: 3.5rem;
@@ -535,8 +536,11 @@ code {
   display: flex; align-items: center; gap: 6px;
 }
 .project-back .flip-hint::before { content: "👆"; font-size: 1rem; }
-.project-body { transform: rotateY(180deg); }
-.project-card.is-flipped .project-back { z-index: 0; }
+.project-body {
+  transform: rotateY(180deg);
+  background: var(--surface);
+  border-radius: var(--radius);
+}
 
 @media (max-width: 640px) {
   .projects-grid { grid-template-columns: 1fr; }
@@ -589,12 +593,22 @@ code {
 }
 
 /* ---------- 我还想做的（清单卡片） ---------- */
+.wishlist-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.wishlist-box {
+  flex-shrink: 0;
+  width: 110px;
+  position: sticky;
+  top: 100px;
+}
 .wishlist-grid {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-width: 760px;
-  margin: 0 auto;
+  flex: 1;
 }
 .wishlist-item {
   position: relative;
@@ -606,9 +620,13 @@ code {
   border-radius: 14px;
   padding: 18px 24px;
   box-shadow: var(--shadow);
-  transition: transform .3s, box-shadow .3s;
   overflow: hidden;
+  /* 初始隐藏，等纸箱触发飞出 */
+  opacity: 0;
+  transform: translateX(-80px);
+  transition: opacity .6s cubic-bezier(.2,.8,.25,1), transform .6s cubic-bezier(.2,.8,.25,1);
 }
+.wishlist-item.is-shown { opacity: 1; transform: none; }
 .wishlist-item:hover { transform: translateX(6px); box-shadow: var(--shadow-lg); }
 .wishlist-item::before {
   content: "";
@@ -654,12 +672,36 @@ code {
   background: var(--line);
   transition: background .3s;
 }
-.rating-dots i.on {
+/* .on 初始也是灰色，等闪烁后才变橙 */
+.rating-dots i.on.is-lit {
   background: var(--accent);
   box-shadow: 0 0 6px rgba(201, 106, 46, .35);
 }
+/* 闪烁出现：灰→橙弹跳 */
+.rating-dots i.on.is-flash {
+  animation: dot-flash .5s cubic-bezier(.2,1.4,.4,1) forwards;
+}
+@keyframes dot-flash {
+  0% { background: var(--line); transform: scale(0); box-shadow: none; }
+  60% { background: var(--accent); transform: scale(1.5); box-shadow: 0 0 10px 3px rgba(201,106,46,.5); }
+  100% { background: var(--accent); transform: scale(1); box-shadow: 0 0 6px rgba(201,106,46,.35); }
+}
+/* 打字光标 */
+#wishlistDesc::after {
+  content: "|";
+  color: var(--accent);
+  animation: desc-caret .8s step-end infinite;
+  font-weight: 300;
+  margin-left: 2px;
+}
+@keyframes desc-caret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
 
 @media (max-width: 640px) {
+  .wishlist-layout { flex-direction: column; }
+  .wishlist-box { position: relative; top: 0; margin: 0 auto; }
   .wishlist-item { flex-direction: column; align-items: flex-start; gap: 12px; }
   .wishlist-text { width: 100%; }
 }
@@ -1101,9 +1143,10 @@ code {
   from { background-position: 0% 0%; }
   to { background-position: 100% 100%; }
 }
-.intro.is-hidden { transform: translateY(-101%); opacity: 0; visibility: hidden; }
-@keyframes intro-exit {
-  to { transform: translateY(-101%); visibility: hidden; }
+.intro.is-hidden { animation: intro-slide-up .8s cubic-bezier(.65, .05, .36, 1) forwards; }
+@keyframes intro-slide-up {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-101%); opacity: 0; visibility: hidden; }
 }
 
 /* 开场背景漂移光斑 */
@@ -1450,14 +1493,29 @@ code {
   padding: 16px 18px;
   color: #fff;
   box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
-  transition: all .35s cubic-bezier(.2, .8, .25, 1);
   overflow: hidden;
 }
+/* 缩球：0.6s 压成横条 → 0.5s 从左往右压缩成球 */
 .music-card.is-collapsed {
   width: 52px; height: 52px;
   padding: 0;
   border-radius: 50%;
   cursor: pointer;
+  animation: collapse-to-ball 1.1s cubic-bezier(.4, .2, .3, 1) forwards;
+}
+/* 展开：0.8s 伸成竖条 → 向左展开成卡片 */
+.music-card:not(.is-collapsed) { animation: expand-to-card 1.2s cubic-bezier(.2, .8, .25, 1) forwards; }
+.music-card.no-anim { animation: none !important; transition: none !important; }
+
+@keyframes collapse-to-ball {
+  0%   { width: var(--cw, 280px); height: var(--ch, 220px); padding: 16px 18px; border-radius: 18px; }
+  54.5% { width: var(--cw, 280px); height: 52px; padding: 0 18px; border-radius: 18px; }
+  100% { width: 52px; height: 52px; padding: 0; border-radius: 50%; }
+}
+@keyframes expand-to-card {
+  0%   { width: 52px; height: 52px; padding: 0; border-radius: 50%; }
+  66.7% { width: 52px; height: var(--ch, 220px); padding: 0 18px; border-radius: 18px; }
+  100% { width: var(--cw, 280px); height: var(--ch, 220px); padding: 16px 18px; border-radius: 18px; }
 }
 .music-card.is-collapsed .music-body,
 .music-card.is-collapsed .music-title,

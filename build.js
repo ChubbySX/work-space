@@ -106,6 +106,15 @@ function rel(p) {
   return path.relative(ROOT, p).split(path.sep).join("/");
 }
 
+/* 缩略图路径：content/daily/x.jpg → content/.thumbs/daily/x.webp（make_thumbs.py 生成）*/
+function thumbFor(src) {
+  if (!src) return "";
+  const m = /^content\/(.+)$/i.exec(src);
+  if (!m) return "";
+  const t = "content/.thumbs/" + m[1].replace(/\.[^.]+$/, "") + ".webp";
+  return isFile(path.join(ROOT, t)) ? t : "";
+}
+
 /* ---------- 扫描日常（支持：单图 / 图片组专辑 / 视频+说明） ---------- */
 function scanDaily() {
   const dir = path.join(CONTENT, "daily");
@@ -122,9 +131,11 @@ function scanDaily() {
       if (!imgs.length) continue;
       const { title, date } = parseName(f);
       const { desc } = sidecar(full); // 读“专辑名.txt”
+      const albumFiles = imgs.map((x) => rel(path.join(full, x)));
       out.push({
         type: "album",
-        files: imgs.map((x) => rel(path.join(full, x))),
+        files: albumFiles,
+        thumb: thumbFor(albumFiles[0]),
         title,
         date,
         desc,
@@ -137,13 +148,15 @@ function scanDaily() {
     if (VIDEO_EXT.test(f)) {
       const { title, date } = parseName(f);
       const { desc, poster } = sidecar(full);
+      const poster2 = poster || (/\.gif$/i.test(f) ? rel(full) : "");
       out.push({
         type: "video",
         file: rel(full),
+        thumb: thumbFor(poster2),
         title,
         date,
         desc,
-        poster: poster || (/\.gif$/i.test(f) ? rel(full) : ""),
+        poster: poster2,
         size: fmtSize(s.size),
       });
       continue;
@@ -153,9 +166,11 @@ function scanDaily() {
     if (IMG_EXT.test(f)) {
       const { title, date } = parseName(f);
       const { desc } = sidecar(full);
+      const src = rel(full);
       out.push({
         type: "image",
-        src: rel(full),
+        src,
+        thumb: thumbFor(src),
         title,
         date,
         desc,
@@ -178,14 +193,16 @@ function scanWorks() {
     const { title, date } = parseName(f);
     const { desc, poster, tags } = sidecar(full);
     const s = stat(full);
+    const wPoster = poster || (/\.gif$/i.test(f) ? rel(full) : "");
     out.push({
       type: "video",
       file: rel(full),
+      thumb: thumbFor(wPoster),
       title,
       date,
       desc,
       tags,
-      poster: poster || (/\.gif$/i.test(f) ? rel(full) : ""),
+      poster: wPoster,
       size: s ? fmtSize(s.size) : "",
     });
   }
@@ -197,9 +214,11 @@ function scanWorks() {
     const { title, date } = parseName(f);
     const { desc, tags } = sidecar(full);
     const s = stat(full);
+    const wFile = rel(full);
     out.push({
       type: "image",
-      file: rel(full),
+      file: wFile,
+      thumb: thumbFor(wFile),
       title,
       date,
       desc,
@@ -288,10 +307,11 @@ function readVersion() {
   }
 }
 
-/* 构建时末位 d+1 */
+/* 构建时 c+1 且 d+1 */
 function bumpBuildVersion(ver) {
   var parts = ver.split(".");
-  parts[3] = String((parseInt(parts[3] || "0", 10) + 1));
+  parts[2] = String((parseInt(parts[2] || "0", 10) + 1));  // c+1
+  parts[3] = String((parseInt(parts[3] || "0", 10) + 1));  // d+1
   var newVer = parts.join(".");
   fs.writeFileSync(path.join(CONTENT, "version.json"), JSON.stringify({ version: newVer }, null, 2) + "\n", "utf8");
   return newVer;

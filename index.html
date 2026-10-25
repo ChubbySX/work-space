@@ -7,7 +7,7 @@
 <meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
 <link rel="icon" href="content/chubby-logo.jpg" type="image/jpeg">
 <script>document.documentElement.classList.add("js");</script>
-<link rel="stylesheet" href="css/style.css?v=25">
+<link rel="stylesheet" href="css/style.css?v=30">
 </head>
 <body>
 
@@ -200,10 +200,22 @@
     <div class="section-head reveal">
       <p class="section-tag">Wishlist</p>
       <h2 class="section-title">我还想做的</h2>
-      <p class="section-desc">那些吸引着我、想要去尝试和完成的事</p>
+      <p class="section-desc" id="wishlistDesc" data-text="那些吸引着我、想要去尝试和完成的事"></p>
     </div>
-    <div class="wishlist-grid" id="wishlistGrid">
-      <div class="empty-state">还没有内容～ 编辑 <code>content/profile.json</code> 里的 wishlist 字段后运行 <code>node build.js</code></div>
+    <div class="wishlist-layout">
+      <div class="wishlist-box" id="wishlistBox">
+        <svg viewBox="0 0 120 100" width="110" height="92">
+          <rect x="10" y="15" width="80" height="75" fill="#c9a063" stroke="#8a6840" stroke-width="2" rx="3"/>
+          <rect x="55" y="20" width="30" height="65" fill="#2a1a10" rx="2"/>
+          <path d="M85 15 L100 8 L100 18 L85 20 Z" fill="#b8895a" stroke="#8a6840" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M85 90 L100 97 L100 87 L85 85 Z" fill="#b8895a" stroke="#8a6840" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M10 15 L10 5 L50 10 L50 18 Z" fill="#d4b07a" stroke="#8a6840" stroke-width="1.5" stroke-linejoin="round"/>
+          <line x1="40" y1="5" x2="42" y2="90" stroke="#8a6840" stroke-width="1" opacity=".3" stroke-dasharray="3 3"/>
+        </svg>
+      </div>
+      <div class="wishlist-grid" id="wishlistGrid">
+        <div class="empty-state">还没有内容～ 编辑 <code>content/profile.json</code> 里的 wishlist 字段后运行 <code>node build.js</code></div>
+      </div>
     </div>
   </div>
 </section>
@@ -262,8 +274,8 @@
     <div class="music-volumes">
       <div class="vol-row">
         <span class="vol-label">🎵 音乐</span>
-        <input type="range" class="vol-slider" id="musicVol" min="0" max="100" value="25">
-        <span class="vol-val" id="musicVolVal">25</span>
+        <input type="range" class="vol-slider" id="musicVol" min="0" max="100" value="60">
+        <span class="vol-val" id="musicVolVal">60</span>
       </div>
       <div class="vol-row">
         <span class="vol-label">🎬 视频</span>
@@ -285,7 +297,7 @@
   <p class="lightbox-caption" id="lightboxCaption"></p>
 </div>
 
-<script src="js/data.js?v=19"></script>
-<script src="js/main.js?v=34"></script>
+<script src="js/data.js?v=22"></script>
+<script src="js/main.js?v=41"></script>
 </body>
 </html>

@@ -7,33 +7,42 @@ set "NODE=C:\Users\23003\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\node
 if not exist "%NODE%" set "NODE=node"
 
 echo ============================================
-echo   发布上线到 GitHub Pages
+echo   发布更新到 GitHub Pages
 echo   https://chubbysx.github.io/work-space/
+echo   (自动分析改动 + 记录更新历史)
 echo ============================================
 echo.
-echo   注意：请先双击 构建网站.bat 完成构建
+
+echo [1/6] 提取视频封面...
+"%PY%" tools\make_posters.py
 echo.
 
-echo [1/5] 升级发布版本号 (c+1)...
-"%PY%" tools\bump_publish.py
+echo [2/6] 生成缩略图（预览用，加速加载）...
+"%PY%" tools\make_thumbs.py
 echo.
 
-echo [2/5] 暂存改动...
+echo [3/6] 暂存改动...
 git add .
 echo.
 
-echo [3/5] 分析改动并记录更新历史...
+echo [4/6] 分析改动并记录更新历史（自动概述）...
 "%NODE%" tools\analyze_and_record.js
 echo.
 
-echo [4/5] 同步版本号到网站数据...
+echo [5/6] 构建网站内容...
 "%NODE%" build.js
+if errorlevel 1 (
+  echo.
+  echo *** 构建失败，请检查上面的错误 ***
+  pause
+  exit /b 1
+)
 git add .
 echo.
 
-echo [5/5] 提交并推送到 GitHub...
+echo [6/6] 提交并推送到 GitHub...
 for /f "delims=" %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmm"') do set "TS=%%t"
-git commit -m "发布 %TS%"
+git commit -m "更新内容 %TS%"
 set ATTEMPT=0
 :PUSHRETRY
 set /a ATTEMPT+=1
@@ -42,7 +51,7 @@ git push
 if errorlevel 1 goto PUSHFAIL
 goto PUSHDONE
 :PUSHFAIL
-if %ATTEMPT% LSS 3 (echo   失败3秒后重试... ^& timeout /t 3 >nul ^& goto PUSHRETRY)
+if %ATTEMPT% LSS 3 (echo   失败3秒后重试... & timeout /t 3 >nul & goto PUSHRETRY)
 echo.
 echo *** 推送失败！网络可能不稳定 ***
 echo   1) 等几分钟再双击本脚本

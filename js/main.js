@@ -16,7 +16,7 @@
   let lightboxIndex = 0;
   let videoVolume = 0.8;    // 视频音量（由音乐卡片控制）
   let bgMusicWasPlaying = false;  // 灯箱打开前背景音乐是否在播放
-  const MAX_MUSIC_VOL = 0.55;    // 音乐音量上限（拉满也不刺耳）
+  const MAX_MUSIC_VOL = 0.0825;  // 音乐音量上限（当前设置的50%）
   let musicVolume = 0;           // 当前音乐音量（0~MAX_MUSIC_VOL）
 
   /* ---------- 数据加载：优先 window.SITE_DATA（file:// 也能用） ---------- */
@@ -118,15 +118,15 @@
         let media;
         if (d.type === "album") {
           media = `
-            <img src="${esc(d.files[0])}" alt="${esc(d.title)}" loading="lazy">
+            <img src="${esc(d.thumb || d.files[0])}" alt="${esc(d.title)}" loading="lazy">
             <span class="daily-badge">📷 共 ${d.files.length} 张</span>`;
         } else if (d.type === "video") {
           media = `
-            <img src="${esc(d.poster || "content/works/video.svg")}" alt="${esc(d.title)}" loading="lazy">
+            <img src="${esc(d.thumb || d.poster || "content/works/video.svg")}" alt="${esc(d.title)}" loading="lazy">
             <span class="daily-badge video">🎬 视频</span>
             <div class="play-overlay"><span class="play-icon">▶</span></div>`;
         } else {
-          media = `<img src="${esc(d.src)}" alt="${esc(d.title)}" loading="lazy">`;
+          media = `<img src="${esc(d.thumb || d.src)}" alt="${esc(d.title)}" loading="lazy">`;
         }
         return `
       <figure class="daily-item reveal" data-index="${i}" style="transition-delay:${(i % 8) * 70}ms">
@@ -246,7 +246,7 @@
           return `
           <article class="work-card reveal" data-type="${w.type}" data-index="${i}" style="transition-delay:${(i % 8) * 70}ms">
             <div class="work-media">
-              <img src="${esc(w.poster || "content/works/video.svg")}" alt="${esc(w.title)}" loading="lazy">
+              <img src="${esc(w.thumb || w.poster || "content/works/video.svg")}" alt="${esc(w.title)}" loading="lazy">
               <span class="work-dimmer"></span>
               ${badge}
               <div class="play-overlay"><span class="play-icon">▶</span></div>
@@ -268,7 +268,7 @@
         return `
         <article class="work-card reveal" data-type="${w.type}" data-index="${i}" style="transition-delay:${(i % 8) * 70}ms">
           <div class="work-media">
-            <img src="${esc(w.file)}" alt="${esc(w.title)}" loading="lazy">
+            <img src="${esc(w.thumb || w.file)}" alt="${esc(w.title)}" loading="lazy">
             <span class="work-dimmer"></span>
             ${badge}
             <span class="work-comment">${esc(w.desc || "点击查看大图")}</span>
@@ -554,10 +554,7 @@
     const skipBtn = $("#introSkip");
     if (skipBtn) skipBtn.addEventListener("click", revealHome);
 
-    // 预加载图片：利用开场动画的时间提前加载 lazy 图片
-    document.querySelectorAll("img[loading=lazy]").forEach(function (im) {
-      im.removeAttribute("loading");
-    });
+    // 日常预加载见 loadData.then（new Image 触发，开场期间执行）
 
     // 开场动画持续 8-14 秒（随机），无视 reduced motion 设置
     var introDur = 8000 + Math.floor(Math.random() * 6000);
@@ -734,7 +731,7 @@
       var target = calcVol();
       musicVolume = target;
       audio.volume = 0;
-      var step = 0, total = 60;
+      var step = 0, total = 100; // 100×50ms = 5秒渐入
       var timer = setInterval(function () {
         step++;
         audio.volume = Math.min(target, target * (step / total));
@@ -806,7 +803,24 @@
     });
 
     // 收起/展开
-    function toggleCollapse() { card.classList.toggle("is-collapsed"); }
+    function toggleCollapse() {
+      if (card.classList.contains("is-collapsed")) {
+        // 展开：先测量目标尺寸，再触发动画
+        card.classList.add("no-anim");
+        card.classList.remove("is-collapsed");
+        card.style.setProperty("--cw", card.offsetWidth + "px");
+        card.style.setProperty("--ch", card.offsetHeight + "px");
+        card.classList.add("is-collapsed"); // 先回到球状态
+        card.offsetWidth; // 强制 reflow
+        card.classList.remove("no-anim");
+        card.classList.remove("is-collapsed"); // 触发展开动画
+      } else {
+        // 缩球：记录当前尺寸
+        card.style.setProperty("--cw", card.offsetWidth + "px");
+        card.style.setProperty("--ch", card.offsetHeight + "px");
+        card.classList.add("is-collapsed");
+      }
+    }
     if (collapseBtn) collapseBtn.addEventListener("click", function (e) { e.stopPropagation(); toggleCollapse(); });
     card.addEventListener("click", function () {
       if (card.classList.contains("is-collapsed")) toggleCollapse();
@@ -815,14 +829,28 @@
     audio.addEventListener("ended", function () { if (isPlaying) audio.play().catch(function () {}); });
 
     updateIcon();
-    // 入场动画结束后自动渐入播放
-    setTimeout(tryAutoPlay, 3000);
+    // 开场动画结束后自动渐入播放（轮询等待 intro 结束）
+    var autoPlayed = false;
+    function checkIntroAndPlay() {
+      if (autoPlayed) { clearInterval(autoPlayTimer); return; }
+      var introEl = document.getElementById("intro");
+      if (!introEl || introEl.classList.contains("is-hidden")) {
+        autoPlayed = true;
+        tryAutoPlay();
+        clearInterval(autoPlayTimer);
+      }
+    }
+    var autoPlayTimer = setInterval(checkIntroAndPlay, 200);
+    // 兜底：10 秒后无论如何都尝试播放
+    setTimeout(function () { if (!autoPlayed) { autoPlayed = true; tryAutoPlay(); } clearInterval(autoPlayTimer); }, 10000);
 
     // ====== 5秒后或首次页面交互后自动收起 + 气泡提示 ======
     var autoCollapsed = false;
     function autoCollapse() {
       if (autoCollapsed) return;
       autoCollapsed = true;
+      card.style.setProperty("--cw", card.offsetWidth + "px");
+      card.style.setProperty("--ch", card.offsetHeight + "px");
       card.classList.add("is-collapsed");
       // 弹出气泡，3 秒后消失
       var bubble = document.createElement("div");
@@ -899,7 +927,7 @@
   function renderWishlist(items) {
     var grid = $("#wishlistGrid");
     if (!items || !items.length) {
-      grid.innerHTML = '<div class="empty-state">还没有内容～ 编辑 <code>content/wishlist.json</code> 后运行 <code>node build.js</code></div>';
+      grid.innerHTML = '<div class="empty-state">还没有内容～ 编辑 <code>content/profile.json</code> 里的 wishlist 字段后运行 <code>node build.js</code></div>';
       return;
     }
     grid.innerHTML = items
@@ -909,11 +937,11 @@
         var impDots = "";
         var attDots = "";
         for (var j = 1; j <= 5; j++) {
-          impDots += '<i class="' + (j <= imp ? "on" : "") + '"></i>';
-          attDots += '<i class="' + (j <= att ? "on" : "") + '"></i>';
+          impDots += '<i class="' + (j <= imp ? "on" : "") + '" data-group="imp" data-idx="' + j + '"></i>';
+          attDots += '<i class="' + (j <= att ? "on" : "") + '" data-group="att" data-idx="' + j + '"></i>';
         }
         return (
-          '<div class="wishlist-item reveal" style="transition-delay:' + ((i % 6) * 60) + 'ms">' +
+          '<div class="wishlist-item" data-index="' + i + '">' +
             '<p class="wishlist-text">' + esc(item.text) + '</p>' +
             '<div class="wishlist-ratings">' +
               '<span class="wr"><label>重要性</label><span class="rating-dots">' + impDots + '</span></span>' +
@@ -923,6 +951,70 @@
         );
       })
       .join("");
+
+    // 纸箱触发：首次进入视口时，条框依次从纸箱飞出 + 小红点闪烁
+    var triggered = false;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting && !triggered) {
+          triggered = true;
+          io.disconnect();
+          var itemList = grid.querySelectorAll(".wishlist-item");
+          itemList.forEach(function (item, i) {
+            setTimeout(function () {
+              item.classList.add("is-shown");
+              // 落位后小红点依次闪烁
+              setTimeout(function () {
+                var dots = item.querySelectorAll(".rating-dots i.on");
+                dots.forEach(function (dot, di) {
+                  setTimeout(function () {
+                    dot.classList.add("is-flash");
+                    setTimeout(function () { dot.classList.remove("is-flash"); dot.classList.add("is-lit"); }, 500);
+                  }, di * 300);
+                });
+              }, 950);
+            }, i * 1200);
+          });
+        }
+      });
+    }, { threshold: 0.15 });
+    io.observe(grid);
+
+    // 打字机动画
+    var descEl = $("#wishlistDesc");
+    if (descEl) {
+      var fullText = descEl.dataset.text || "那些吸引着我、想要去尝试和完成的事";
+      var descStarted = false;
+      var ioDesc = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting && !descStarted) {
+            descStarted = true;
+            ioDesc.disconnect();
+            startDescTyping();
+          }
+        });
+      }, { threshold: 0.3 });
+      ioDesc.observe(descEl);
+
+      function startDescTyping() {
+        var ci = 0, deleting = false;
+        function tick() {
+          if (!deleting) {
+            ci++;
+            descEl.textContent = fullText.slice(0, ci);
+            if (ci >= fullText.length) { deleting = true; setTimeout(tick, 5000); return; }
+            setTimeout(tick, 80);
+          } else {
+            ci--;
+            descEl.textContent = fullText.slice(0, ci);
+            if (ci <= 0) { deleting = false; setTimeout(tick, 500); return; }
+            setTimeout(tick, 40);
+          }
+        }
+        descEl.textContent = "";
+        setTimeout(tick, 300);
+      }
+    }
   }
 
   /* ---------- 渲染：更新历史 ---------- */
