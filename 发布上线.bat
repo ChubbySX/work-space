@@ -25,7 +25,9 @@ echo [3/8] 暂存改动...
 git add .
 echo.
 
-echo [4/8] 分析改动并记录更新历史（自动概述）...
+echo [4/8] 备份并分析改动（记录更新历史）...
+copy /Y content\changelog.json content\changelog.json.bak >nul 2>&1
+copy /Y content\version.json content\version.json.bak >nul 2>&1
 "%NODE%" tools\analyze_and_record.js
 echo.
 
@@ -34,6 +36,7 @@ echo [5/8] 构建网站内容（c+1, d+1）...
 if errorlevel 1 (
   echo.
   echo *** 构建失败，请检查上面的错误 ***
+  del content\changelog.json.bak content\version.json.bak >nul 2>&1
   pause
   exit /b 1
 )
@@ -56,12 +59,20 @@ goto PUSHDONE1
 :PUSHFAIL1
 if %ATTEMPT% LSS 3 (echo   失败3秒后重试... & timeout /t 3 >nul & goto PUSHRETRY1)
 echo.
-echo *** 推送失败！版本号未更新，请稍后重试 ***
+echo *** 推送失败！正在回滚更新历史... ***
+copy /Y content\changelog.json.bak content\changelog.json >nul 2>&1
+copy /Y content\version.json.bak content\version.json >nul 2>&1
+del content\changelog.json.bak content\version.json.bak >nul 2>&1
+git reset --mixed HEAD~1 >nul 2>&1
+"%NODE%" build.js >nul 2>&1
+echo.
+echo *** 推送失败！未记录更新历史，版本号未变，请稍后重试 ***
 echo   1) 等几分钟再双击本脚本
 echo   2) 临时开手机热点再双击
 pause
 exit /b 1
 :PUSHDONE1
+del content\changelog.json.bak content\version.json.bak >nul 2>&1
 echo.
 
 echo [8/8] 更新发布版本号（b+1, c归零, d还原）并推送...
