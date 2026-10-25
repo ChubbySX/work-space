@@ -341,6 +341,10 @@ window.SITE_DATA = {
   "changelog": [
     {
       "date": "2026-10-25 23:50",
+      "summary": "1.内容更新"
+    },
+    {
+      "date": "2026-10-25 23:50",
       "summary": "1.调整了 网页结构（index.html +2 -2）"
     },
     {
@@ -354,11 +358,7 @@ window.SITE_DATA = {
     {
       "date": "2026-10-25 23:04",
       "summary": "1.清理 git 历史中的大文件旧版本（.git 从 115MB 降至 41MB）；2.删除冗余文件：doc.svg、video.svg、avatar.svg、compress_assets.py；3.CSS 清理：移除 .hero-quote、.contact-note 等死代码，合并重复规则，修复光晕球颜色被错误覆盖为蓝色的问题；4.JS 清理：删除 fmtSize 等未使用函数，合并 3 个滚动监听器为 1 个，合并 2 个开场轮询为事件监听"
-    },
-    {
-      "date": "2026-10-25 23:01",
-      "summary": "1.修复版本号系统：发布后 d 不再 +1（bump_publish.py 增加 d-1 还原）；2.bump_publish.py 同步版本号到 version.json、data.json、js/data.js 三个文件"
     }
   ],
-  "version": "1.4.4.39"
+  "version": "1.4.5.40"
 };
