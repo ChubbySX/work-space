@@ -7,7 +7,7 @@
 <meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
 <link rel="icon" href="content/chubby-logo.jpg" type="image/jpeg">
 <script>document.documentElement.classList.add("js");</script>
-<link rel="stylesheet" href="css/style.css?v=20">
+<link rel="stylesheet" href="css/style.css?v=25">
 </head>
 <body>
 
@@ -19,6 +19,7 @@
     <p class="intro-sub" id="introSub">小典 · 机械 · 建模 · 动手爱好者</p>
     <div class="intro-load" aria-hidden="true"><i></i></div>
   </div>
+  <span class="intro-version" id="introVersion">v1.0.0.1</span>
   <button class="intro-skip" id="introSkip" type="button">跳过 →</button>
 </div>
 
@@ -82,7 +83,12 @@
 <!-- ============ 首屏 Hero ============ -->
 <section class="hero" id="home">
   <div class="hero-bg" aria-hidden="true">
-    <img class="hero-photo" src="content/hero-dusk.jpg?v=2" alt="青岛海边黄昏" fetchpriority="high">
+    <img class="hero-photo" src="content/hero-dusk.jpg?v=3" alt="青岛海边黄昏" fetchpriority="high">
+    <div class="hero-sun" id="heroSun"></div>
+    <div class="hero-cloud c1" id="cloud1"></div>
+    <div class="hero-cloud c2" id="cloud2"></div>
+    <div class="hero-cloud c3" id="cloud3"></div>
+    <div class="hero-mist" id="heroMist"></div>
     <div class="hero-blob b1"></div>
     <div class="hero-blob b2"></div>
   </div>
@@ -231,7 +237,7 @@
 
 <footer class="site-footer">
   <div class="container">
-    <p>© <span id="year"></span> 钟智轩 Chubby · 用心搭建的个人主页</p>
+    <p>© <span id="year"></span> 钟智轩 Chubby · 用心搭建的个人主页 · v<span id="siteVersion">1.0.0.1</span></p>
     <p class="visit-count" id="visitCount"></p>
   </div>
 </footer>
@@ -279,7 +285,7 @@
   <p class="lightbox-caption" id="lightboxCaption"></p>
 </div>
 
-<script src="js/data.js?v=18"></script>
-<script src="js/main.js?v=26"></script>
+<script src="js/data.js?v=19"></script>
+<script src="js/main.js?v=34"></script>
 </body>
 </html>

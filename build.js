@@ -277,6 +277,26 @@ function readChangelog() {
   }
 }
 
+/* ---------- 读取版本号（content/version.json）---------- */
+function readVersion() {
+  const f = path.join(CONTENT, "version.json");
+  if (!isFile(f)) return "1.0.0.0";
+  try {
+    return String(JSON.parse(readText(f)).version || "1.0.0.0");
+  } catch (e) {
+    return "1.0.0.0";
+  }
+}
+
+/* 构建时末位 d+1 */
+function bumpBuildVersion(ver) {
+  var parts = ver.split(".");
+  parts[3] = String((parseInt(parts[3] || "0", 10) + 1));
+  var newVer = parts.join(".");
+  fs.writeFileSync(path.join(CONTENT, "version.json"), JSON.stringify({ version: newVer }, null, 2) + "\n", "utf8");
+  return newVer;
+}
+
 /* ---------- 输出 ---------- */
 function writeData(data) {
   const json = JSON.stringify(data, null, 2);
@@ -295,6 +315,7 @@ const works = scanWorks();
 const daily = scanDaily();
 const projects = scanProjects();
 const changelog = readChangelog();
+const version = bumpBuildVersion(readVersion());
 
 /* "我还想做的"清单从 profile.json 读取（统一在一个文件里管理） */
 const wishlist = (profile.wishlist || []).map(function (item) {
@@ -323,6 +344,7 @@ const data = {
   projects,
   wishlist,
   changelog,
+  version,
 };
 
 writeData(data);

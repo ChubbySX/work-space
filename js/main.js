@@ -548,6 +548,8 @@
       try { sessionStorage.setItem("intro-seen", "1"); } catch (e) {}
     }
 
+    var ver = (window.SITE_DATA && window.SITE_DATA.version) || "1.0.0.1";
+    var ivEl = $("#introVersion"); if (ivEl) ivEl.textContent = "v" + ver;
     document.body.style.overflow = "hidden";        // 播放期间锁定滚动
     const skipBtn = $("#introSkip");
     if (skipBtn) skipBtn.addEventListener("click", revealHome);
@@ -557,18 +559,9 @@
       im.removeAttribute("loading");
     });
 
-    // 系统开启“减弱动态效果”时：不播动画，短暂停留品牌页后直接进入
-    if (reduced) {
-      setTimeout(revealHome, 1600);
-      return;
-    }
-
-    // 额外延长 2-4 秒（随机），让开场更有沉浸感
-    var extra = 2000 + Math.floor(Math.random() * 2000);
-    setTimeout(revealHome, 2500 + extra);
-    intro.addEventListener("animationend", (e) => {
-      if (e.animationName === "intro-exit") revealHome();
-    });
+    // 开场动画持续 8-14 秒（随机），无视 reduced motion 设置
+    var introDur = 8000 + Math.floor(Math.random() * 6000);
+    setTimeout(revealHome, introDur);
   }
 
   /* ---------- 滚动进度条 / 回到顶部 ---------- */
@@ -869,8 +862,7 @@
     grid.innerHTML = projects
       .map(function (p, i) {
         var progress = Math.max(0, Math.min(100, p.progress || 0));
-        return (
-          '<article class="project-card reveal" style="--p:' + progress + '%;transition-delay:' + ((i % 4) * 80) + 'ms">' +
+        var body =
             '<div class="project-body">' +
               '<h3 class="project-name">' + esc(p.name) + '</h3>' +
               (p.desc ? '<p class="project-desc">' + esc(p.desc) + '</p>' : '') +
@@ -881,11 +873,26 @@
               '</div>' +
               (p.expected ? '<div class="project-field"><span class="project-label">期望结果</span><span class="project-value">' + esc(p.expected) + '</span></div>' : '') +
               (p.learned ? '<div class="project-field"><span class="project-label">我收获了什么</span><span class="project-value">' + esc(p.learned) + '</span></div>' : '') +
+            '</div>';
+        return (
+          '<article class="project-card reveal" style="--p:' + progress + '%;transition-delay:' + ((i % 4) * 80) + 'ms">' +
+            '<div class="project-card-inner">' +
+              '<div class="project-back">' +
+                '<span class="project-back-mark">?</span>' +
+                '<span class="flip-hint">点击翻开</span>' +
+              '</div>' +
+              body +
             '</div>' +
           '</article>'
         );
       })
       .join("");
+    // 点击翻开（已翻开的不会盖回）
+    $$(".project-card", grid).forEach(function (card) {
+      card.addEventListener("click", function () {
+        card.classList.add("is-flipped");
+      });
+    });
   }
 
   /* ---------- 渲染：我还想做的（清单卡片） ---------- */
@@ -946,7 +953,7 @@
       return;
     }
     el.innerHTML = items.map(function (t, i) {
-      return '<div class="timeline-item reveal" style="transition-delay:' + ((i % 5) * 80) + 'ms">' +
+      return '<div class="timeline-item" style="transition-delay:' + ((i % 5) * 80) + 'ms">' +
         '<div class="timeline-date">' + esc(t.date || "") + '</div>' +
         '<div class="timeline-event">' + esc(t.event || "") + '</div>' +
         (t.desc ? '<div class="timeline-desc">' + esc(t.desc) + '</div>' : '') +
@@ -1069,17 +1076,18 @@
       light.setAttribute("fill", "#ffe08a");
       car.appendChild(light);
 
-      var motion = document.createElementNS(NS, "animateMotion");
-      motion.setAttribute("dur", "22s");
-      motion.setAttribute("repeatCount", "indefinite");
-      motion.setAttribute("rotate", "auto");
-      var mpath = document.createElementNS(NS, "mpath");
-      mpath.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", "#timeline-center-path");
-      motion.appendChild(mpath);
-      car.appendChild(motion);
+      // 小车位置由滚动进度驱动（不再用 animateMotion）
       svg.appendChild(car);
+      car.style.opacity = "0";
+      car.style.transition = "opacity .5s";
 
       el.insertBefore(svg, el.firstChild);
+
+      // 道路绘制 + 小车位置 统一由 setupRoadDraw 管理（完全同步）
+      var dashPath = svg.querySelector("#timeline-center-path");
+      var pathLen = 0;
+      try { pathLen = dashPath.getTotalLength(); } catch (e) {}
+      setupRoadDraw(el, svg, car, dashPath, pathLen, itemList, dotYs);
     });
   }
 
@@ -1356,6 +1364,93 @@
     setTimeout(initRender, 150);
   }
 
+  /* ---------- 首页视差（照片/太阳/云层不同速度移动） ---------- */
+  function setupHeroParallax() {
+    var hero = document.querySelector(".hero");
+    if (!hero) return;
+    var photo = hero.querySelector(".hero-photo");
+    var sun = $("#heroSun");
+    var mist = $("#heroMist");
+    var clouds = [$("#cloud1"), $("#cloud2"), $("#cloud3")].filter(Boolean);
+
+    function onScroll() {
+      var y = window.scrollY;
+      if (y > window.innerHeight) return;
+      if (photo) photo.style.transform = "translateY(" + (y * 0.1) + "px)";
+      if (sun) sun.style.marginTop = (y * 0.05) + "px";
+      if (mist) mist.style.transform = "translateY(" + (y * 0.2) + "px)";
+      clouds.forEach(function (c, i) {
+        c.style.marginTop = (y * (0.03 + i * 0.02)) + "px";
+      });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+  }
+
+  /* ---------- 轨迹道路绘制 + 小车循环 + 圆点随路出现 ---------- */
+  function setupRoadDraw(el, svg, car, dashPath, pathLen, items, dotYs) {
+    var paths = svg.querySelectorAll("path:not([stroke-dasharray])");
+    if (!paths.length) return;
+    var totalLen = 0;
+    try { totalLen = paths[0].getTotalLength(); } catch (e) { return; }
+    if (!totalLen || totalLen < 10) return;
+    paths.forEach(function (p) {
+      p.style.strokeDasharray = totalLen;
+      p.style.strokeDashoffset = totalLen;
+    });
+
+    var totalH = (dotYs && dotYs.length) ? dotYs[dotYs.length - 1] : 100;
+    // 每个圆点的进度阈值 = Y位置 / 总高度，提前 0.06 让圆点在道路刚抵达时就出现
+    var thresholds = (dotYs || []).map(function (y) { return y / totalH - 0.1; });
+
+    var currentProg = 0;
+
+    function update() {
+      if (!el.parentNode) { window.removeEventListener("scroll", update); return; }
+      var rect = el.getBoundingClientRect();
+      var winH = window.innerHeight;
+      // 阈值：0.95 开始绘制，0.5 完成线
+      var prog = (winH * 0.95 - rect.top) / (rect.height + winH * 0.5);
+      prog = Math.max(0, Math.min(1, prog));
+      currentProg = prog;
+      // 绘制道路
+      paths.forEach(function (p) {
+        p.style.strokeDashoffset = totalLen * (1 - prog);
+      });
+      // 圆点在道路铺到后才出现
+      if (items) {
+        items.forEach(function (item, i) {
+          if (prog >= thresholds[i] && !item.classList.contains("is-visible")) {
+            item.classList.add("is-visible");
+          }
+        });
+      }
+    }
+    window.addEventListener("scroll", update, { passive: true });
+    update();
+
+    // 小车循环行驶：在已绘制道路范围内来回跑
+    var startTime = Date.now();
+    function animateCar() {
+      if (!el.parentNode) return;
+      var drawnLen = currentProg * pathLen;
+      if (drawnLen < 10 || !dashPath) {
+        car.style.opacity = "0";
+      } else {
+        car.style.opacity = "1";
+        var elapsed = (Date.now() - startTime) / 1000;
+        var loopDur = 5; // 5 秒走完当前已绘制部分
+        var frac = (elapsed % loopDur) / loopDur;
+        var dist = frac * drawnLen;
+        var pt = dashPath.getPointAtLength(dist);
+        var pt2 = dashPath.getPointAtLength(Math.min(dist + 2, pathLen));
+        var angle = Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180 / Math.PI;
+        car.setAttribute("transform", "translate(" + pt.x + "," + pt.y + ") rotate(" + angle + ")");
+      }
+      requestAnimationFrame(animateCar);
+    }
+    requestAnimationFrame(animateCar);
+  }
+
   /* ---------- 启动 ---------- */
   initIntro();
   setupChrome();
@@ -1364,8 +1459,14 @@
   setupThemeToggle();
   setupVisitCounter();
   setupEasterEgg();
+  setupHeroParallax();
   loadData().then((data) => {
     DATA = data || {};
+    // 开场动画期间预加载日常照片
+    (DATA.daily || []).forEach(function (item) {
+      if (item.src) { new Image().src = item.src; }
+      if (item.files) { item.files.forEach(function (f) { new Image().src = f; }); }
+    });
     const p = DATA.profile || {};
     renderProfile(p);
     renderTimeline(p.timeline);
@@ -1380,6 +1481,7 @@
     setupStats();
 
     $("#year").textContent = new Date().getFullYear();
+    var svEl = $("#siteVersion"); if (svEl) svEl.textContent = (window.SITE_DATA && window.SITE_DATA.version) || "1.0.0.1";
 
     setupNav();
     setupLightboxEvents();
