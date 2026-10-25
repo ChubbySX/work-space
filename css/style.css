@@ -1115,7 +1115,7 @@ code {
   overflow: hidden;
   background: linear-gradient(125deg, #0d1630, #1b2b54 30%, #241d4a 55%, #3c2142 78%, #6b2f3d);
   background-size: 300% 300%;
-  /* 背景持续缓慢移动；开场时长由 JS 控制（main.js introDur 20-35s）*/
+  /* 背景持续缓慢移动；开场时长由 JS 控制（main.js introDur 15-25s）*/
   animation: intro-bg-pan 5s ease-in-out infinite alternate;
   transition: transform .7s cubic-bezier(.65, .05, .36, 1), opacity .4s ease;
 }

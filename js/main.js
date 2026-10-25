@@ -539,9 +539,9 @@
 
     // 日常预加载见 loadData.then（new Image 触发，开场期间执行，带进度跟踪）
 
-    // 开场动画持续 8-14 秒（随机），无视 reduced motion 设置
-    // 若预加载提前 100% 完成，会在 ≥2.5s 后提前结束（见 loadData.then）
-    var introDur = 8000 + Math.floor(Math.random() * 6000);
+    // 开场动画持续 15-25 秒（随机），无视 reduced motion 设置
+    // 若预加载提前 100% 完成，会在 ≥15s 后提前结束（见 loadData.then）
+    var introDur = 15000 + Math.floor(Math.random() * 10000);
     PRELOAD.revealFn = revealHome;
     PRELOAD.active = true;
     PRELOAD.startTime = Date.now();
@@ -595,8 +595,8 @@
     function startTick() { if (started) return; started = true; setTimeout(tick, 200); }
     // 开场动画结束后启动打字效果
     document.addEventListener("intro-done", startTick);
-    // 兜底：8 秒后无论如何都启动
-    setTimeout(startTick, 8000);
+    // 兜底：26 秒后无论如何都启动（≥ 开场最大 25 秒 + 1 秒余量）
+    setTimeout(startTick, 26000);
   }
 
   /* ---------- 统计数字滚动 ---------- */
@@ -818,8 +818,8 @@
     var autoPlayed = false;
     function startAutoPlay() { if (autoPlayed) return; autoPlayed = true; tryAutoPlay(); }
     document.addEventListener("intro-done", startAutoPlay);
-    // 兜底：10 秒后无论如何都尝试播放
-    setTimeout(startAutoPlay, 10000);
+    // 兜底：26 秒后无论如何都尝试播放（≥ 开场最大 25 秒 + 1 秒余量）
+    setTimeout(startAutoPlay, 26000);
 
     // ====== 5秒后或首次页面交互后自动收起 + 气泡提示 ======
     var autoCollapsed = false;
@@ -842,9 +842,10 @@
         setTimeout(function () { if (bubble.parentNode) bubble.remove(); }, 400);
       }, 3000);
     }
-    // 开场动画约 3 秒，计时和交互监听都在动画结束后才开始
-    // 5 秒后自动收起（= 开场结束 + 5 秒展示时间）
-    setTimeout(autoCollapse, 8000);
+    // 开场动画结束后开始计时，5 秒后自动收起（= 开场结束 + 5 秒展示时间）
+    document.addEventListener("intro-done", function () { setTimeout(autoCollapse, 5000); });
+    // 兜底：30 秒后无论如何都收起（≥ 开场最大 25 秒 + 5 秒）
+    setTimeout(autoCollapse, 30000);
     // 首次点击/触摸/滚动（不在音乐卡片上）也触发收起
     function onInteract(e) {
       if (autoCollapsed) return;
@@ -852,11 +853,11 @@
       setTimeout(autoCollapse, 50);
     }
     // 延迟到开场动画结束后再监听，避免开场期间误触
-    setTimeout(function () {
+    document.addEventListener("intro-done", function () {
       document.addEventListener("click", onInteract, { passive: true });
       document.addEventListener("touchstart", onInteract, { passive: true });
       document.addEventListener("scroll", onInteract, { passive: true });
-    }, 3500);
+    });
   }
 
   /* ---------- 渲染：我正在做的（项目卡片） ---------- */
@@ -1670,7 +1671,7 @@
     function tryEarlyReveal() {
       if (!PRELOAD.active || !PRELOAD.revealFn) return;
       var elapsed = Date.now() - PRELOAD.startTime;
-      var minWait = 2500; // 最少播放 2.5 秒，保证视觉完整性
+      var minWait = 15000; // 最少播放 15 秒，保证开场时长符合 15-25 秒设定
       if (elapsed >= minWait) {
         PRELOAD.active = false;
         PRELOAD.revealFn();
