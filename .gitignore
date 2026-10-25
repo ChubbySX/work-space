@@ -18,6 +18,13 @@ Desktop.ini
 .candidates/
 .candidates2/
 
+# Python 缓存
+__pycache__/
+*.pyc
+
+# 构建产物（data.json 是 js/data.js 的原始副本，浏览器只用 data.js）
+data.json
+
 # 敏感配置
 *.cos-key*
 发布到腾讯云.bat

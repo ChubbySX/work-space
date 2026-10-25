@@ -30,7 +30,8 @@ const CONTENT = path.join(ROOT, "content");
 const IMG_EXT = /\.(jpe?g|png|webp|gif|svg|avif|bmp|tiff?)$/i;
 /* gif 也允许放在 video/ 里当“动画演示”占位（真实视频请用 mp4/webm/mov） */
 const VIDEO_EXT = /\.(mp4|webm|mov|avi|mkv|m4v|gif)$/i;
-const DOC_EXT = /\.(docx?|pdf|pptx?|xlsx?|txt|md|zip|rar|7z|odt|ods|odp)$/i;
+/* txt/md 不含在内——它们是"同名描述侧车"，不是可下载作品 */
+const DOC_EXT = /\.(docx?|pdf|pptx?|xlsx?|zip|rar|7z|odt|ods|odp)$/i;
 
 /* ---------- 小工具 ---------- */
 function listDir(dir) {

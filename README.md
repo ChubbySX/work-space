@@ -1,14 +1,8 @@
 # 钟智轩 Chubby 个人主页
 
-一个现代简约风的个人介绍网站，用来展示**你的日常**和**作品**（视频 / 图片 / Word / PPT / Excel / PDF……）。
+一个**日落海景**风格的个人网站，展示**日常**、**作品**（视频 / 图片 / 文档）、**正在进行的项目**和**心愿单**。
 
-**核心玩法：把文件丢进文件夹 → 运行 `node build.js` → 内容自动上架。** 无需数据库、无需服务器。
-
-> 🎬 网站带有一段约 2.5 秒的**入场过渡动画**（品牌开场 → 滑出进入首页）：
-> 默认**每次进入都会播放**；播放时点右下角「跳过 →」可立即进入；
-> 若想改成"同一会话只播一次"，把 `js/main.js` 里 `ONCE_PER_SESSION` 改为 `true` 即可。
-> ⚠ 如果开场不动了：可能是浏览器**节电模式**或系统**「减弱动态效果 / 动画效果」**被开启（Chrome 低电量时会自动触发）。
-> Windows：`设置 → 辅助功能 → 视觉效果 → 动画效果` 打开即可恢复。全部样式在 `css/style.css` 的「入场过渡动画」一节。
+**核心玩法：把文件丢进文件夹 → 双击 `构建网站.bat` → 内容自动上架。** 无需数据库、无需服务器。
 
 ---
 
@@ -16,24 +10,34 @@
 
 | 方式 | 操作 |
 | --- | --- |
-| 👀 直接预览 | 双击打开 `index.html`（浏览器即可，无需任何环境） |
-| 🌐 本地服务器（推荐） | `python -m http.server 8000` 然后访问 `http://localhost:8000` |
-| 🔁 添加内容后 | 运行 `node build.js` 重新构建（需要 Node，纯脚本零依赖） |
+| 👀 直接预览 | 双击 `index.html`（浏览器即可，无需任何环境） |
+| 🌐 本地服务器（推荐） | 双击 `启动预览.bat` → 自动打开浏览器 |
+| 🔁 添加内容后 | 双击 `构建网站.bat`（截视频封面 + 构建数据） |
+| 🚀 发布上线 | 双击 `发布上线.bat`（自动提交 + 推送到 GitHub Pages） |
+
+> 🎬 开场动画：5–8 秒品牌开场 → 滑出进入首页。预加载完成会提前结束。
+> 🌗 暗色模式：右下角 🌙/☀️ 按钮切换，自动记忆。
+> 🎵 背景音乐：开场结束后自动渐入播放，音量上限保护耳朵。
+
+---
 
 ## 目录结构
 
 ```
 personal-website/
 ├── index.html            # 页面骨架（一般不用改）
-├── build.js              # 构建脚本：扫描 content/ → 生成数据
+├── build.js              # 构建脚本：扫描 content/ → 生成 js/data.js
+├── data.json             # 自动生成（已 gitignore，仅本地调试用）
 ├── css/style.css         # 样式（改主题色见文末）
 ├── js/
 │   ├── main.js           # 页面交互逻辑
 │   └── data.js           # ★ 自动生成，别手改
 ├── content/              # ★★★ 你要更新的都在这里 ★★★
-│   ├── profile.json      # ★ 文字控制台：姓名/简介/联系/wishlist/开场动画文字
-│   ├── hero-dusk.jpg     # 首页背景（可换成你拍的照片）
-│   ├── avatar.svg        # 头像
+│   ├── profile.json      # ★ 文字控制台：姓名/简介/开场动画/心愿单/联系方式…
+│   ├── version.json      # 版本号（自动递增，别手改）
+│   ├── changelog.json    # 更新历史（发布时自动生成）
+│   ├── chubby-logo.jpg   # 头像 + 网站图标
+│   ├── hero-dusk.jpg     # 首页背景（青岛海边日落）
 │   ├── audio/            # 背景音乐 MP3（三首）
 │   ├── daily/            # 日常：单图 / 图片组（子文件夹）/ 视频+说明
 │   ├── projects/         # 我正在做的：每个项目一个 .json
@@ -43,11 +47,12 @@ personal-website/
 │       └── doc/          # 文档作品（docx/pdf/pptx/xlsx…）
 ├── 构建网站.bat           # ★ 双击：截视频封面 + 构建数据
 ├── 启动预览.bat           # ★ 双击：启动服务器 + 打开浏览器
-├── 发布上线.bat           # 双击：发布到 GitHub Pages
+├── 发布上线.bat           # 双击：版本号 + 提交 + 推送
 └── tools/
     ├── make_posters.py     # 从视频截取封面帧（构建时自动调用）
-    ├── compress_assets.py  # 压缩大文件（视频 720p / 图片 1920px）
-    └── upload_to_cos.py   # 上传到腾讯云 COS
+    ├── make_thumbs.py      # 生成缩略图 webp
+    ├── bump_publish.py     # 发布时版本号 b+1, c归零
+    └── analyze_and_record.js  # 分析 git 改动，记录到 changelog.json
 ```
 
 ## 日常内容怎么加
@@ -74,18 +79,19 @@ personal-website/
 | --- | --- | --- |
 | 视频 | `content/works/video/` | mp4、webm、mov、avi、mkv |
 | 图片 | `content/works/image/` | 任意图片格式 |
-| 文档 | `content/works/doc/` | docx、doc、pdf、pptx、ppt、xlsx、txt、md、zip… |
+| 文档 | `content/works/doc/` | docx、doc、pdf、pptx、ppt、xlsx、zip… |
 
 **文件命名小技巧（可选）：**
 
 - `2025-06-01 我的第一个视频.mp4` → 网站自动显示日期「2025-06-01」+ 标题「我的第一个视频」
 - 也可以不要日期：`我的第一个视频.mp4` → 只有标题
 - 同名 `.txt` 文件（如 `我的第一个视频.txt`）→ 一句话作品介绍，自动显示在卡片上
-- 视频同名 `xxx.poster.jpg` → 自定义视频封面；不提供则用默认占位封面
+- 在 `.txt` 里写 `#机械 #建模` → 自动提取为标签显示在卡片上
+- 视频同名 `xxx.poster.jpg` → 自定义视频封面；不提供则自动截取首帧
 
 ## 个人资料怎么改
 
-编辑 `content/profile.json`：
+编辑 `content/profile.json`——这是你唯一的「文字控制台」：
 
 ```jsonc
 {
@@ -93,10 +99,23 @@ personal-website/
   "enName": "Chubby",       // 英文名
   "nickname": "小典",        // 外号
   "tagline": "大学生 · 机械 · 建模 · 动手爱好者",  // 首屏副标题
-  "quote": "把想法变成看得见、摸得着的东西。",      // 首屏一句话
-  "avatar": "content/avatar.svg",               // 关于我卡片头像（可换成你的照片）
-  "bio": ["第一段简介……", "第二段……"],             // 简介，每段一个字符串
-  "tags": ["机械", "3D建模", "动手DIY"],            // 关于我卡片里的标签
+  "heroKicker": "嗨，欢迎来到我的主页 👋",        // 首屏问候语
+  "avatar": "content/chubby-logo.jpg",           // 头像
+  "bio": ["第一段简介……", "第二段……"],             // 简介
+  "tags": ["机械", "3D建模", "动手DIY"],            // 首屏打字机循环词 + 关于我标签
+  "skills": [                                      // 关于我：技能进度条
+    { "name": "SolidWorks", "level": 85 },
+    { "name": "3D打印", "level": 70 }
+  ],
+  "timeline": [                                    // 成长轨迹
+    { "date": "2023-09", "event": "入学", "desc": "机械工程专业" }
+  ],
+  "wishlist": [                                    // 心愿单
+    { "title": "3D打印机", "rating": 5, "desc": "自己组装一台" }
+  ],
+  "intro": {                                       // 开场动画文字
+    "mark": "鐘", "name": "CHUBBY", "sub": "钟智轩的个人主页"
+  },
   "contact": {
     "email": "chubbysx@qq.com",
     "wechat": "ChubbyXS369"
@@ -106,15 +125,25 @@ personal-website/
 }
 ```
 
-## 发布上线（让别人也能访问）
+## 版本号
 
-推荐免费托管，整个文件夹上传即用：
+格式 `a.b.c.d`，在 `content/version.json` 里自动维护：
 
-1. **GitHub Pages**：把项目推到 GitHub 仓库 → Settings → Pages → 选择分支即可
-2. **Netlify / Vercel**：拖拽上传 `personal-website/` 文件夹，秒上线
-3. 自己的服务器 / 云盘静态托管：把文件夹传上去即可
+- 每次运行 `构建网站.bat`：c+1, d+1（如 `1.0.5.5` → `1.0.6.6`）
+- 每次运行 `发布上线.bat`：b+1, c归零, d还原（如 `1.0.6.6` → `1.1.0.5`）
 
-网站是纯静态的，双击 `index.html` 也能看，发布零成本。
+## 发布上线
+
+双击 `发布上线.bat`，自动完成 7 步：
+1. 截取视频封面
+2. 生成缩略图
+3. git add 内容
+4. 分析改动 + 记录到 changelog.json
+5. 构建数据（build.js）
+6. 版本号 b+1 / c归零 / d还原
+7. git add + commit + push
+
+网站是纯静态的，推送到 GitHub 后 Pages 自动部署，双击 `index.html` 也能本地看。
 
 ## 改主题色（可选）
 
@@ -125,13 +154,15 @@ personal-website/
 --accent-soft: #fbeadb; /* 主色浅底 */
 --accent-dark: #a6531f; /* 主色深一点 */
 --bg: #f7f0e7;          /* 页面底色（暖沙金） */
+--sea: #5b8a8c;          /* 辅助色（海雾青） */
 ```
 
 > 📷 首页背景图来自 **Pexels**（青岛海边日落天际线，摄影师 Rain Lu），Pexels License 允许免费商用。
-> 想换成自己拍的青岛照片：把图片放进 `content/`，改 `index.html` 里 hero 的 `src` 即可，再顺手把 `:root` 主题色调成照片的主色调。
+> 想换成自己拍的青岛照片：把图片放进 `content/`，改 `profile.json` 或 `index.html` 里 hero 的 `src` 即可。
 
 ## 常见问题
 
-- **改了内容没变化？** 记得运行 `node build.js` 再刷新页面。
+- **改了内容没变化？** 记得双击 `构建网站.bat` 再刷新页面（或 Ctrl+Shift+R 强制刷新）。
 - **想双击打开也能用？** 可以，`js/data.js` 已经把数据写进页面里了（file:// 也能跑）。
-- **视频卡片显示占位封面？** 那是默认封面，添加 `xxx.poster.jpg` 即可自定义，或直接换成真视频。
+- **视频卡片显示占位封面？** 双击 `构建网站.bat` 会自动截取首帧；也可手动放 `xxx.poster.jpg`。
+- **开场动画不动了？** 检查浏览器控制台是否有报错；开场动画无视系统 reduced-motion 设置，始终运行。

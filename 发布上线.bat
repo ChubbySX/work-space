@@ -13,23 +13,23 @@ echo   (自动分析改动 + 记录更新历史)
 echo ============================================
 echo.
 
-echo [1/6] 提取视频封面...
+echo [1/7] 提取视频封面...
 "%PY%" tools\make_posters.py
 echo.
 
-echo [2/6] 生成缩略图（预览用，加速加载）...
+echo [2/7] 生成缩略图（预览用，加速加载）...
 "%PY%" tools\make_thumbs.py
 echo.
 
-echo [3/6] 暂存改动...
+echo [3/7] 暂存改动...
 git add .
 echo.
 
-echo [4/6] 分析改动并记录更新历史（自动概述）...
+echo [4/7] 分析改动并记录更新历史（自动概述）...
 "%NODE%" tools\analyze_and_record.js
 echo.
 
-echo [5/6] 构建网站内容...
+echo [5/7] 构建网站内容（c+1, d+1）...
 "%NODE%" build.js
 if errorlevel 1 (
   echo.
@@ -37,10 +37,14 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-git add .
 echo.
 
-echo [6/6] 提交并推送到 GitHub...
+echo [6/7] 更新发布版本号（b+1, c归零, d还原）...
+"%PY%" tools\bump_publish.py
+echo.
+
+echo [7/7] 提交并推送到 GitHub...
+git add .
 for /f "delims=" %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmm"') do set "TS=%%t"
 git commit -m "更新内容 %TS%"
 set ATTEMPT=0

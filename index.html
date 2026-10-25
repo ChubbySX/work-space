@@ -7,7 +7,7 @@
 <meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
 <link rel="icon" href="content/chubby-logo.jpg" type="image/jpeg">
 <script>document.documentElement.classList.add("js");</script>
-<link rel="stylesheet" href="css/style.css?v=31">
+<link rel="stylesheet" href="css/style.css?v=37">
 </head>
 <body>
 
@@ -18,6 +18,7 @@
     <p class="intro-name" id="introName">ZHONG ZHIXUAN · CHUBBY</p>
     <p class="intro-sub" id="introSub">小典 · 机械 · 建模 · 动手爱好者</p>
     <div class="intro-load" aria-hidden="true"><i></i></div>
+    <p class="intro-preload" id="introPreload">正在准备预览图…</p>
   </div>
   <span class="intro-version" id="introVersion">v1.0.0.1</span>
   <button class="intro-skip" id="introSkip" type="button">跳过 →</button>
@@ -85,12 +86,14 @@
   <div class="hero-bg" aria-hidden="true">
     <img class="hero-photo" src="content/hero-dusk.jpg?v=3" alt="青岛海边黄昏" fetchpriority="high">
     <div class="hero-sun" id="heroSun"></div>
-    <div class="hero-cloud c1" id="cloud1"></div>
-    <div class="hero-cloud c2" id="cloud2"></div>
-    <div class="hero-cloud c3" id="cloud3"></div>
+    <svg class="hero-cloud c1" id="cloud1" viewBox="0 0 320 80"><g fill="rgba(255,255,255,.16)"><circle cx="38" cy="50" r="27"/><circle cx="72" cy="36" r="33"/><circle cx="108" cy="28" r="29"/><circle cx="144" cy="34" r="31"/><circle cx="178" cy="27" r="26"/><circle cx="210" cy="35" r="23"/><circle cx="245" cy="42" r="21"/><circle cx="278" cy="48" r="19"/><ellipse cx="158" cy="57" rx="142" ry="14"/></g></svg>
+    <svg class="hero-cloud c2" id="cloud2" viewBox="0 0 420 100"><g fill="rgba(255,255,255,.14)"><circle cx="42" cy="62" r="34"/><circle cx="88" cy="46" r="40"/><circle cx="132" cy="36" r="35"/><circle cx="172" cy="39" r="37"/><circle cx="216" cy="30" r="31"/><circle cx="258" cy="36" r="34"/><circle cx="302" cy="43" r="29"/><circle cx="342" cy="49" r="27"/><circle cx="382" cy="56" r="24"/><ellipse cx="210" cy="73" rx="182" ry="17"/></g></svg>
+    <svg class="hero-cloud c3" id="cloud3" viewBox="0 0 240 65"><g fill="rgba(255,255,255,.12)"><circle cx="28" cy="40" r="21"/><circle cx="58" cy="31" r="24"/><circle cx="92" cy="27" r="21"/><circle cx="126" cy="31" r="19"/><circle cx="160" cy="35" r="17"/><circle cx="192" cy="41" r="15"/><ellipse cx="112" cy="48" rx="98" ry="11"/></g></svg>
     <div class="hero-mist" id="heroMist"></div>
     <div class="hero-blob b1"></div>
     <div class="hero-blob b2"></div>
+    <svg class="hero-bird" id="bird1" viewBox="0 0 40 20"><path d="M2,12 Q8,4 14,10 Q20,2 26,10 Q32,4 38,12" fill="none" stroke="rgba(40,30,20,.5)" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <svg class="hero-bird" id="bird2" viewBox="0 0 32 16"><path d="M2,10 Q7,3 12,8 Q16,2 20,8 Q25,3 30,10" fill="none" stroke="rgba(40,30,20,.4)" stroke-width="1.5" stroke-linecap="round"/></svg>
   </div>
   <div class="container hero-inner">
     <p class="hero-kicker hero-stagger" id="heroKicker">嗨，欢迎来到我的主页 👋</p>
@@ -315,7 +318,7 @@
   <p class="lightbox-caption" id="lightboxCaption"></p>
 </div>
 
-<script src="js/data.js?v=22"></script>
-<script src="js/main.js?v=41"></script>
+<script src="js/data.js?v=23"></script>
+<script src="js/main.js?v=47"></script>
 </body>
 </html>

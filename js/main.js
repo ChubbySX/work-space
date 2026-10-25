@@ -18,6 +18,7 @@
   let bgMusicWasPlaying = false;  // 灯箱打开前背景音乐是否在播放
   const MAX_MUSIC_VOL = 0.0825;  // 音乐音量上限（当前设置的50%）
   let musicVolume = 0;           // 当前音乐音量（0~MAX_MUSIC_VOL）
+  var PRELOAD = { total: 0, loaded: 0, revealFn: null, active: false, done: false, startTime: 0 };
 
   /* ---------- 数据加载：优先 window.SITE_DATA（file:// 也能用） ---------- */
   function loadData() {
@@ -43,13 +44,6 @@
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
-  function fmtSize(bytes) {
-    if (!bytes && bytes !== 0) return "";
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / 1024 / 1024).toFixed(1) + " MB";
-  }
-
   function fileExt(name) {
     const m = /\.([A-Za-z0-9]+)$/.exec(name || "");
     return m ? m[1].toUpperCase() : "";
@@ -65,8 +59,6 @@
     const name = p.name || "钟智轩";
     $("#heroName").textContent = name;
     $("#heroSub").textContent = p.tagline || "";
-    var hq = $("#heroQuote");
-    if (hq) hq.textContent = p.quote || "";
     if (p.heroKicker) $("#heroKicker").textContent = p.heroKicker;
     $("#aboutName").textContent = name;
     $("#aboutAlias").textContent = [p.enName, p.nickname].filter(Boolean).join(" · ");
@@ -446,13 +438,8 @@
 
   /* ---------- 导航行为 ---------- */
   function setupNav() {
-    const header = $("#siteHeader");
     const toggle = $("#navToggle");
     const links = $("#navLinks");
-
-    const onScroll = () => header.classList.toggle("is-scrolled", window.scrollY > 10);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
 
     toggle.addEventListener("click", () => {
       const open = links.classList.toggle("is-open");
@@ -521,10 +508,6 @@
     //       false = 每次进入都播放（默认，方便随时看效果）
     const ONCE_PER_SESSION = false;
 
-    const reduced =
-      window.matchMedia &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
     let hidden = false;
     const revealHome = () => {
       if (hidden) return;
@@ -554,22 +537,31 @@
     const skipBtn = $("#introSkip");
     if (skipBtn) skipBtn.addEventListener("click", revealHome);
 
-    // 日常预加载见 loadData.then（new Image 触发，开场期间执行）
+    // 日常预加载见 loadData.then（new Image 触发，开场期间执行，带进度跟踪）
 
     // 开场动画持续 8-14 秒（随机），无视 reduced motion 设置
+    // 若预加载提前 100% 完成，会在 ≥2.5s 后提前结束（见 loadData.then）
     var introDur = 8000 + Math.floor(Math.random() * 6000);
+    PRELOAD.revealFn = revealHome;
+    PRELOAD.active = true;
+    PRELOAD.startTime = Date.now();
     setTimeout(revealHome, introDur);
   }
 
-  /* ---------- 滚动进度条 / 回到顶部 ---------- */
+  /* ---------- 滚动进度条 / 回到顶部 / 侧边导航填充 / 导航栏状态 ---------- */
   function setupChrome() {
     const bar = $("#scrollProgress");
     const toTop = $("#toTop");
+    const sideFill = $("#sideFill");
+    const header = $("#siteHeader");
     const update = () => {
       const st = window.scrollY || document.documentElement.scrollTop || 0;
       const max = (document.documentElement.scrollHeight - window.innerHeight) || 1;
-      if (bar) bar.style.width = Math.min(100, (st / max) * 100) + "%";
+      const pct = Math.min(100, (st / max) * 100);
+      if (bar) bar.style.width = pct + "%";
+      if (sideFill) sideFill.style.height = pct + "%";
       if (toTop) toTop.classList.toggle("is-visible", st > 600);
+      if (header) header.classList.toggle("is-scrolled", st > 10);
     };
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update, { passive: true });
@@ -601,16 +593,10 @@
     };
     var started = false;
     function startTick() { if (started) return; started = true; setTimeout(tick, 200); }
-    // 轮询检查开场动画是否结束（每 200ms 检查一次）
-    var checkIntro = setInterval(function () {
-      var introEl = document.getElementById("intro");
-      if (!introEl || introEl.classList.contains("is-hidden")) {
-        clearInterval(checkIntro);
-        startTick();
-      }
-    }, 200);
+    // 开场动画结束后启动打字效果
+    document.addEventListener("intro-done", startTick);
     // 兜底：8 秒后无论如何都启动
-    setTimeout(function () { clearInterval(checkIntro); startTick(); }, 8000);
+    setTimeout(startTick, 8000);
   }
 
   /* ---------- 统计数字滚动 ---------- */
@@ -649,20 +635,10 @@
 
   /* ---------- 左侧章节导航 ---------- */
   function setupSideNav() {
-    const fill = $("#sideFill");
     const dots = $$(".side-dot");
     if (!dots.length) return;
 
-    const update = () => {
-      const st = window.scrollY || document.documentElement.scrollTop || 0;
-      const max = (document.documentElement.scrollHeight - window.innerHeight) || 1;
-      if (fill) fill.style.height = Math.min(100, (st / max) * 100) + "%";
-    };
-    window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update, { passive: true });
-    update();
-
-    // 高亮当前章节
+    // 高亮当前章节（滚动进度填充由 setupChrome 统一处理）
     const spy = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
@@ -803,9 +779,11 @@
     });
 
     // 收起/展开
+    var expandTimer1 = null, expandTimer2 = null;
     function toggleCollapse() {
       if (card.classList.contains("is-collapsed")) {
         // 展开：先测量目标尺寸，再触发动画
+        clearTimeout(expandTimer1); clearTimeout(expandTimer2);
         card.classList.add("no-anim");
         card.classList.remove("is-collapsed");
         card.style.setProperty("--cw", card.offsetWidth + "px");
@@ -814,8 +792,15 @@
         card.offsetWidth; // 强制 reflow
         card.classList.remove("no-anim");
         card.classList.remove("is-collapsed"); // 触发展开动画
+        card.classList.add("is-expanding");
+        // 0.8s 后内容淡入（此时卡片已展开到足够宽度）
+        expandTimer1 = setTimeout(function () { card.classList.add("is-content-in"); }, 800);
+        // 1.2s 后清理动画类
+        expandTimer2 = setTimeout(function () { card.classList.remove("is-expanding"); card.classList.remove("is-content-in"); }, 1200);
       } else {
-        // 缩球：记录当前尺寸
+        // 缩球：清理展开状态，记录当前尺寸
+        clearTimeout(expandTimer1); clearTimeout(expandTimer2);
+        card.classList.remove("is-expanding", "is-content-in");
         card.style.setProperty("--cw", card.offsetWidth + "px");
         card.style.setProperty("--ch", card.offsetHeight + "px");
         card.classList.add("is-collapsed");
@@ -829,26 +814,20 @@
     audio.addEventListener("ended", function () { if (isPlaying) audio.play().catch(function () {}); });
 
     updateIcon();
-    // 开场动画结束后自动渐入播放（轮询等待 intro 结束）
+    // 开场动画结束后自动渐入播放
     var autoPlayed = false;
-    function checkIntroAndPlay() {
-      if (autoPlayed) { clearInterval(autoPlayTimer); return; }
-      var introEl = document.getElementById("intro");
-      if (!introEl || introEl.classList.contains("is-hidden")) {
-        autoPlayed = true;
-        tryAutoPlay();
-        clearInterval(autoPlayTimer);
-      }
-    }
-    var autoPlayTimer = setInterval(checkIntroAndPlay, 200);
+    function startAutoPlay() { if (autoPlayed) return; autoPlayed = true; tryAutoPlay(); }
+    document.addEventListener("intro-done", startAutoPlay);
     // 兜底：10 秒后无论如何都尝试播放
-    setTimeout(function () { if (!autoPlayed) { autoPlayed = true; tryAutoPlay(); } clearInterval(autoPlayTimer); }, 10000);
+    setTimeout(startAutoPlay, 10000);
 
     // ====== 5秒后或首次页面交互后自动收起 + 气泡提示 ======
     var autoCollapsed = false;
     function autoCollapse() {
       if (autoCollapsed) return;
       autoCollapsed = true;
+      clearTimeout(expandTimer1); clearTimeout(expandTimer2);
+      card.classList.remove("is-expanding", "is-content-in");
       card.style.setProperty("--cw", card.offsetWidth + "px");
       card.style.setProperty("--ch", card.offsetHeight + "px");
       card.classList.add("is-collapsed");
@@ -1463,19 +1442,124 @@
     var photo = hero.querySelector(".hero-photo");
     var sun = $("#heroSun");
     var mist = $("#heroMist");
-    var clouds = [$("#cloud1"), $("#cloud2"), $("#cloud3")].filter(Boolean);
+    var mistScrollY = 0;
+
+    /* ====== 云层配置（每朵云宽 + 滚动视差系数） ====== */
+    var cloudDefs = [
+      { el: $("#cloud1"), w: 320, pf: 0.03 },
+      { el: $("#cloud2"), w: 420, pf: 0.05 },
+      { el: $("#cloud3"), w: 240, pf: 0.07 },
+    ].filter(function (c) { return c.el; });
+
+    var SPEED_MIN = 18;
+    var SPEED_MAX = 52;
+    var PAUSE_GAP_MIN = 3000;
+    var PAUSE_GAP_MAX = 7000;
+    var PAUSE_DUR_MIN = 800;
+    var PAUSE_DUR_MAX = 2800;
+
+    function randSpeed() { return SPEED_MIN + Math.random() * (SPEED_MAX - SPEED_MIN); }
+    function randGap() { return PAUSE_GAP_MIN + Math.random() * (PAUSE_GAP_MAX - PAUSE_GAP_MIN); }
+
+    var cloudState = cloudDefs.map(function (c) {
+      return {
+        el: c.el, w: c.w, pf: c.pf,
+        x: Math.random() * (window.innerWidth + c.w) - c.w * 0.7,
+        speed: randSpeed(),
+        paused: false,
+        pauseLeft: 0,
+        nextPause: randGap(),
+        scrollY: 0,
+      };
+    });
+
+    /* ====== 飞鸟配置 ====== */
+    var birdDefs = [
+      { el: $("#bird1"), w: 40, h: 20 },
+      { el: $("#bird2"), w: 32, h: 16 },
+    ].filter(function (b) { return b.el; });
+    var birdState = birdDefs.map(function (b) {
+      return { el: b.el, w: b.w, h: b.h, active: false, x: 0, y: 0, speed: 0, nextFly: 4000 + Math.random() * 8000 };
+    });
+
+    var lastTime = performance.now();
+
+    function tick(now) {
+      var dt = (now - lastTime) / 1000;
+      lastTime = now;
+      if (dt > 0.1) dt = 0.1;
+      var vw = window.innerWidth;
+
+      cloudState.forEach(function (c) {
+        c.nextPause -= dt * 1000;
+        if (c.nextPause <= 0 && !c.paused) {
+          c.paused = true;
+          c.pauseLeft = PAUSE_DUR_MIN + Math.random() * (PAUSE_DUR_MAX - PAUSE_DUR_MIN);
+        }
+        if (c.paused) {
+          c.pauseLeft -= dt * 1000;
+          c.speed *= 0.9;
+          if (c.pauseLeft <= 0) {
+            c.paused = false;
+            c.speed = randSpeed();
+            c.nextPause = randGap();
+          }
+        }
+        c.x += c.speed * dt;
+        if (c.x > vw + 60) {
+          c.x = -c.w - Math.random() * 120;
+          c.speed = randSpeed();
+          c.paused = false;
+          c.nextPause = randGap();
+        }
+        c.el.style.transform = "translate(" + c.x.toFixed(1) + "px," + (c.scrollY * c.pf).toFixed(1) + "px)";
+      });
+
+      birdState.forEach(function (b) {
+        if (!b.active) {
+          b.nextFly -= dt * 1000;
+          if (b.nextFly <= 0) {
+            b.active = true;
+            b.x = -b.w - 20;
+            b.y = 60 + Math.random() * (window.innerHeight * 0.35);
+            b.speed = 80 + Math.random() * 60;
+            b.el.style.top = b.y + "px";
+            b.el.classList.add("flap");
+            b.el.style.opacity = "1";
+          }
+        } else {
+          b.x += b.speed * dt;
+          b.el.style.transform = "translateX(" + b.x.toFixed(1) + "px)";
+          if (b.x > vw + 20) {
+            b.active = false;
+            b.el.style.opacity = "0";
+            b.el.classList.remove("flap");
+            b.nextFly = 6000 + Math.random() * 12000;
+          }
+        }
+      });
+
+      /* 雾气：正弦波缓慢左右飘 + 滚动视差 Y */
+      if (mist) {
+        var mx = Math.sin(now / 1000 * 0.35) * 28;
+        mist.style.transform = "translate(" + mx.toFixed(1) + "px," + (mistScrollY * 0.2).toFixed(1) + "px)";
+      }
+
+      requestAnimationFrame(tick);
+    }
 
     function onScroll() {
       var y = window.scrollY;
       if (y > window.innerHeight) return;
       if (photo) photo.style.transform = "translateY(" + (y * 0.1) + "px)";
       if (sun) sun.style.marginTop = (y * 0.05) + "px";
-      if (mist) mist.style.transform = "translateY(" + (y * 0.2) + "px)";
-      clouds.forEach(function (c, i) {
-        c.style.marginTop = (y * (0.03 + i * 0.02)) + "px";
-      });
+      mistScrollY = y;
+      cloudState.forEach(function (c) { c.scrollY = y; });
     }
     window.addEventListener("scroll", onScroll, { passive: true });
+
+    /* 始终启动云层 + 雾气动画（用户明确要求） */
+    requestAnimationFrame(tick);
   }
 
   /* ---------- 轨迹道路绘制 + 小车循环 + 圆点随路出现 ---------- */
@@ -1554,11 +1638,74 @@
   setupHeroParallax();
   loadData().then((data) => {
     DATA = data || {};
-    // 开场动画期间预加载日常照片
+    // 开场动画期间预加载预览图（带进度跟踪 + 提前结束）
+    var preloadUrls = [];
     (DATA.daily || []).forEach(function (item) {
-      if (item.src) { new Image().src = item.src; }
-      if (item.files) { item.files.forEach(function (f) { new Image().src = f; }); }
+      if (item.src) preloadUrls.push(item.src);
+      if (item.files) item.files.forEach(function (f) { preloadUrls.push(f); });
     });
+    (DATA.works || []).forEach(function (w) {
+      if (w.type === "image" && w.file) preloadUrls.push(w.file);
+      else if (w.poster) preloadUrls.push(w.poster);
+    });
+    // 去重
+    preloadUrls = preloadUrls.filter(function (u, i, arr) { return u && arr.indexOf(u) === i; });
+
+    PRELOAD.total = preloadUrls.length;
+    PRELOAD.loaded = 0;
+    var preEl = $("#introPreload");
+
+    function updatePreloadDisplay() {
+      if (!preEl) return;
+      var pct = PRELOAD.total > 0 ? Math.floor(PRELOAD.loaded / PRELOAD.total * 100) : 100;
+      if (PRELOAD.total === 0) {
+        preEl.textContent = "无需预加载 · 即将进入";
+      } else if (PRELOAD.loaded >= PRELOAD.total) {
+        preEl.textContent = "预加载完成 · " + PRELOAD.total + " 张 · 100%";
+      } else {
+        preEl.textContent = "需要加载" + PRELOAD.total + "张预览图 — 已加载" + PRELOAD.loaded + "张   进度" + pct + "%";
+      }
+    }
+
+    function tryEarlyReveal() {
+      if (!PRELOAD.active || !PRELOAD.revealFn) return;
+      var elapsed = Date.now() - PRELOAD.startTime;
+      var minWait = 2500; // 最少播放 2.5 秒，保证视觉完整性
+      if (elapsed >= minWait) {
+        PRELOAD.active = false;
+        PRELOAD.revealFn();
+      } else {
+        setTimeout(function () {
+          if (PRELOAD.active && PRELOAD.revealFn) {
+            PRELOAD.active = false;
+            PRELOAD.revealFn();
+          }
+        }, minWait - elapsed);
+      }
+    }
+
+    function onPreloadItemDone() {
+      PRELOAD.loaded++;
+      updatePreloadDisplay();
+      if (PRELOAD.loaded >= PRELOAD.total) {
+        PRELOAD.done = true;
+        tryEarlyReveal();
+      }
+    }
+
+    updatePreloadDisplay();
+    if (PRELOAD.total > 0) {
+      preloadUrls.forEach(function (url) {
+        var img = new Image();
+        img.onload = img.onerror = onPreloadItemDone;
+        img.src = url;
+      });
+    } else {
+      // 无需预加载，直接尝试提前结束
+      PRELOAD.done = true;
+      tryEarlyReveal();
+    }
+
     const p = DATA.profile || {};
     renderProfile(p);
     renderTimeline(p.timeline);
@@ -1566,7 +1713,7 @@
     renderWorks(DATA.works);
     renderProjects(DATA.projects);
     renderWishlist(DATA.wishlist);
-    if (typeof renderChangelog === "function") renderChangelog(DATA.changelog);
+    renderChangelog(DATA.changelog);
     setupFilters(DATA.works);
     renderContact(p.contact);
     setupTyped();
