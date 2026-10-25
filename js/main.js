@@ -509,13 +509,13 @@
     const ONCE_PER_SESSION = false;
 
     let hidden = false;
-    const revealHome = () => {
+    const revealHome = (opts) => {
       if (hidden) return;
       hidden = true;
       document.body.style.overflow = "";
       hero.classList.add("is-ready");               // 首页元素开始逐帧入场
       setTimeout(() => intro.classList.add("is-hidden"), 800); // 等滑出动画收尾
-      document.dispatchEvent(new CustomEvent("intro-done"));
+      document.dispatchEvent(new CustomEvent("intro-done", { detail: { skipped: !!(opts && opts.skipped) } }));
     };
 
     // 可选：同一会话内不再重播（file:// 无 sessionStorage 时每次都会播）
@@ -535,12 +535,12 @@
     var ivEl = $("#introVersion"); if (ivEl) ivEl.textContent = "v" + ver;
     document.body.style.overflow = "hidden";        // 播放期间锁定滚动
     const skipBtn = $("#introSkip");
-    if (skipBtn) skipBtn.addEventListener("click", revealHome);
+    if (skipBtn) skipBtn.addEventListener("click", () => revealHome({ skipped: true }));
 
     // 日常预加载见 loadData.then（new Image 触发，开场期间执行，带进度跟踪）
 
     // 开场动画持续 15-25 秒（随机），无视 reduced motion 设置
-    // 若预加载提前 100% 完成，会在 ≥15s 后提前结束（见 loadData.then）
+    // 若预加载提前 100% 完成，会在 ≥3.5s 后提前结束（见 loadData.then）
     var introDur = 15000 + Math.floor(Math.random() * 10000);
     PRELOAD.revealFn = revealHome;
     PRELOAD.active = true;
@@ -843,7 +843,10 @@
       }, 3000);
     }
     // 开场动画结束后开始计时，5 秒后自动收起（= 开场结束 + 5 秒展示时间）
-    document.addEventListener("intro-done", function () { setTimeout(autoCollapse, 5000); });
+    document.addEventListener("intro-done", function (e) {
+      if (e.detail && e.detail.skipped) return; // 点击跳过时不自动收起音乐卡片
+      setTimeout(autoCollapse, 5000);
+    });
     // 兜底：30 秒后无论如何都收起（≥ 开场最大 25 秒 + 5 秒）
     setTimeout(autoCollapse, 30000);
     // 首次点击/触摸/滚动（不在音乐卡片上）也触发收起
@@ -1671,7 +1674,7 @@
     function tryEarlyReveal() {
       if (!PRELOAD.active || !PRELOAD.revealFn) return;
       var elapsed = Date.now() - PRELOAD.startTime;
-      var minWait = 15000; // 最少播放 15 秒，保证开场时长符合 15-25 秒设定
+      var minWait = 3500; // 最少播放 3.5 秒，保证视觉完整性
       if (elapsed >= minWait) {
         PRELOAD.active = false;
         PRELOAD.revealFn();
