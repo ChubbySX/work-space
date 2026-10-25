@@ -341,6 +341,10 @@ window.SITE_DATA = {
   "changelog": [
     {
       "date": "2026-10-25 23:50",
+      "summary": "1.调整了 网页结构（index.html +2 -2）"
+    },
+    {
+      "date": "2026-10-25 23:50",
       "summary": "1.调整了 网页样式（style.css +1 -1）；站点数据（data.js +1 -1）；页面交互逻辑（main.js +14 -13）"
     },
     {
@@ -354,11 +358,7 @@ window.SITE_DATA = {
     {
       "date": "2026-10-25 23:01",
       "summary": "1.修复版本号系统：发布后 d 不再 +1（bump_publish.py 增加 d-1 还原）；2.bump_publish.py 同步版本号到 version.json、data.json、js/data.js 三个文件"
-    },
-    {
-      "date": "2026-10-25 16:44",
-      "summary": "1.首页视差效果增强：云层改为不规则 SVG 形状，JS 驱动变速飘移+随机停顿；2.新增飞鸟动画（SVG 翅膀扇动，定时横穿屏幕）；3.底部雾气改为三层渐变+正弦波飘动，增强海面朦胧感"
     }
   ],
-  "version": "1.4.3.38"
+  "version": "1.4.4.39"
 };
