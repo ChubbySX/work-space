@@ -14,19 +14,24 @@ echo.
 echo   注意：请先双击 构建网站.bat 完成构建
 echo.
 
-echo [1/4] 升级发布版本号 (c+1)...
+echo [1/5] 升级发布版本号 (c+1)...
 "%PY%" tools\bump_publish.py
 echo.
 
-echo [2/4] 暂存改动...
+echo [2/5] 暂存改动...
 git add .
 echo.
 
-echo [3/4] 分析改动并记录更新历史...
+echo [3/5] 分析改动并记录更新历史...
 "%NODE%" tools\analyze_and_record.js
 echo.
 
-echo [4/4] 提交并推送到 GitHub...
+echo [4/5] 同步版本号到网站数据...
+"%NODE%" build.js
+git add .
+echo.
+
+echo [5/5] 提交并推送到 GitHub...
 for /f "delims=" %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmm"') do set "TS=%%t"
 git commit -m "发布 %TS%"
 set ATTEMPT=0
@@ -37,7 +42,7 @@ git push
 if errorlevel 1 goto PUSHFAIL
 goto PUSHDONE
 :PUSHFAIL
-if %ATTEMPT% LSS 3 (echo   失败3秒后重试... & timeout /t 3 >nul & goto PUSHRETRY)
+if %ATTEMPT% LSS 3 (echo   失败3秒后重试... ^& timeout /t 3 >nul ^& goto PUSHRETRY)
 echo.
 echo *** 推送失败！网络可能不稳定 ***
 echo   1) 等几分钟再双击本脚本
