@@ -190,6 +190,10 @@ code {
 .hero-cloud.c1 { width: 320px; height: 80px; top: 18%; }
 .hero-cloud.c2 { width: 420px; height: 100px; top: 34%; opacity: .8; }
 .hero-cloud.c3 { width: 240px; height: 65px; top: 50%; opacity: .6; }
+/* 手机端隐藏云层（在小屏上白云变成灰色块，影响观感） */
+@media (max-width: 768px) {
+  .hero-cloud { display: none; }
+}
 
 /* 近景雾气（底部暖色渐变，JS 驱动缓慢飘动 + 滚动视差） */
 .hero-mist {
@@ -532,7 +536,7 @@ code {
 .changelog-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   max-width: 760px;
   margin: 0 auto;
 }
@@ -540,38 +544,39 @@ code {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 18px;
-  background: var(--surface);
+  gap: 14px;
+  background: linear-gradient(135deg, var(--surface) 0%, var(--accent-soft) 140%);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 16px 22px;
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 18px 12px 16px;
   box-shadow: var(--shadow);
-  transition: transform .3s, box-shadow .3s;
+  transition: background .3s, border-color .3s;
   overflow: hidden;
 }
-.changelog-item:hover { transform: translateX(6px); box-shadow: var(--shadow-lg); }
-.changelog-item::before {
-  content: "";
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 4px;
-  background: var(--accent);
-  border-radius: 4px 0 0 4px;
+.changelog-item:hover {
+  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--surface) 140%);
+  border-left-color: var(--accent-dark);
 }
 .changelog-date {
   flex: 0 0 auto;
-  font-size: .82rem;
+  font-size: .76rem;
   font-weight: 700;
   color: var(--accent-dark);
+  background: var(--accent-soft);
+  border-radius: 6px;
+  padding: 3px 8px;
   white-space: nowrap;
-  padding-top: 2px;
+  margin-top: 1px;
+  letter-spacing: .02em;
 }
 .changelog-summary {
   flex: 1;
-  font-size: .95rem;
-  color: var(--ink);
-  line-height: 1.55;
+  font-size: .9rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
   margin: 0;
+  font-weight: 400;
 }
 
 /* ---------- 我还想做的（清单卡片） ---------- */
