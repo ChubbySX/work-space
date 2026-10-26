@@ -158,6 +158,20 @@ window.SITE_DATA = {
     {
       "type": "album",
       "files": [
+        "content/daily/实习是探索/思锐厂外.jpg",
+        "content/daily/实习是探索/思锐智能！.jpg",
+        "content/daily/实习是探索/思锐的眺望.jpg",
+        "content/daily/实习是探索/思锐真的很漂亮.jpg"
+      ],
+      "thumb": "content/.thumbs/daily/实习是探索/思锐厂外.webp",
+      "title": "实习是探索",
+      "date": "",
+      "desc": "如果工作是必经之路，那么实习就是学前班",
+      "size": "4 张"
+    },
+    {
+      "type": "album",
+      "files": [
         "content/daily/工作日记/USB口钣金件.jpg",
         "content/daily/工作日记/制作个人主页的一晚.jpg",
         "content/daily/工作日记/实习与我的同事们.jpg",
@@ -374,6 +388,10 @@ window.SITE_DATA = {
   ],
   "changelog": [
     {
+      "date": "2026-10-27 00:44",
+      "summary": "1.新增日常照：实习是探索.txt、思锐厂外.jpg、思锐厂外.txt、思锐智能！.jpg 等9张；2.调整了 站点数据（data.js +15 -1）"
+    },
+    {
       "date": "2026-10-26 22:20",
       "summary": "1.新增日常照：我在洪崖洞.jpg、我在洪崖洞.txt、我在重庆！.jpg、我在重庆！.txt 等30张；2.新增视频：移栽机！.mp4；3.调整了 网页样式（style.css +7 -8）：移除 .no-trans；网页结构（index.html +2 -2）；页面交互逻辑（main.js +3 -4）"
     }
@@ -445,5 +463,5 @@ window.SITE_DATA = {
       "photos": []
     }
   ],
-  "version": "1.10.2.104"
+  "version": "1.10.5.107"
 };
