@@ -8,24 +8,33 @@
 
 ## 运行时
 
-- PowerShell（探活用 `Test-NetConnection`，pwsh 专属；Windows 环境）。
+- PowerShell（探活用 `Test-NetConnection`；GUI 用 WinForms；pwsh 专属；Windows 环境）。
 - 工作目录 = 调用方的 git 仓库根（不切目录）。
 - 当前分支由 `git rev-parse --abbrev-ref HEAD` 自动取得，推 `origin <分支>`。
+- 界面脚本 `tools/github-push-gui.ps1`（在调用方仓库 `tools/` 下；WinForms 置顶小窗，深色极简风，钉屏幕右上角）。
 
 ## 流程
 
-把推送当成「探活 → 推」的循环，**最多 3 次「推」尝试**：
+运行界面脚本（自带探活 + 推送 + 右上角状态窗，每轮刷新文字，不用盯黑窗口）：
 
-1. **探活**（最多 5 轮，每轮间隔 30s，~2.5min 上限）：
-   - `Test-NetConnection -ComputerName github.com -Port 443 -WarningAction SilentlyContinue`，看 `.TcpTestSucceeded`。
+```
+pwsh -NoProfile -ExecutionPolicy Bypass -File <仓库>\tools\github-push-gui.ps1 -Repo <仓库> [-Branch <分支>] [-DryRun]
+```
+
+脚本内部逻辑（探活 → 推 循环，最多 3 次「推」尝试）：
+
+1. **探活**（最多 **20 轮，每轮间隔 60s，~20min 上限**）：
+   - `Test-NetConnection github.com:443`，看 `.TcpTestSucceeded`；窗显示「第 N/20 轮 · 443 不通 · 已用 M:SS」。
    - 通 → 进入第 2 步。
-   - 不通 → 报告「443 不通（疑似 SNI 封锁），第 N/5 轮，等 30s 重探」；5 轮全不通 → **返回失败**（443 持续封锁，不强行推、不自动切 SSH / 代理）。
-2. **推**：
-   - 设环境变量 fail-fast：`GIT_HTTP_LOW_SPEED_LIMIT=1000`、`GIT_HTTP_LOW_SPEED_TIME=20`（卡住即断，不等死连接）。
+   - 不通 → 等 60s 重探；20 轮全不通 → **返回失败**（443 持续封锁，不强行推、不自动切 SSH / 代理）。
+2. **推**（窗显示「推送中… · 第 K 次推送」）：
+   - 设 fail-fast env：`GIT_HTTP_LOW_SPEED_LIMIT=1000`、`GIT_HTTP_LOW_SPEED_TIME=20`（卡住即断）。
    - `git push origin <分支>`（捕获 stderr）。
-   - exit 0 → **返回成功**。
-   - 失败 → 报告「第 N/3 次推送失败：<stderr 关键行>」，回到第 1 步（重新探活）。
-3. 3 次「推」全失败 → **返回失败**。
+   - exit 0 → **返回成功**，窗显示「✅ 推送成功 · 耗时 · 已同步」。
+   - 失败 → 窗显示「推送失败 · 重探」，回到第 1 步（重新探活）。
+3. 3 次「推」全失败 → **返回失败**，窗显示「❌ 推送失败」。
+
+成功 / 失败后窗停留 **8 秒自动关**。脚本末行输出 `SUCCESS push=origin/<分支> rounds=N pushAttempts=K elapsed=M:SS` 或 `FAIL reason=... elapsed=M:SS` 供调用方读取。
 
 ## 返回与报告
 
@@ -38,7 +47,7 @@
 - 只探 `github.com:443`；不自动切 SSH（22）或 HTTP 代理——用户若长期不通，可手动 `git config http.proxy ...` 或换 SSH 远端（见下方备注）。
 - 不做回滚 / 不撤销已做的 commit。
 - 不改远端地址、不动 credential。
-- 默认 5 轮探活 × 30s / 3 次推送可调（调用方可缩短 / 加长）。
+- 默认 **20 轮探活 × 60s（~20min）/ 3 次推送**可调（脚本参数 `-MaxRounds` / `-RoundWait` / `-MaxPushAttempts`）。
 
 ## 备注（手动兜底，不自动执行）
 
