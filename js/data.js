@@ -345,6 +345,10 @@ window.SITE_DATA = {
   ],
   "changelog": [
     {
+      "date": "2026-10-26 20:04",
+      "summary": "1.调整了 个人资料（profile.json +3 -1）；网页样式（style.css +3 -2）：新增 .no-trans；网页结构（index.html +2 -2）；站点数据（data.js +13 -5）；页面交互逻辑（main.js +4 -2）；工具脚本（analyze_and_record.js +1 -1）；发布脚本（发布上线.bat +13 -20）"
+    },
+    {
       "date": "2026-10-26 20:01",
       "summary": "1.调整了 网页样式（style.css +57 -14）：新增 .dash-bar-track、.ongoing、.grabbing、.no-trans、.map-zoom-hint，移除 .site-header；网页结构（index.html +15 -6）；站点数据（data.js +9 -45）；页面交互逻辑（main.js +185 -7）：新增 .idx、.clientWidth、.offsetWidth、.left、applyZoom()；工具脚本（analyze_and_record.js +14 -3）；工具脚本（map-editor.html +248 -29）：新增 .mcard-toggle、.mcard-body、.field、.add-btn、.btn；发布脚本（发布上线.bat +1 -1）；2.新增了 工具脚本（sync_version.js +11 -0）"
     },
@@ -354,10 +358,6 @@ window.SITE_DATA = {
     },
     {
       "date": "2026-10-26 18:19",
-      "summary": "1.内容更新"
-    },
-    {
-      "date": "2026-10-26 18:11",
       "summary": "1.内容更新"
     },
     {
@@ -394,5 +394,5 @@ window.SITE_DATA = {
       "photos": []
     }
   ],
-  "version": "1.8.0.101"
+  "version": "1.8.1.102"
 };
