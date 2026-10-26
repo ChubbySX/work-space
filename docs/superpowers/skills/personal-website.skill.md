@@ -11,6 +11,7 @@
 - Python（`PY`）：`C:\Users\23003\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe`；不存在则回落 `python`。
 - Node（`NODE`）：`C:\Users\23003\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\node\bin\node.exe`；不存在则回落 `node`。
 - 预览端口 `8367`（`http://127.0.0.1:8367`）。
+- 压缩脚本（**本仓库外**）：`D:\DS harnessw\work station\compress_image.py`（图片，Pillow）/ `compress_video.ps1`（视频，ffmpeg）。它们的 `待压缩/`、`已压缩/`、`config.txt` / `config_image.txt`、`tools/ffmpeg/` 都在该目录下——**按绝对路径调，不要 `cd` 过去**（项目根保持不变）。
 
 工作目录始终是项目根。下面命令里的 `%PY%`/`%NODE%` 指上面两个路径。
 
@@ -23,13 +24,23 @@
    - → `content/daily/`：生活日常、旅游、玩具、美食、校园 / 工作日记。
    - → `content/works/{video|image|doc}/`：建模渲染、完成度高的创作、正式作品。
    - 启发式：日常随拍 / 碎片记录 / 生活场景 → `daily/`；有意打磨的创作成品 / 对外展示的作品 → `works/`；**模糊时默认 `daily/`**，并在告知时说明「按日常归位，**如属作品请移**过去」。
-3. **归位 + 命名**（沿用现有约定）：
+3. **定名 + 定位**（沿用现有约定，先定名再压缩）：
    - 可选日期前缀：`2025-06-01 标题.jpg`。
    - 视频放 `works/video/`。
    - 一组图做相册 → 建子文件夹，文件夹名用相册主题、仿现有 `我的小玩具们` / `不爱出门的旅游` 风格（中文短语、带主题感）。
-   - **同名冲突**：目标位置已存在同名文件时**不静默覆盖**——询问用户，或给新文件加 `_2` 后缀。
-4. **写说明**：在归位文件旁写同名 `.txt`，一句话说明 + 可提取标签（如 `#机械 #建模`）。
-5. **可纠错**：归位后明确告知用户「放在 `daily/xxx/`，叫 `yyy.jpg`，说明是 `…`」；用户说放错了就移过去。
+   - **同名冲突**：目标位置已存在同名文件时**不静默覆盖**——询问用户，或给新文件加 `_2` 后缀。最终名确定后用于第 4 步压缩。
+4. **压缩**（用第 3 步定的最终名；先压再归位，**原图不进 `content/`、不进 git**）：
+   - 压缩脚本在 `D:\DS harnessw\work station\`（仓库外），按绝对路径调，不 `cd`。
+   - **图片**：把收到的图写到 `D:\DS harnessw\work station\待压缩\<最终名>.<ext>`；若 `已压缩\<最终名>.jpg`（或按 `config_image.txt` 格式为 `.webp`）已存在**先删**（避免被脚本 skip 拿到旧成品）；跑 `"%PY%" "D:\DS harnessw\work station\compress_image.py"`；从 `已压缩\` 取 `<最终名>.jpg|.webp`（待第 5 步移进 content/）；清掉 `待压缩\` 里这张原图。
+   - **视频**：直接 `powershell -NoProfile -ExecutionPolicy Bypass -File "D:\DS harnessw\work station\compress_video.ps1" -InputPath "<收到的视频>"`（脚本自带 ffmpeg 查找：PATH → `tools\ffmpeg\`）；从 `已压缩\<base>.mp4` 取成品（待第 5 步移进 `content/works/video/`）；原视频不进 `待压缩/`、不进 content/。
+   - **依赖**：图片需 Pillow（DSH python 自带，12.3+）；视频需 ffmpeg（`work station\tools\ffmpeg\` 已有，PATH 上没有但不影响脚本查找）。缺则停下告知，**不归位、不进 content/**。
+   - **配置**：沿用现有 `config.txt`（视频：分辨率/帧率/画质/编码/音频码率）/ `config_image.txt`（图片：格式/分辨率/画质）；改 config 全局生效。
+   - **扩展名变化**：视频统一出 `.mp4`（不论原 `.mov/.avi/.mkv`）；图片按 `config_image.txt` 格式出 `.jpg` 或 `.webp`。归位时**告知用户新文件名（含扩展名）**。
+   - **失败**：压缩脚本报错（文件损坏等）→ 停下告知 stderr 关键行，不归位、不进 content/；用户可手动跳过压缩直接放原图（告知「原图较大，未压缩」）。
+   - **只清理本次自己的文件**：`待压缩/`、`已压缩/` 里属于本次的文件用完删掉，**不动用户其它文件**（如 `已压缩/` 里既有的旧成品）。
+5. **归位**：把第 4 步的压缩版移进第 3 步定的 `content/` 路径。
+6. **写说明**：在压缩版旁写同名 `.txt`，一句话说明 + 可提取标签（如 `#机械 #建模`）。
+7. **可纠错**：归位后明确告知用户「放在 `daily/xxx/`，叫 `yyy.jpg`（压缩后 <原大小>），说明是 `…`」；用户说放错了就移过去。
 
 ## 阶段 2 · 构建预览
 
@@ -82,5 +93,6 @@
 
 - 不重写 `make_posters.py` / `make_thumbs.py` / `analyze_and_record.js` / `bump_publish.py` / `build.js`，只调用。
 - 不改站点样式 / 布局（日落海景风格、profile.json 控制台等不动）。
+- 压缩调 `D:\DS harnessw\work station\` 的 `compress_image.py` / `compress_video.ps1`（不重写）；**原图不进 `content/`、不进 git**；`待压缩/`、`已压缩/` 只清理本次自己的文件，不动用户其它文件。
 - 发布始终由用户显式触发，且 push 前必须停下确认。
 - 构建阶段不碰 git。
