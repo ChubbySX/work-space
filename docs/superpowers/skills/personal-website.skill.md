@@ -56,7 +56,7 @@
    - `copy /Y content\version.json content\version.json.bak`
    - `"%NODE%" tools\analyze_and_record.js`（分析 `git diff --cached`，生成 changelog 顶部条目）
 4. `"%NODE%" build.js`（这次构建做版本号 `c+1, d+1`）。
-5. **🔴 STOP — 停下确认**。把以下内容列给用户，**等用户点头再继续**：
+5. **🔴 STOP — 停下确认**。先**主动核对暂存区**：读 `git diff --cached --name-status`，逐项判断是否本次该发布的内容（`content/` 下 daily/works/profile/changelog/version、`.thumbs/`、`js/data.js`）。**若出现非内容文件（`build.js`、`css/`、`index.html`、`js/main.js`、`tools/` 或其它源码 / 配置）要明确告知用户**——它们会随这次提交进仓库；非本次意图就提示用户先 `git reset HEAD <file>` 取消暂存，清单干净后再继续。然后把以下内容列给用户，**等用户点头再继续**：
    - 本次提交清单：`git diff --cached --name-status`
    - changelog 摘要：读 `content/changelog.json` 顶部条目
    - 版本号将怎么变：当前 `content/version.json` 的值 + `bump_publish.py` 将做 `b+1, c=0, d-1`（还原本次 build 的 `d+1`；一次发布的净效果 = `b+1, c→0, d 不变`）。
