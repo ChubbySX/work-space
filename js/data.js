@@ -422,5 +422,5 @@ window.SITE_DATA = {
       "photos": []
     }
   ],
-  "version": "1.5.31.76"
+  "version": "1.6.0.75"
 };
