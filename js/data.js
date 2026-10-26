@@ -337,6 +337,10 @@ window.SITE_DATA = {
   ],
   "changelog": [
     {
+      "date": "2026-10-26 18:11",
+      "summary": "1.内容更新"
+    },
+    {
       "date": "2026-10-26 18:10",
       "summary": "1.调整了 网页样式（style.css +30 -20）：新增 .nav-toggles-mobile，移除 .c1、.c2、.c3、.hero-cloud、.theme-toggle；网页结构（index.html +7 -7）；站点数据（data.js +1 -1）；页面交互逻辑（main.js +11 -58）：移除 .el、randSpeed()、randGap()"
     },
@@ -351,10 +355,6 @@ window.SITE_DATA = {
     {
       "date": "2026-10-26 00:08",
       "summary": "1.内容更新"
-    },
-    {
-      "date": "2026-10-26 00:00",
-      "summary": "1.调整了 站点数据（data.js +1 -1）；发布脚本（发布上线.bat +2 -2）"
     }
   ],
   "mapMarkers": [
@@ -422,5 +422,5 @@ window.SITE_DATA = {
       "photos": []
     }
   ],
-  "version": "1.6.7.82"
+  "version": "1.6.8.83"
 };
