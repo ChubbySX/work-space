@@ -122,7 +122,7 @@ const uniq = (a) => [...new Set(a)];
 /* 1. 读暂存区改动（A新增/M修改/D删除）*/
 let out = "";
 try {
-  out = execSync('git -c core.quotepath=false diff --cached --name-status',
+  out = execSync('git -c core.quotepath=false diff ' + DIFF_BASE + ' --name-status',
     { cwd: ROOT, encoding: "utf8" });
 } catch (e) { out = ""; }
 

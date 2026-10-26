@@ -25,30 +25,23 @@ echo [3/8] 暂存改动...
 git add .
 echo.
 
-echo [4/8] 备份并分析改动（记录更新历史）...
-copy /Y content\changelog.json content\changelog.json.bak >nul 2>&1
-copy /Y content\version.json content\version.json.bak >nul 2>&1
-"%NODE%" tools\analyze_and_record.js
-echo.
-
-echo [5/8] 构建网站内容（c+1, d+1）...
+echo [4/8] 构建网站内容（c+1, d+1）...
 "%NODE%" build.js
 if errorlevel 1 (
   echo.
   echo *** 构建失败，请检查上面的错误 ***
-  del content\changelog.json.bak content\version.json.bak >nul 2>&1
   pause
   exit /b 1
 )
 echo.
 
-echo [6/8] 暂存构建产物并提交...
+echo [5/8] 提交改动...
 git add .
 for /f "delims=" %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HHmm"') do set "TS=%%t"
 git commit -m "更新内容 %TS%"
 echo.
 
-echo [7/8] 推送到 GitHub（最多重试3次）...
+echo [6/8] 推送到 GitHub（最多重试3次）...
 set ATTEMPT=0
 :PUSHRETRY1
 set /a ATTEMPT+=1
@@ -59,10 +52,7 @@ goto PUSHDONE1
 :PUSHFAIL1
 if %ATTEMPT% LSS 3 (echo   失败3秒后重试... & timeout /t 3 >nul & goto PUSHRETRY1)
 echo.
-echo *** 推送失败！正在回滚更新历史... ***
-copy /Y content\changelog.json.bak content\changelog.json >nul 2>&1
-copy /Y content\version.json.bak content\version.json >nul 2>&1
-del content\changelog.json.bak content\version.json.bak >nul 2>&1
+echo *** 推送失败！正在回滚... ***
 git reset --mixed HEAD~1 >nul 2>&1
 "%NODE%" tools\sync_version.js >nul 2>&1
 echo.
@@ -72,25 +62,28 @@ echo   2) 临时开手机热点再双击
 pause
 exit /b 1
 :PUSHDONE1
-del content\changelog.json.bak content\version.json.bak >nul 2>&1
 echo.
 
-echo [8/8] 更新发布版本号（b+1, c归零, d还原）并推送...
+echo [7/8] 记录更新历史 + 更新发布版本号（b+1, c归零, d还原）...
+"%NODE%" tools\analyze_and_record.js
 "%PY%" tools\bump_publish.py
+echo.
+
+echo [8/8] 提交版本更新并推送（最多重试3次）...
 git add .
-git commit -m "发布版本号更新"
+git commit -m "发布版本号更新 + 更新历史"
 set ATTEMPT=0
 :PUSHRETRY2
 set /a ATTEMPT+=1
-echo   第 %ATTEMPT% 次推送版本号...
+echo   第 %ATTEMPT% 次推送...
 git push origin main
 if errorlevel 1 goto PUSHFAIL2
 goto PUSHDONE2
 :PUSHFAIL2
 if %ATTEMPT% LSS 3 (echo   失败3秒后重试... & timeout /t 3 >nul & goto PUSHRETRY2)
 echo.
-echo *** 版本号推送失败！内容已上传，但版本号未同步到远程 ***
-echo   本地版本号已更新，下次发布会自动包含
+echo *** 版本号推送失败！内容已上传，但版本号和更新历史未同步到远程 ***
+echo   本地已更新，下次发布会自动包含
 pause
 exit /b 1
 :PUSHDONE2

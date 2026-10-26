@@ -2131,13 +2131,14 @@ code {
 @media (max-width: 600px) { .gantt-label { width: 70px; font-size: .75rem; } .gantt-axis { padding-left: 80px; } }
 
 /* ---------- 青岛地图（底图 + 编号标记 + 点击展开照片） ---------- */
-.map-img-container { position: relative; display: flex; justify-content: center; align-items: flex-start; overflow: hidden; border-radius: 14px; max-height: 720px; cursor: grab; background: var(--bg2); }
+.map-img-container { position: relative; display: flex; justify-content: center; align-items: flex-start; overflow: hidden; border-radius: 14px; max-height: 720px; cursor: grab; }
 .map-img-container.grabbing { cursor: grabbing; }
 .map-zoom-inner { position: relative; transform-origin: center top; transition: transform .35s cubic-bezier(.22,1,.36,1); will-change: transform; }
 .map-zoom-inner.no-trans { transition: none; }
 .map-img { display: block; max-width: 100%; max-height: 720px; width: auto; height: auto; mix-blend-mode: multiply; }
 [data-theme="dark"] .map-img { mix-blend-mode: screen; filter: invert(1) hue-rotate(180deg) brightness(.9); }
-.map-markers { position: absolute; inset: 0; pointer-events: none; }
+.map-markers { position: absolute; inset: 0; pointer-events: none; transform-origin: center top; transition: transform .35s cubic-bezier(.22,1,.36,1); will-change: transform; }
+.map-markers.no-trans { transition: none; }
 .map-pin {
   position: absolute; transform: translate(-50%, -50%);
   width: 28px; height: 28px; border-radius: 50%;

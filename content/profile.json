@@ -35,7 +35,9 @@
     { "name": "工业建模", "level": 65 },
     { "name": "Blender 渲染", "level": 50 },
     { "name": "波箱调试组装", "level": 55 },
-    { "name": "视频剪辑", "level": 30 }
+    { "name": "视频剪辑", "level": 30 },
+    { "name": "AI工作流编排", "level": 53 },
+    { "name": "数据运用处理", "level": 32 }
   ],
 
   "_说明_timeline": "↓ 成长轨迹：每条 { date=日期, event=事件, desc=一句话描述 }",
