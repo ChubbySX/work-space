@@ -391,6 +391,25 @@
     $("#contactGrid").innerHTML = html;
   }
 
+  /* ---------- 渲染：友情链接 ---------- */
+  function renderFriends(friends) {
+    var grid = $("#friendsGrid");
+    if (!grid) return;
+    if (!friends || !friends.length) { grid.innerHTML = '<div class="empty-state">还没有友情链接～ 编辑 <code>content/profile.json</code> 里的 friends 字段</div>'; return; }
+    grid.innerHTML = friends.map(function (f, i) {
+      var initial = (f.name || "?").charAt(0);
+      var avatar = f.avatar
+        ? '<div class="friend-avatar"><img src="' + esc(f.avatar) + '" alt="' + esc(f.name) + '" loading="lazy"></div>'
+        : '<div class="friend-avatar">' + esc(initial) + '</div>';
+      return '<a class="friend-card reveal" href="' + esc(f.url || "#") + '" target="_blank" rel="noopener" style="transition-delay:' + ((i % 4) * 80) + 'ms">' +
+        avatar +
+        '<div class="friend-info">' +
+        '<div class="friend-name">' + esc(f.name || "") + '</div>' +
+        (f.desc ? '<div class="friend-desc">' + esc(f.desc) + '</div>' : '') +
+        '</div></a>';
+    }).join("");
+  }
+
   /* ---------- 灯箱 ---------- */
   function openLightbox(list, index, kind) {
     if (!list || !list.length) return;
@@ -1797,6 +1816,7 @@
     renderChangelog(DATA.changelog);
     setupFilters(DATA.works);
     renderContact(p.contact);
+    renderFriends(p.friends);
     setupTyped();
     setupStats();
 

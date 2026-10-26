@@ -104,6 +104,14 @@ window.SITE_DATA = {
         "attraction": 4
       }
     ],
+    "friends": [
+      {
+        "name": "你的名字",
+        "url": "https://example.com",
+        "desc": "在这里写一句话介绍",
+        "avatar": ""
+      }
+    ],
     "stats": [
       {
         "value": "8",
@@ -360,5 +368,5 @@ window.SITE_DATA = {
       "summary": "1.内容更新"
     }
   ],
-  "version": "1.5.7.52"
+  "version": "1.5.8.53"
 };

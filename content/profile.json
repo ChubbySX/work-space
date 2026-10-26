@@ -62,5 +62,10 @@
     { "text": "购买一台属于自己的3D打印机，并学会打印操作", "importance": 3, "attraction": 4 },
     { "text": "买一台运动相机（虽然但是，其实没什么大用）", "importance": 1, "attraction": 3 },
     { "text": "再搭建一个网站，用于介绍我的女朋友", "importance": 4, "attraction": 4 }
+  ],
+
+  "_说明_friends": "↓ 友情链接：每条 { name=名字, url=网址, desc=一句话描述, avatar=头像图片网址(可选) }",
+  "friends": [
+    { "name": "你的名字", "url": "https://example.com", "desc": "在这里写一句话介绍", "avatar": "" }
   ]
 }
