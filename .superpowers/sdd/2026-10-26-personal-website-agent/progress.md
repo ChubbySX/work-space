@@ -26,3 +26,16 @@
 - Lean review verdict: **APPROVE**. Full spec §5/§6/§8 coverage; 3 safety properties intact; no top issues. 2 nits: (1) `git add .` sweeps WIP — STOP should proactively scan staged list for stray files; (2) spec §8 #4 (no 2nd LLM provider) not restated in body (harmless).
 - Nit #1 addressed: edited STOP step (body:59) + mirrored to SKILL.md:64 — agent now proactively scans `git diff --cached --name-status`, flags non-content files (build.js/css/index.html/js/main.js/tools/source/config), suggests `git reset HEAD <file>` before confirming. Committed 79276d4. SKILL.md synced (grep "主动核对暂存区" in both). Nit #2 left (harmless).
 - HEAD now 10 ahead of origin/main: 4 mine (ad8f9a6 spec / 2efd504 plan / 0b8b6c8 body / 79276d4 nit-fix) + 6 user (content/features, pre-session). Finishing menu: push-all vs keep-local (recommended — ride along next 发布上线.bat).
+
+## 2026-10-26 压缩原图/视频特性（bounded 增补）
+
+- 触发：m00333 用户要求给 personal-website 技能加压缩原图/视频能力，指向现有 压缩视频.bat/压缩图片.bat。
+- 路径：brainstorming → bounded（用户选接入模型 A「归位时压缩·原图不进库」m00350）→ 设计批准 m00360 → 实现。
+- 实现：docs/superpowers/skills/personal-website.skill.md 阶段1 由 5 步扩为 7 步（插入「压缩」子步：定名定位→压缩→归位），约束加「原图不进 content/git、只清自己的暂存」。镜像到 live SKILL.md。
+- 依赖：Pillow 12.3.0（DSH python，图片）；ffmpeg（work-station\tools\ffmpeg\，视频，compress_video.ps1 自动找）。
+- 验证（GREEN）：grep 两文件 7/7 关键字一致、出门正确/出口 0；图片 dry-run（compress_image.py 待压缩→已压缩，noop 保护触发，exit 0，content 未动，git PRE==POST）；视频 dry-run（compress_video.ps1 -InputPath 火控.mp4，libx265/CRF23，-1.1% 真缩小，exit 0，content 未动，git PRE==POST）。
+- 提交：524fb18「docs: personal-website 技能阶段1 增加压缩原图/视频子步」（1 file, +16/-4）。working tree 干净。
+- 未推送：留本地，跟下次 发布上线.bat 一起上（同上次 keep-local 偏好）。
+[PUBLISH SUCCESS 2026-10-26 22:21] 16-item batch published. analyze+build GREEN. commit b7c5a40 '更新内容 2026-10-26_2220' (54 files) pushed (attempt 1, exit 0; 443 recovered mid-diagnosis). bump_publish -> 1.10.0.102. version commit b7480ec pushed. origin synced (0 ahead). 5 docs commits rode along (were stacked). Site https://chubbysx.github.io/work-space/ deploying.
+NETWORK FINDING (informs paused push-skill task): push failure = intermittent SNI-based 443 block (github.com:443 False / 20.205.243.166:443 True / github.com:22 True). Retry-when-443-up works. SSH path: id_ed25519 key exists but ssh -T hung incl. BatchMode - key may have passphrase or agent issue; deferred.
+[github-push SKILL 2026-10-26 22:45] Bounded task COMPLETE. New skill github-push (probe github.com:443 + retry push w/ LOW_SPEED_LIMIT/TIME, no rollback) at docs/superpowers/skills/github-push.skill.md + live C:\Users\23003\.dsh\skills\github-push\SKILL.md. personal-website stage 3 edited (2 push steps -> call github-push; failure table trigger -> github-push返回失败). Both files synced (grep GREEN: old push line 0, 调用github-push x2, Test-NetConnection+LOW_SPEED in github-push). Dry-run GREEN: 443 probe True + git push --dry-run exit0. Root cause basis: intermittent SNI 443 block (diagnosed m00523-m00530). Auto-probe route chosen by user (m00555). No script/bat changes. Keep-local (docs, per user pref m00312).
