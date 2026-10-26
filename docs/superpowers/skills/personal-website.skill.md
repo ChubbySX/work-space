@@ -74,20 +74,20 @@
 6. 用户确认后：
    - 取时间戳 `TS`（PowerShell: `Get-Date -Format yyyy-MM-dd_HHmm`）。
    - `git commit -m "更新内容 <TS>"`
-   - `git push origin main`（最多 3 次重试，间隔 3s）。
+   - **调用 `github-push` 技能推送**（探活 `github.com:443` + 重试；返回失败 → 进失败处理回滚）。
 7. push 成功后发版号：
    - `"%PY%" tools\bump_publish.py`（`b+1, c=0, d-1`）
    - `git add .`
    - `git commit -m "发布版本号更新"`
-   - `git push origin main`（最多 3 次重试，间隔 3s）。
+   - **调用 `github-push` 技能推送**；返回失败 → 进失败处理（版本号未同步）。
 
 ## 失败处理（沿用 bat 现有健壮逻辑）
 
 | 场景 | 处理 |
 |---|---|
 | `make_posters.py` / `make_thumbs.py` / `build.js` 任一失败 | 停下报错，**不进入发布**；给脚本 stderr 关键行 |
-| 内容 push 3 次仍失败 | 回滚：`copy /Y content\changelog.json.bak content\changelog.json` + `copy /Y content\version.json.bak content\version.json` → `del content\changelog.json.bak content\version.json.bak` → `git reset --mixed HEAD~1`（撤销 commit）→ `"%NODE%" build.js` 重建 → 报告「未记录更新历史，版本号未变」（多半网络或 git 凭证问题），**不擅自重推** |
-| 版本号 push 3 次失败 | 内容已上线但版本未同步——明确告知「内容已上传、版本号未同步」，不静默 |
+| `github-push` 返回失败（内容推送） | 回滚：`copy /Y content\changelog.json.bak content\changelog.json` + `copy /Y content\version.json.bak content\version.json` → `del content\changelog.json.bak content\version.json.bak` → `git reset --mixed HEAD~1`（撤销 commit）→ `"%NODE%" build.js` 重建 → 报告「未记录更新历史，版本号未变」（多半网络或 git 凭证问题），**不擅自重推** |
+| `github-push` 返回失败（版本号推送） | 内容已上线但版本未同步——明确告知「内容已上传、版本号未同步」，不静默 |
 
 ## 约束
 
