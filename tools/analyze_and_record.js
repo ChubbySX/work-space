@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* analyze_and_record.js —— 分析 git 暂存区改动，生成详细更新概述并记录到 changelog.json */
+/* analyze_and_record.js —— 分析 git 改动（暂存区优先，无则用最近提交），生成详细更新概述并记录到 changelog.json */
 "use strict";
 const { execSync } = require("child_process");
 const fs = require("fs");
@@ -7,6 +7,17 @@ const path = require("path");
 
 const ROOT = path.join(__dirname, "..");
 const CHANGLOG = path.join(ROOT, "content", "changelog.json");
+
+/* 判断暂存区是否有改动，没有则用 HEAD~1..HEAD */
+function pickDiffBase() {
+  try {
+    const staged = execSync('git -c core.quotepath=false diff --cached --name-status',
+      { cwd: ROOT, encoding: "utf8" }).trim();
+    if (staged) return "--cached";
+  } catch (e) {}
+  return "HEAD~1 HEAD";
+}
+const DIFF_BASE = pickDiffBase();
 
 /* 代码文件 → 功能描述 */
 function codeFunc(file) {
@@ -32,7 +43,7 @@ function shortName(file) {
 function extractDiffPatterns(file) {
   let diff = "";
   try {
-    diff = execSync('git -c core.quotepath=false diff --cached -- "' + file + '"',
+    diff = execSync('git -c core.quotepath=false diff ' + DIFF_BASE + ' -- "' + file + '"',
       { cwd: ROOT, encoding: "utf8", maxBuffer: 2 * 1024 * 1024 });
   } catch (e) { return { added: [], removed: [] }; }
 
@@ -96,7 +107,7 @@ function extractDiffPatterns(file) {
 /* 获取文件的行变动统计 */
 function diffStat(file) {
   try {
-    const stat = execSync('git -c core.quotepath=false diff --cached --numstat -- "' + file + '"',
+    const stat = execSync('git -c core.quotepath=false diff ' + DIFF_BASE + ' --numstat -- "' + file + '"',
       { cwd: ROOT, encoding: "utf8" });
     const parts = stat.trim().split(/\s+/);
     if (parts.length >= 2) {

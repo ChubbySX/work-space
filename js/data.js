@@ -337,6 +337,10 @@ window.SITE_DATA = {
   ],
   "changelog": [
     {
+      "date": "2026-10-26 19:53",
+      "summary": "1.调整了 网页样式（style.css +57 -14）：新增 .dash-bar-track、.ongoing、.grabbing、.no-trans、.map-zoom-hint，移除 .site-header；网页结构（index.html +15 -6）；站点数据（data.js +5 -41）；页面交互逻辑（main.js +185 -7）：新增 .idx、.clientWidth、.offsetWidth、.left、applyZoom()；工具脚本（analyze_and_record.js +13 -2）；工具脚本（map-editor.html +248 -29）：新增 .mcard-toggle、.mcard-body、.field、.add-btn、.btn；发布脚本（发布上线.bat +1 -1）；2.新增了 工具脚本（sync_version.js +11 -0）"
+    },
+    {
       "date": "2026-10-26 18:19",
       "summary": "1.内容更新"
     },
@@ -351,18 +355,14 @@ window.SITE_DATA = {
     {
       "date": "2026-10-26 18:10",
       "summary": "1.调整了 网页样式（style.css +30 -20）：新增 .nav-toggles-mobile，移除 .c1、.c2、.c3、.hero-cloud、.theme-toggle；网页结构（index.html +7 -7）；站点数据（data.js +1 -1）；页面交互逻辑（main.js +11 -58）：移除 .el、randSpeed()、randGap()"
-    },
-    {
-      "date": "2026-10-26 17:31",
-      "summary": "1.更新项目：2号波箱复刻.json、个人网站搭建.json、水弹的魔法.json；2.调整了 构建脚本（build.js +27 -8）；网页样式（style.css +265 -57）：新增 .friends-grid、.friend-card、.friend-avatar、.music-tracks、.dash-charts，移除 .stats、.skill-fill；网页结构（index.html +84 -12）；站点数据（data.js +73 -19）；页面交互逻辑（main.js +369 -95）：新增 .video、.idx、unlockAudio()、playGearSound()、fmtTime()，移除 .textContent、setupStats()；3.新增了 代码（map-designs.html +334 -0）：新增 .active；发布脚本（预览地图设计.bat +3 -0）；工具脚本（map-editor.html +167 -0）：新增 .dragging、.secondary、.clientX、renderPins()、startDrag()；工具脚本（打开地图编辑器.bat +3 -0）"
     }
   ],
   "mapMarkers": [
     {
       "name": "青岛理工大学",
       "desc": "我的大学 · 智能制造工程",
-      "x": 42,
-      "y": 30,
+      "x": 49,
+      "y": 75,
       "color": "#c96a2e",
       "icon": "🎓",
       "photos": [
@@ -377,50 +377,14 @@ window.SITE_DATA = {
       ]
     },
     {
-      "name": "栈桥",
-      "desc": "青岛的标志 · 回澜阁",
-      "x": 36,
-      "y": 52,
-      "color": "#5b8a8c",
-      "icon": "🌉",
-      "photos": []
-    },
-    {
-      "name": "五四广场",
-      "desc": "红色雕塑「五月的风」",
-      "x": 50,
-      "y": 54,
-      "color": "#d94a3a",
-      "icon": "🌀",
-      "photos": []
-    },
-    {
-      "name": "八大关",
-      "desc": "万国建筑博览",
-      "x": 42,
-      "y": 50,
-      "color": "#8a7a5a",
-      "icon": "🏛️",
-      "photos": []
-    },
-    {
-      "name": "崂山风景区",
-      "desc": "海上第一名山",
-      "x": 76,
-      "y": 42,
-      "color": "#5a9e3a",
-      "icon": "⛰️",
-      "photos": []
-    },
-    {
       "name": "金沙滩",
       "desc": "亚洲第一滩",
-      "x": 22,
-      "y": 62,
+      "x": 52,
+      "y": 77,
       "color": "#e8b840",
       "icon": "🏖️",
       "photos": []
     }
   ],
-  "version": "1.7.0.84"
+  "version": "1.7.14.98"
 };

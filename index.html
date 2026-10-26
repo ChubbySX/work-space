@@ -7,7 +7,7 @@
 <meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
 <link rel="icon" href="content/chubby-logo.jpg" type="image/jpeg">
 <script>document.documentElement.classList.add("js");</script>
-<link rel="stylesheet" href="css/style.css?v=56">
+<link rel="stylesheet" href="css/style.css?v=61">
 </head>
 <body>
 
@@ -29,8 +29,8 @@
   <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
   <nav class="nav container">
     <a class="brand" href="#home">
-      <span class="brand-mark">钟</span>
-      <span class="brand-text">钟智轩 <em>Chubby</em></span>
+      <span class="brand-mark">鐘</span>
+      <span class="brand-text"><em>Chubby</em></span>
     </a>
     <ul class="nav-links" id="navLinks">
       <li><a href="#home" class="nav-link is-active">首页</a></li>
@@ -338,11 +338,20 @@
     </div>
     <div class="map-wrap reveal">
       <div class="map-img-container" id="cityMap">
-        <img class="map-img" src="content/map/qingdao-map.jpg?v=2" alt="青岛地图" loading="lazy">
-        <div class="map-markers" id="mapMarkers"></div>
+        <div class="map-zoom-inner" id="mapZoomInner">
+          <img class="map-img" src="content/map/qingdao-map.jpg?v=5" alt="青岛地图" loading="lazy">
+          <div class="map-markers" id="mapMarkers"></div>
+        </div>
+        <div class="map-zoom-ctrl">
+          <button class="map-zoom-btn" id="mapZoomIn" aria-label="放大">＋</button>
+          <button class="map-zoom-btn" id="mapZoomOut" aria-label="缩小">－</button>
+          <button class="map-zoom-btn" id="mapZoomFit" aria-label="还原">⟲</button>
+        </div>
+        <div class="map-zoom-hint">滚轮缩放 · 拖拽平移</div>
       </div>
     </div>
     <div class="map-popup" id="mapPopup"></div>
+    <div class="map-preview" id="mapPreview"></div>
   </div>
 </section>
 
@@ -440,6 +449,6 @@
 </div>
 
 <script src="js/data.js?v=27"></script>
-<script src="js/main.js?v=67"></script>
+<script src="js/main.js?v=72"></script>
 </body>
 </html>

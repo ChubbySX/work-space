@@ -64,7 +64,7 @@ copy /Y content\changelog.json.bak content\changelog.json >nul 2>&1
 copy /Y content\version.json.bak content\version.json >nul 2>&1
 del content\changelog.json.bak content\version.json.bak >nul 2>&1
 git reset --mixed HEAD~1 >nul 2>&1
-"%NODE%" build.js >nul 2>&1
+"%NODE%" tools\sync_version.js >nul 2>&1
 echo.
 echo *** 推送失败！未记录更新历史，版本号未变，请稍后重试 ***
 echo   1) 等几分钟再双击本脚本

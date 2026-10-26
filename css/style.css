@@ -20,6 +20,7 @@
   --shadow: 0 10px 30px rgba(96, 58, 22, .10);
   --shadow-lg: 0 18px 50px rgba(96, 58, 22, .18);
   --nav-h: 64px;
+  --header-bg: rgba(247, 240, 231, .84);
   --font: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Source Han Sans SC", system-ui, -apple-system, sans-serif;
 }
 
@@ -79,7 +80,7 @@ code {
   inset: 0 0 auto 0;
   height: var(--nav-h);
   z-index: 100;
-  background: rgba(247, 240, 231, .84);
+  background: var(--header-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid transparent;
@@ -108,7 +109,7 @@ code {
   width: 34px; height: 34px;
   display: grid; place-items: center;
   background: var(--ink);
-  color: #fff;
+  color: var(--bg);
   border-radius: 10px;
   font-size: 17px;
 }
@@ -126,6 +127,8 @@ code {
   list-style: none;
   flex-wrap: nowrap;
   overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
   max-width: calc(100vw - 200px);
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -1930,6 +1933,7 @@ code {
   --sea: #5b8a8c;
   --shadow: 0 10px 30px rgba(0, 0, 0, .3);
   --shadow-lg: 0 18px 50px rgba(0, 0, 0, .4);
+  --header-bg: rgba(26, 21, 16, .88);
 }
 /* 暗色 + 季节组合（高于单一选择器，季节在暗色下生效） */
 [data-theme="dark"][data-season="spring"] {
@@ -1944,7 +1948,7 @@ code {
   --accent: #8ea2c8; --accent-soft: #2a2e3a; --accent-dark: #6b7fa8; --sea: #8ea2c8;
   --bg2: #1e2230; --bg3: #242838;
 }
-[data-theme="dark"] .site-header { background: rgba(26, 21, 16, .88); }
+/* header 背景已用 --header-bg 变量，随主题自动切换 */
 [data-theme="dark"] .hero-bg::after { background: linear-gradient(180deg, rgba(10,8,5,.55), rgba(10,8,5,.25) 50%, rgba(10,8,5,.5)); }
 [data-theme="dark"] .side-label { background: #2a2218; color: var(--ink); border: 1px solid var(--line); }
 [data-theme="dark"] #about   { background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%); }
@@ -1978,17 +1982,12 @@ code {
 }
 .season-toggle:hover { border-color: var(--accent); transform: scale(1.08); }
 
-/* 桌面端：切换按钮在导航栏右端，始终可见 */
+/* 桌面端：切换按钮直接融入导航栏，无额外背景框 */
 .nav-toggles-mobile {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  position: sticky;
-  right: 0;
-  background: var(--bg);
-  padding-left: 12px;
-  z-index: 1;
 }
 
 /* ---------- 时间线 ---------- */
@@ -2092,14 +2091,17 @@ code {
   flex: 1;
   height: 24px;
   border-radius: 12px;
-  background: var(--accent-soft);
+  background: rgba(128,128,128,.1);
   overflow: hidden;
   position: relative;
 }
+[data-theme="dark"] .dash-bar-track { background: rgba(255,255,255,.06); }
 .dash-bar-fill {
   height: 100%;
   border-radius: 12px;
   transition: width 1.2s cubic-bezier(.25,.46,.45,.94);
+  position: relative;
+  min-width: 0;
 }
 .dash-bar-val {
   font-size: .85rem;
@@ -2125,12 +2127,16 @@ code {
 .gantt-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-dark)); border-radius: 8px 0 0 8px; transition: width 1s ease; }
 .gantt-bar.done .gantt-bar-fill { border-radius: 8px; }
 .gantt-pct { position: absolute; top: 50%; transform: translateY(-50%); font-size: .72rem; font-weight: 700; color: var(--accent-dark); white-space: nowrap; z-index: 1; }
-.gantt-row.ongoing .gantt-track::after { content: "进行中"; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: .68rem; color: var(--ink-faint); }
+.gantt-pct.ongoing { color: var(--accent-dark); }
 @media (max-width: 600px) { .gantt-label { width: 70px; font-size: .75rem; } .gantt-axis { padding-left: 80px; } }
 
 /* ---------- 青岛地图（底图 + 编号标记 + 点击展开照片） ---------- */
-.map-img-container { position: relative; border-radius: 14px; overflow: hidden; display: flex; justify-content: center; background: var(--bg2); }
-.map-img { display: block; max-width: 100%; max-height: 500px; width: auto; height: auto; }
+.map-img-container { position: relative; display: flex; justify-content: center; align-items: flex-start; overflow: hidden; border-radius: 14px; max-height: 720px; cursor: grab; background: var(--bg2); }
+.map-img-container.grabbing { cursor: grabbing; }
+.map-zoom-inner { position: relative; transform-origin: center top; transition: transform .35s cubic-bezier(.22,1,.36,1); will-change: transform; }
+.map-zoom-inner.no-trans { transition: none; }
+.map-img { display: block; max-width: 100%; max-height: 720px; width: auto; height: auto; mix-blend-mode: multiply; }
+[data-theme="dark"] .map-img { mix-blend-mode: screen; filter: invert(1) hue-rotate(180deg) brightness(.9); }
 .map-markers { position: absolute; inset: 0; pointer-events: none; }
 .map-pin {
   position: absolute; transform: translate(-50%, -50%);
@@ -2174,12 +2180,49 @@ code {
 .map-popup-photos img:hover { transform: scale(1.03); }
 .map-popup-empty { padding: 20px 18px; text-align: center; font-size: .82rem; color: var(--ink-faint); background: var(--surface); border: 1px solid var(--line); border-top: none; border-radius: 0 0 12px 12px; }
 
+/* 地图缩放控件 */
+.map-zoom-ctrl { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 20; }
+.map-zoom-btn { width: 36px; height: 36px; border: none; border-radius: 8px;
+  background: var(--surface); box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  font-size: 1.1rem; cursor: pointer; color: var(--ink);
+  display: flex; align-items: center; justify-content: center; transition: all .2s; }
+.map-zoom-btn:hover { background: var(--accent); color: #fff; }
+.map-zoom-hint { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  font-size: .65rem; color: var(--ink-faint); background: var(--surface); padding: 2px 10px;
+  border-radius: 10px; pointer-events: none; opacity: .7; z-index: 15; transition: opacity .3s; }
+.map-img-container:hover .map-zoom-hint { opacity: 0; }
+
+/* 地图悬停预览面板（光标放在锚点上时，侧边弹出照片缩略图） */
+.map-preview {
+  position: fixed; top: 50%;
+  width: 240px; max-width: 90vw;
+  background: var(--surface); border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(96,58,22,.18);
+  border: 1px solid var(--line);
+  padding: 14px; z-index: 90;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.map-preview.show { opacity: 1; }
+.map-preview.from-right { right: 24px; left: auto; transform: translateY(-50%) translateX(30px); }
+.map-preview.show.from-right { transform: translateY(-50%) translateX(0); }
+.map-preview.from-left { left: 24px; right: auto; transform: translateY(-50%) translateX(-30px); }
+.map-preview.show.from-left { transform: translateY(-50%) translateX(0); }
+.map-preview-title { font-size: .9rem; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+.map-preview-desc { font-size: .72rem; color: var(--ink-soft); margin-bottom: 10px; }
+.map-preview-photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.map-preview-photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; }
+.map-preview-empty { font-size: .72rem; color: var(--ink-faint); text-align: center; padding: 16px 0; }
+
 @media (max-width: 640px) {
-  .map-img { max-height: 360px; }
+  .map-img { max-height: 520px; }
   .map-pin { width: 22px; height: 22px; font-size: .62rem; border-width: 2px; }
   .map-pin-label { font-size: .6rem; }
   .map-popup-photos { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
   .map-popup-photos img { height: 100px; }
+  .map-zoom-btn { width: 32px; height: 32px; font-size: 1rem; }
+  .map-preview { width: 200px; padding: 10px; }
+  .map-preview-photos { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* ---------- 卡片堆叠相册查看器 ---------- */

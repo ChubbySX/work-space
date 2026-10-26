@@ -1,5 +1,9 @@
 [
   {
+    "date": "2026-10-26 19:53",
+    "summary": "1.调整了 网页样式（style.css +57 -14）：新增 .dash-bar-track、.ongoing、.grabbing、.no-trans、.map-zoom-hint，移除 .site-header；网页结构（index.html +15 -6）；站点数据（data.js +5 -41）；页面交互逻辑（main.js +185 -7）：新增 .idx、.clientWidth、.offsetWidth、.left、applyZoom()；工具脚本（analyze_and_record.js +13 -2）；工具脚本（map-editor.html +248 -29）：新增 .mcard-toggle、.mcard-body、.field、.add-btn、.btn；发布脚本（发布上线.bat +1 -1）；2.新增了 工具脚本（sync_version.js +11 -0）"
+  },
+  {
     "date": "2026-10-26 18:19",
     "summary": "1.内容更新"
   },
@@ -74,9 +78,5 @@
   {
     "date": "2026-10-25 16:44",
     "summary": "1.首页视差效果增强：云层改为不规则 SVG 形状，JS 驱动变速飘移+随机停顿；2.新增飞鸟动画（SVG 翅膀扇动，定时横穿屏幕）；3.底部雾气改为三层渐变+正弦波飘动，增强海面朦胧感"
-  },
-  {
-    "date": "2026-10-25 16:39",
-    "summary": "1.音乐卡片折叠/展开动画优化：折叠时卡片先压缩为横条再缩为圆球，展开时仅显示图标避免文字挤压"
   }
 ]

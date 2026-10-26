@@ -931,6 +931,14 @@
     // 兜底：26 秒后无论如何都尝试播放（≥ 开场最大 25 秒 + 1 秒余量）
     setTimeout(startAutoPlay, 26000);
 
+    // 页面隐藏/关闭时暂停音乐（切标签页、最小化、关闭网站）
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        if (!audio.paused) { audio.pause(); setPlaying(false); }
+      }
+    });
+    window.addEventListener("pagehide", function () { audio.pause(); });
+
     // ====== 5秒后或首次页面交互后自动收起 + 气泡提示 ======
     var autoCollapsed = false;
     function autoCollapse() {
@@ -1003,10 +1011,10 @@
     var barLabels = { video: "视频", image: "图片", doc: "文档" };
     var barsHtml = "";
     ["video", "image", "doc"].forEach(function (t) {
-      var w = (byType[t] / maxV * 100);
+      var pct = Math.round(byType[t] / maxV * 100);
       barsHtml += '<div class="dash-bar-row"><span class="dash-bar-label">' + barLabels[t] + '</span>' +
-        '<div class="dash-bar-track"><div class="dash-bar-fill" data-w="' + w + '" style="width:0;background:' + barColors[t] + '"></div></div>' +
-        '<span class="dash-bar-val">' + byType[t] + '</span></div>';
+        '<div class="dash-bar-track"><div class="dash-bar-fill" data-w="' + pct + '" style="width:0%;background:' + barColors[t] + '"></div></div>' +
+        '<span class="dash-bar-val">' + byType[t] + ' 份</span></div>';
     });
     $("#dashBars").innerHTML = barsHtml;
     if (skills.length >= 3) renderRadar(skills);
@@ -1014,12 +1022,18 @@
     function animateDashboard() {
       $$(".dash-stat-num").forEach(function (el) {
         var target = +el.dataset.target;
-        if (target === 0 || el.dataset.done) return;
+        if (el.dataset.done) return;
         el.dataset.done = "1";
+        if (target === 0) { el.textContent = "0"; return; }
         var cur = 0, step = Math.max(1, Math.ceil(target / 30));
         var timer = setInterval(function () { cur += step; if (cur >= target) { cur = target; clearInterval(timer); } el.textContent = cur; }, 30);
       });
-      $$(".dash-bar-fill").forEach(function (el) { if (el.dataset.done) return; el.dataset.done = "1"; setTimeout(function () { el.style.width = el.dataset.w + "%"; }, 100); });
+      $$(".dash-bar-fill").forEach(function (el) {
+        if (el.dataset.done) return;
+        el.dataset.done = "1";
+        var w = el.dataset.w || "0";
+        requestAnimationFrame(function () { requestAnimationFrame(function () { el.style.width = w + "%"; }); });
+      });
     }
     var dashEl = $("#dashboard");
     if (dashEl) {
@@ -1096,7 +1110,7 @@
         '<span class="gantt-label">' + esc(p.name) + '</span>' +
         '<div class="gantt-track"><div class="gantt-bar' + (isDone ? " done" : "") + '" style="left:' + left + '%;width:' + width + '%">' +
         '<div class="gantt-bar-fill" style="width:' + prog + '%"></div>' +
-        '</div><span class="gantt-pct" style="' + pctStyle + '">' + prog + '%</span>' +
+        '</div><span class="gantt-pct' + (p.end === "" ? " ongoing" : "") + '" style="' + pctStyle + '">' + (p.end === "" ? "进行中 " : "") + prog + '%</span>' +
         '</div></div>';
     });
 
@@ -1492,11 +1506,12 @@
     });
   }
 
-  /* ---------- 青岛地图（底图 + 编号标记 + 点击展开照片） ---------- */
+  /* ---------- 青岛地图（底图 + 编号标记 + 点击展开照片 + 悬停预览） ---------- */
   function setupMap() {
     var container = $("#cityMap");
     var markersEl = $("#mapMarkers");
     var popupEl = $("#mapPopup");
+    var previewEl = $("#mapPreview");
     if (!container || !markersEl || !popupEl) return;
 
     var MARKERS = (window.SITE_DATA && window.SITE_DATA.mapMarkers) || [];
@@ -1516,6 +1531,7 @@
 
     // 点击标记 → 展开照片弹层
     var currentIdx = -1;
+    var previewTimer = null;
     document.querySelectorAll(".map-pin").forEach(function (pin) {
       pin.addEventListener("click", function (e) {
         e.stopPropagation();
@@ -1555,12 +1571,174 @@
         var closeBtn = $("#mapPopupClose");
         if (closeBtn) closeBtn.addEventListener("click", closePopup);
       });
+
+      // 悬停 → 侧边预览面板
+      if (previewEl) {
+        pin.addEventListener("mouseenter", function () {
+          if (previewTimer) { clearTimeout(previewTimer); previewTimer = null; }
+          var idx = parseInt(pin.dataset.idx, 10);
+          var m = MARKERS[idx];
+          if (!m) return;
+
+          // 判断锚点在视口左半还是右半 → 面板放对侧
+          var rect = pin.getBoundingClientRect();
+          var pinCenter = rect.left + rect.width / 2;
+          var showOnRight = pinCenter > window.innerWidth / 2;
+
+          // 构建内容
+          var photos = m.photos || [];
+          var photosHtml;
+          if (photos.length) {
+            photosHtml = '<div class="map-preview-photos">' +
+              photos.map(function (src) {
+                return '<img src="' + src + '" alt="" loading="lazy">';
+              }).join("") +
+              "</div>";
+          } else {
+            photosHtml = '<div class="map-preview-empty">暂无照片</div>';
+          }
+
+          previewEl.innerHTML =
+            '<div class="map-preview-title">' + m.icon + " " + m.name + "</div>" +
+            '<div class="map-preview-desc">' + m.desc + "</div>" +
+            photosHtml;
+
+          previewEl.classList.remove("from-left", "from-right");
+          previewEl.classList.add(showOnRight ? "from-right" : "from-left");
+
+          requestAnimationFrame(function () {
+            previewEl.classList.add("show");
+          });
+        });
+
+        pin.addEventListener("mouseleave", function () {
+          // 延迟关闭，避免光标在锚点边缘抖动时闪烁
+          previewTimer = setTimeout(function () {
+            previewEl.classList.remove("show");
+            previewTimer = null;
+          }, 200);
+        });
+
+        // 光标移到面板上 → 保持显示
+        previewEl.addEventListener("mouseenter", function () {
+          if (previewTimer) { clearTimeout(previewTimer); previewTimer = null; }
+        });
+        previewEl.addEventListener("mouseleave", function () {
+          previewEl.classList.remove("show");
+        });
+      }
     });
 
     function closePopup() {
       popupEl.classList.remove("is-open");
       currentIdx = -1;
       setTimeout(function () { popupEl.innerHTML = ""; }, 300);
+    }
+
+    // ── 地图缩放与平移（解决锚点密集重叠问题） ──
+    var zoomInner = $("#mapZoomInner");
+    if (zoomInner && container) {
+      var mZoom = 1, mPanX = 0, mPanY = 0;
+      var mPanning = false, mPanSX = 0, mPanSY = 0;
+      var ccX = container.clientWidth / 2;
+
+      function applyZoom(animate) {
+        if (animate) zoomInner.classList.remove("no-trans");
+        else zoomInner.classList.add("no-trans");
+        zoomInner.style.transform = "translate(" + mPanX + "px," + mPanY + "px) scale(" + mZoom + ")";
+      }
+
+      function clampPan() {
+        var cw = container.clientWidth, ch = container.clientHeight;
+        var iw = zoomInner.offsetWidth, ih = zoomInner.offsetHeight;
+        var sw = iw * mZoom, sh = ih * mZoom;
+        ccX = cw / 2;
+        if (sw > cw) {
+          var mx = (sw - cw) / 2;
+          mPanX = Math.max(-mx, Math.min(mx, mPanX));
+        } else { mPanX = 0; }
+        if (sh > ch) {
+          mPanY = Math.max(ch - sh, Math.min(0, mPanY));
+        } else { mPanY = 0; }
+      }
+
+      applyZoom(false);
+
+      // 滚轮缩放（以光标位置为中心）
+      container.addEventListener("wheel", function (e) {
+        e.preventDefault();
+        var rect = container.getBoundingClientRect();
+        var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        var delta = e.deltaY > 0 ? 0.85 : 1.18;
+        var nz = Math.max(1, Math.min(6, mZoom * delta));
+        var r = nz / mZoom;
+        mPanX = (mx - ccX) * (1 - r) + mPanX * r;
+        mPanY = my * (1 - r) + mPanY * r;
+        mZoom = nz;
+        clampPan();
+        applyZoom(false);
+      }, { passive: false });
+
+      // 拖拽平移（点锚点或按钮时不触发）
+      container.addEventListener("mousedown", function (e) {
+        if (e.target.closest(".map-pin") || e.target.closest(".map-zoom-btn")) return;
+        mPanning = true;
+        mPanSX = e.clientX - mPanX;
+        mPanSY = e.clientY - mPanY;
+        container.classList.add("grabbing");
+        zoomInner.classList.add("no-trans");
+        e.preventDefault();
+      });
+      document.addEventListener("mousemove", function (e) {
+        if (!mPanning) return;
+        mPanX = e.clientX - mPanSX;
+        mPanY = e.clientY - mPanSY;
+        clampPan();
+        applyZoom(false);
+      });
+      document.addEventListener("mouseup", function () {
+        if (mPanning) { mPanning = false; container.classList.remove("grabbing"); }
+      });
+
+      // 触摸平移
+      var tPan = null;
+      container.addEventListener("touchstart", function (e) {
+        if (e.target.closest(".map-pin") || e.target.closest(".map-zoom-btn")) return;
+        if (e.touches.length === 1) {
+          tPan = { x: e.touches[0].clientX - mPanX, y: e.touches[0].clientY - mPanY };
+        }
+      }, { passive: true });
+      container.addEventListener("touchmove", function (e) {
+        if (!tPan || e.touches.length !== 1) return;
+        e.preventDefault();
+        mPanX = e.touches[0].clientX - tPan.x;
+        mPanY = e.touches[0].clientY - tPan.y;
+        clampPan();
+        applyZoom(false);
+      }, { passive: false });
+      container.addEventListener("touchend", function () { tPan = null; });
+
+      // 缩放按钮
+      var btnIn = $("#mapZoomIn"), btnOut = $("#mapZoomOut"), btnFit = $("#mapZoomFit");
+      function zoomCenter(factor) {
+        var ch = container.clientHeight;
+        var nz = Math.max(1, Math.min(6, mZoom * factor));
+        var r = nz / mZoom;
+        mPanX = mPanX * r;
+        mPanY = (ch / 2) * (1 - r) + mPanY * r;
+        mZoom = nz;
+        clampPan();
+        applyZoom(true);
+      }
+      if (btnIn) btnIn.addEventListener("click", function () { zoomCenter(1.4); });
+      if (btnOut) btnOut.addEventListener("click", function () { zoomCenter(0.71); });
+      if (btnFit) btnFit.addEventListener("click", function () {
+        mZoom = 1; mPanX = 0; mPanY = 0;
+        applyZoom(true);
+      });
+
+      // 窗口大小变化 → 重新限制平移范围
+      window.addEventListener("resize", function () { clampPan(); applyZoom(false); });
     }
   }
 
