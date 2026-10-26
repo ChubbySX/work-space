@@ -208,22 +208,7 @@ code {
   50% { transform: scale(1.12); opacity: .95; }
 }
 
-/* 云层（SVG 不规则云形，JS 驱动变速飘移） */
-.hero-cloud {
-  position: absolute;
-  display: block;
-  filter: blur(12px);
-  will-change: transform;
-  z-index: 2;
-  pointer-events: none;
-}
-.hero-cloud.c1 { width: 320px; height: 80px; top: 18%; }
-.hero-cloud.c2 { width: 420px; height: 100px; top: 34%; opacity: .8; }
-.hero-cloud.c3 { width: 240px; height: 65px; top: 50%; opacity: .6; }
-/* 手机端隐藏云层（在小屏上白云变成灰色块，影响观感） */
-@media (max-width: 768px) {
-  .hero-cloud { display: none; }
-}
+/* 云层已移除（移动端灰色块问题） */
 
 /* 近景雾气（底部暖色渐变，JS 驱动缓慢飘动 + 滚动视差） */
 .hero-mist {
@@ -486,10 +471,10 @@ code {
 }
 .project-value { font-size: .9rem; color: var(--ink-soft); line-height: 1.6; }
 
-.project-progress-wrap { display: flex; align-items: center; gap: 10px; }
+.project-progress-head { display: flex; align-items: center; justify-content: space-between; }
 .project-progress {
   flex: 1; height: 8px; border-radius: 4px;
-  background: var(--line); overflow: hidden;
+  background: var(--line); overflow: hidden; display: block;
 }
 .project-progress i {
   display: block; height: 100%; border-radius: 4px;
@@ -498,7 +483,6 @@ code {
 }
 .project-progress-val {
   font-size: .85rem; font-weight: 700; color: var(--accent);
-  min-width: 36px; text-align: right;
 }
 
 /* 进度条入场动画 */
@@ -1275,9 +1259,23 @@ code {
     transition: transform .25s, opacity .25s;
     max-width: none;
     overflow-x: visible;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    max-height: calc(100vh - var(--nav-h));
   }
   .nav-links.is-open { transform: none; opacity: 1; pointer-events: auto; }
   .nav-link { display: block; padding: 12px 14px; }
+  .nav-toggles-mobile {
+    position: static;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding-top: 14px;
+    margin-top: 8px;
+    border-top: 1px solid var(--line);
+  }
   .hero { padding-top: calc(var(--nav-h) + 24px); }
   .lightbox { padding: 20px; }
   .lightbox-prev { left: 8px; }
@@ -1979,7 +1977,19 @@ code {
   font-size: 16px; cursor: pointer; transition: all .25s; flex-shrink: 0;
 }
 .season-toggle:hover { border-color: var(--accent); transform: scale(1.08); }
-@media (max-width: 640px) { .theme-toggle, .season-toggle { display: none; } }
+
+/* 桌面端：切换按钮在导航栏右端，始终可见 */
+.nav-toggles-mobile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  position: sticky;
+  right: 0;
+  background: var(--bg);
+  padding-left: 12px;
+  z-index: 1;
+}
 
 /* ---------- 时间线 ---------- */
 /* ---------- 时间线（蜿蜒曲线 + 逐条浮现） ---------- */

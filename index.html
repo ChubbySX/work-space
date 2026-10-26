@@ -7,7 +7,7 @@
 <meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
 <link rel="icon" href="content/chubby-logo.jpg" type="image/jpeg">
 <script>document.documentElement.classList.add("js");</script>
-<link rel="stylesheet" href="css/style.css?v=53">
+<link rel="stylesheet" href="css/style.css?v=56">
 </head>
 <body>
 
@@ -45,9 +45,11 @@
       <li><a href="#friends" class="nav-link">友链</a></li>
       <li><a href="#map" class="nav-link">地图</a></li>
       <li><a href="#changelog" class="nav-link">更新历史</a></li>
+      <li class="nav-toggles-mobile">
+        <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">🌙</button>
+        <button class="season-toggle" id="seasonToggle" aria-label="切换季节主题">🍂</button>
+      </li>
     </ul>
-    <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">🌙</button>
-    <button class="season-toggle" id="seasonToggle" aria-label="切换季节主题">🍂</button>
     <button class="nav-toggle" id="navToggle" aria-label="打开菜单">
       <span></span><span></span><span></span>
     </button>
@@ -102,9 +104,7 @@
   <div class="hero-bg" aria-hidden="true">
     <img class="hero-photo" src="content/hero-dusk.jpg?v=3" alt="青岛海边黄昏" fetchpriority="high">
     <div class="hero-sun" id="heroSun"></div>
-    <svg class="hero-cloud c1" id="cloud1" viewBox="0 0 320 80"><g fill="rgba(255,255,255,.16)"><circle cx="38" cy="50" r="27"/><circle cx="72" cy="36" r="33"/><circle cx="108" cy="28" r="29"/><circle cx="144" cy="34" r="31"/><circle cx="178" cy="27" r="26"/><circle cx="210" cy="35" r="23"/><circle cx="245" cy="42" r="21"/><circle cx="278" cy="48" r="19"/><ellipse cx="158" cy="57" rx="142" ry="14"/></g></svg>
-    <svg class="hero-cloud c2" id="cloud2" viewBox="0 0 420 100"><g fill="rgba(255,255,255,.14)"><circle cx="42" cy="62" r="34"/><circle cx="88" cy="46" r="40"/><circle cx="132" cy="36" r="35"/><circle cx="172" cy="39" r="37"/><circle cx="216" cy="30" r="31"/><circle cx="258" cy="36" r="34"/><circle cx="302" cy="43" r="29"/><circle cx="342" cy="49" r="27"/><circle cx="382" cy="56" r="24"/><ellipse cx="210" cy="73" rx="182" ry="17"/></g></svg>
-    <svg class="hero-cloud c3" id="cloud3" viewBox="0 0 240 65"><g fill="rgba(255,255,255,.12)"><circle cx="28" cy="40" r="21"/><circle cx="58" cy="31" r="24"/><circle cx="92" cy="27" r="21"/><circle cx="126" cy="31" r="19"/><circle cx="160" cy="35" r="17"/><circle cx="192" cy="41" r="15"/><ellipse cx="112" cy="48" rx="98" ry="11"/></g></svg>
+    <!-- 云层已移除（移动端灰色块问题） -->
     <div class="hero-mist" id="heroMist"></div>
     <div class="hero-blob b1"></div>
     <div class="hero-blob b2"></div>
@@ -440,6 +440,6 @@
 </div>
 
 <script src="js/data.js?v=27"></script>
-<script src="js/main.js?v=64"></script>
+<script src="js/main.js?v=67"></script>
 </body>
 </html>

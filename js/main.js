@@ -530,11 +530,16 @@
     toggle.addEventListener("click", () => {
       const open = links.classList.toggle("is-open");
       toggle.classList.toggle("is-open", open);
+      // 移动端：打开菜单时锁定页面滚动，关闭时恢复
+      if (window.innerWidth <= 640) {
+        document.body.style.overflow = open ? "hidden" : "";
+      }
     });
     $$(".nav-link", links).forEach((a) =>
       a.addEventListener("click", () => {
         links.classList.remove("is-open");
         toggle.classList.remove("is-open");
+        document.body.style.overflow = "";
       })
     );
 
@@ -1130,9 +1135,12 @@
               '<h3 class="project-name">' + esc(p.name) + '</h3>' +
               (p.desc ? '<p class="project-desc">' + esc(p.desc) + '</p>' : '') +
               (p.goal ? '<div class="project-field"><span class="project-label">目标</span><span class="project-value">' + esc(p.goal) + '</span></div>' : '') +
-              '<div class="project-field"><span class="project-label">进度</span>' +
-                '<div class="project-progress-wrap"><span class="project-progress"><i></i></span>' +
-                '<span class="project-progress-val">' + progress + '%</span></div>' +
+              '<div class="project-field project-progress-field">' +
+                '<div class="project-progress-head">' +
+                  '<span class="project-label">进度</span>' +
+                  '<span class="project-progress-val">' + progress + '%</span>' +
+                '</div>' +
+                '<span class="project-progress"><i></i></span>' +
               '</div>' +
               (p.expected ? '<div class="project-field"><span class="project-label">期望结果</span><span class="project-value">' + esc(p.expected) + '</span></div>' : '') +
               (p.learned ? '<div class="project-field"><span class="project-label">我收获了什么</span><span class="project-value">' + esc(p.learned) + '</span></div>' : '') +
@@ -1814,35 +1822,6 @@
     var mist = $("#heroMist");
     var mistScrollY = 0;
 
-    /* ====== 云层配置（每朵云宽 + 滚动视差系数） ====== */
-    var cloudDefs = [
-      { el: $("#cloud1"), w: 320, pf: 0.03 },
-      { el: $("#cloud2"), w: 420, pf: 0.05 },
-      { el: $("#cloud3"), w: 240, pf: 0.07 },
-    ].filter(function (c) { return c.el; });
-
-    var SPEED_MIN = 18;
-    var SPEED_MAX = 52;
-    var PAUSE_GAP_MIN = 3000;
-    var PAUSE_GAP_MAX = 7000;
-    var PAUSE_DUR_MIN = 800;
-    var PAUSE_DUR_MAX = 2800;
-
-    function randSpeed() { return SPEED_MIN + Math.random() * (SPEED_MAX - SPEED_MIN); }
-    function randGap() { return PAUSE_GAP_MIN + Math.random() * (PAUSE_GAP_MAX - PAUSE_GAP_MIN); }
-
-    var cloudState = cloudDefs.map(function (c) {
-      return {
-        el: c.el, w: c.w, pf: c.pf,
-        x: Math.random() * (window.innerWidth + c.w) - c.w * 0.7,
-        speed: randSpeed(),
-        paused: false,
-        pauseLeft: 0,
-        nextPause: randGap(),
-        scrollY: 0,
-      };
-    });
-
     /* ====== 飞鸟配置 ====== */
     var birdDefs = [
       { el: $("#bird1"), w: 40, h: 20 },
@@ -1859,31 +1838,6 @@
       lastTime = now;
       if (dt > 0.1) dt = 0.1;
       var vw = window.innerWidth;
-
-      cloudState.forEach(function (c) {
-        c.nextPause -= dt * 1000;
-        if (c.nextPause <= 0 && !c.paused) {
-          c.paused = true;
-          c.pauseLeft = PAUSE_DUR_MIN + Math.random() * (PAUSE_DUR_MAX - PAUSE_DUR_MIN);
-        }
-        if (c.paused) {
-          c.pauseLeft -= dt * 1000;
-          c.speed *= 0.9;
-          if (c.pauseLeft <= 0) {
-            c.paused = false;
-            c.speed = randSpeed();
-            c.nextPause = randGap();
-          }
-        }
-        c.x += c.speed * dt;
-        if (c.x > vw + 60) {
-          c.x = -c.w - Math.random() * 120;
-          c.speed = randSpeed();
-          c.paused = false;
-          c.nextPause = randGap();
-        }
-        c.el.style.transform = "translate(" + c.x.toFixed(1) + "px," + (c.scrollY * c.pf).toFixed(1) + "px)";
-      });
 
       birdState.forEach(function (b) {
         if (!b.active) {
@@ -1924,7 +1878,6 @@
       if (photo) photo.style.transform = "translateY(" + (y * 0.1) + "px)";
       if (sun) sun.style.marginTop = (y * 0.05) + "px";
       mistScrollY = y;
-      cloudState.forEach(function (c) { c.scrollY = y; });
     }
     window.addEventListener("scroll", onScroll, { passive: true });
 
