@@ -1,0 +1,86 @@
+# personal-website
+
+> 本技能接管「个人网站」内容更新全流程中所有需要人判断的环节。项目根 `D:\DS harnessw\work station\personal-website`（git `main`，远程 `origin`，GitHub Pages https://chubbysx.github.io/work-space/）。**不重写任何现有脚本**，只调用它们。
+
+## 触发 / 路由
+
+当用户要更新或发布个人网站、往网站加照片或视频、改网站内容或 profile、提到 chubbysx 主页 / 构建网站 / 发布上线 / 预览网站时加载本技能。技能接管内容归位、构建预览、发布上线的全流程判断与操作。
+
+## 运行时
+
+- Python（`PY`）：`C:\Users\23003\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe`；不存在则回落 `python`。
+- Node（`NODE`）：`C:\Users\23003\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\node\bin\node.exe`；不存在则回落 `node`。
+- 预览端口 `8367`（`http://127.0.0.1:8367`）。
+
+工作目录始终是项目根。下面命令里的 `%PY%`/`%NODE%` 指上面两个路径。
+
+## 阶段 1 · 内容归位
+
+**触发**：用户在对话里发图 / 视频 / 给本地路径，或说「加内容 / 更新网站」。
+
+1. 接收素材（对话附件或本地路径）。
+2. **判断分类**（自主判断，判完告知用户）：
+   - → `content/daily/`：生活日常、旅游、玩具、美食、校园 / 工作日记。
+   - → `content/works/{video|image|doc}/`：建模渲染、完成度高的创作、正式作品。
+   - 启发式：日常随拍 / 碎片记录 / 生活场景 → `daily/`；有意打磨的创作成品 / 对外展示的作品 → `works/`；**模糊时默认 `daily/`**，并在告知时说明「按日常归位，**如属作品请移**过去」。
+3. **归位 + 命名**（沿用现有约定）：
+   - 可选日期前缀：`2025-06-01 标题.jpg`。
+   - 视频放 `works/video/`。
+   - 一组图做相册 → 建子文件夹，文件夹名用相册主题、仿现有 `我的小玩具们` / `不爱出门的旅游` 风格（中文短语、带主题感）。
+   - **同名冲突**：目标位置已存在同名文件时**不静默覆盖**——询问用户，或给新文件加 `_2` 后缀。
+4. **写说明**：在归位文件旁写同名 `.txt`，一句话说明 + 可提取标签（如 `#机械 #建模`）。
+5. **可纠错**：归位后明确告知用户「放在 `daily/xxx/`，叫 `yyy.jpg`，说明是 `…`」；用户说放错了就移过去。
+
+## 阶段 2 · 构建预览
+
+**触发**：归位完成后自动衔接（也可单独说「构建 / 预览」）。
+
+用 DSH runtime 调**现有脚本**（不重写），按序：
+
+1. `"%PY%" tools\make_posters.py` — 截视频封面。无新视频时为 no-op，**不得报错**；若某视频的 ffmpeg 全缺失（`tools/ffmpeg.exe` → `imageio_ffmpeg` → PATH 都失败），报告该视频无封面，**不阻断构建**。
+2. `"%PY%" tools\make_thumbs.py` — 生成 `.thumbs/*.webp` 缩略图。
+3. `"%NODE%" build.js` — 扫 `content/` 生成 `js/data.js`（`window.SITE_DATA=...`）。
+
+任一脚本失败（非零退出）→ 停下，把 stderr 关键行给用户，**不进入发布**。
+
+完成后告知预览地址 `http://127.0.0.1:8367`（先确保 `启动预览.bat` 跑着，或直接开 `index.html`）。**本阶段不碰 git**。
+
+## 阶段 3 · 发布
+
+**触发**：用户说「发布 / 上线」。
+
+1. 若阶段 2 未跑或有新内容 → 先跑阶段 2。
+2. `git add .`
+3. 备份并分析：
+   - `copy /Y content\changelog.json content\changelog.json.bak`
+   - `copy /Y content\version.json content\version.json.bak`
+   - `"%NODE%" tools\analyze_and_record.js`（分析 `git diff --cached`，生成 changelog 顶部条目）
+4. `"%NODE%" build.js`（这次构建做版本号 `c+1, d+1`）。
+5. **🔴 STOP — 停下确认**。把以下内容列给用户，**等用户点头再继续**：
+   - 本次提交清单：`git diff --cached --name-status`
+   - changelog 摘要：读 `content/changelog.json` 顶部条目
+   - 版本号将怎么变：当前 `content/version.json` 的值 + `bump_publish.py` 将做 `b+1, c=0, d-1`（还原本次 build 的 `d+1`；一次发布的净效果 = `b+1, c→0, d 不变`）。
+6. 用户确认后：
+   - 取时间戳 `TS`（PowerShell: `Get-Date -Format yyyy-MM-dd_HHmm`）。
+   - `git commit -m "更新内容 <TS>"`
+   - `git push origin main`（最多 3 次重试，间隔 3s）。
+7. push 成功后发版号：
+   - `"%PY%" tools\bump_publish.py`（`b+1, c=0, d-1`）
+   - `git add .`
+   - `git commit -m "发布版本号更新"`
+   - `git push origin main`（最多 3 次重试，间隔 3s）。
+
+## 失败处理（沿用 bat 现有健壮逻辑）
+
+| 场景 | 处理 |
+|---|---|
+| `make_posters.py` / `make_thumbs.py` / `build.js` 任一失败 | 停下报错，**不进入发布**；给脚本 stderr 关键行 |
+| 内容 push 3 次仍失败 | 回滚：`copy /Y content\changelog.json.bak content\changelog.json` + `copy /Y content\version.json.bak content\version.json` → `del content\changelog.json.bak content\version.json.bak` → `git reset --mixed HEAD~1`（撤销 commit）→ `"%NODE%" build.js` 重建 → 报告「未记录更新历史，版本号未变」（多半网络或 git 凭证问题），**不擅自重推** |
+| 版本号 push 3 次失败 | 内容已上线但版本未同步——明确告知「内容已上传、版本号未同步」，不静默 |
+
+## 约束
+
+- 不重写 `make_posters.py` / `make_thumbs.py` / `analyze_and_record.js` / `bump_publish.py` / `build.js`，只调用。
+- 不改站点样式 / 布局（日落海景风格、profile.json 控制台等不动）。
+- 发布始终由用户显式触发，且 push 前必须停下确认。
+- 构建阶段不碰 git。
