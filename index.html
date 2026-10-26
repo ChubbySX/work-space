@@ -7,7 +7,7 @@
 <meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
 <link rel="icon" href="content/chubby-logo.jpg" type="image/jpeg">
 <script>document.documentElement.classList.add("js");</script>
-<link rel="stylesheet" href="css/style.css?v=40">
+<link rel="stylesheet" href="css/style.css?v=42">
 </head>
 <body>
 
@@ -173,6 +173,20 @@
       <button class="vt-btn is-active" data-mode="card" aria-label="卡片模式">▦ 卡片</button>
       <button class="vt-btn" data-mode="masonry" aria-label="瀑布流模式">≋ 瀑布流</button>
     </div>
+
+    <!-- 每日精选照片 -->
+    <figure class="featured-photo reveal" id="featuredPhoto">
+      <div class="featured-img-wrap">
+        <img id="featuredImg" src="" alt="今日精选" loading="lazy">
+        <div class="featured-shine"></div>
+      </div>
+      <figcaption class="featured-caption">
+        <span class="featured-label">📷 今日精选</span>
+        <span class="featured-title" id="featuredTitle"></span>
+        <span class="featured-date" id="featuredDate"></span>
+      </figcaption>
+    </figure>
+
     <div class="daily-grid is-card" id="dailyGrid">
       <div class="empty-state">还没有日常照片～ 请把图片放进 <code>content/daily/</code> 文件夹后运行 <code>node build.js</code></div>
     </div>
@@ -282,6 +296,23 @@
 <!-- ============ 回到顶部 ============ -->
 <button class="to-top" id="toTop" aria-label="回到顶部">↑</button>
 
+<!-- ============ 彩蛋徽章 ============ -->
+<button class="egg-badge" id="eggBadge" aria-label="彩蛋合集">
+  <span class="egg-icon">🥚</span>
+  <span class="egg-count" id="eggCount">0/8</span>
+</button>
+
+<!-- ============ 彩蛋合集弹窗 ============ -->
+<div class="egg-modal" id="eggModal" aria-hidden="true">
+  <div class="egg-modal-bg" id="eggModalBg"></div>
+  <div class="egg-modal-card">
+    <button class="egg-modal-close" id="eggModalClose" aria-label="关闭">✕</button>
+    <h2 class="egg-modal-title">🏆 彩蛋合集</h2>
+    <p class="egg-modal-desc">探索网站时发现隐藏的彩蛋，已发现 <strong id="eggFound">0</strong> / <strong id="eggTotal">8</strong></p>
+    <div class="egg-grid" id="eggGrid"></div>
+  </div>
+</div>
+
 <!-- ============ 背景音乐播放器 ============ -->
 <div class="music-card" id="musicCard">
   <div class="music-header" id="musicHeader">
@@ -323,6 +354,6 @@
 </div>
 
 <script src="js/data.js?v=24"></script>
-<script src="js/main.js?v=51"></script>
+<script src="js/main.js?v=53"></script>
 </body>
 </html>

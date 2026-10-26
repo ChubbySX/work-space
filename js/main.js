@@ -195,6 +195,36 @@
     });
   }
 
+  /* ---------- 每日精选照片 ---------- */
+  function renderFeatured(daily) {
+    var el = $("#featuredPhoto");
+    if (!el || !daily || !daily.length) { if (el) el.style.display = "none"; return; }
+    // 用日期确定性地选一张（每天不同）
+    var now = new Date();
+    var dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+    var item = daily[dayOfYear % daily.length];
+    var img = $("#featuredImg");
+    var src = "";
+    if (item.type === "album") src = item.thumb || item.files[0];
+    else if (item.type === "video") src = item.thumb || item.poster || "";
+    else src = item.thumb || item.src;
+    if (!src) { el.style.display = "none"; return; }
+    img.src = src;
+    img.alt = item.title || "今日精选";
+    $("#featuredTitle").textContent = item.title || "";
+    var dateStr = "";
+    if (item.date) dateStr = item.date;
+    else dateStr = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    $("#featuredDate").textContent = dateStr;
+    el.addEventListener("click", function () {
+      if (item.type === "album") { openCardStack(item); return; }
+      var slides = [];
+      if (item.type === "video") slides.push({ type: "video", file: item.file, title: item.title, desc: item.desc });
+      else slides.push({ type: "image", file: item.src, title: item.title, desc: item.desc });
+      openLightbox(slides, 0, slides[0].type);
+    });
+  }
+
   /* ---------- 渲染：作品 ---------- */
   const TYPE_LABEL = { video: "视频", image: "图片", doc: "文档" };
 
@@ -736,6 +766,8 @@
       });
       updateIcon();
       if (isPlaying) audio.play().catch(function () {});
+      tracksPlayed[idx] = true;
+      if (Object.keys(tracksPlayed).length >= TRACKS.length && typeof discoverEgg === "function") discoverEgg("music-lover");
     }
 
     function setPlaying(playing) {
@@ -1230,6 +1262,7 @@
         btn.textContent = "☀️";
         try { localStorage.setItem("theme", "dark"); } catch (e) {}
       }
+      if (typeof discoverEgg === "function") discoverEgg("dark-mode");
     });
   }
 
@@ -1757,6 +1790,7 @@
     renderProfile(p);
     renderTimeline(p.timeline);
     renderDaily(DATA.daily);
+    renderFeatured(DATA.daily);
     renderWorks(DATA.works);
     renderProjects(DATA.projects);
     renderWishlist(DATA.wishlist);
@@ -1773,7 +1807,124 @@
     setupLightboxEvents();
     setupReveal();
     setupDailyToggle();
+    setupEggs();
   });
+
+  /* ---------- 彩蛋合集系统 ---------- */
+  var EGGS = [
+    { id: "night-owl", emoji: "🦉", name: "夜猫子", hint: "深夜造访（0~6点）" },
+    { id: "dark-mode", emoji: "🌙", name: "暗影模式", hint: "切换深色主题" },
+    { id: "snow", emoji: "⛄", name: "雪天来了", hint: "冬日访问网站" },
+    { id: "music-lover", emoji: "🎧", name: "音乐发烧友", hint: "听完3首背景音乐" },
+    { id: "skip-intro", emoji: "⏭️", name: "急性子", hint: "跳过开场动画" },
+    { id: "scroll-bottom", emoji: "📜", name: "到底了", hint: "滚动到页面最底部" },
+    { id: "konami", emoji: "🎮", name: "科乐美秘籍", hint: "↑↑↓↓←→←→BA" },
+    { id: "ten-clicks", emoji: "👆", name: "十连击", hint: "点击左上角logo十次" }
+  ];
+  var eggFound = {};
+  var tracksPlayed = {};
+  var brandClicks = 0;
+  var konamiSeq = [];
+  var KONAMI = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]; // ↑↑↓↓←→←→BA
+
+  function loadEggs() {
+    try { eggFound = JSON.parse(localStorage.getItem("eggs") || "{}"); } catch (e) { eggFound = {}; }
+  }
+  function saveEggs() {
+    try { localStorage.setItem("eggs", JSON.stringify(eggFound)); } catch (e) {}
+  }
+  function discoverEgg(id) {
+    if (eggFound[id]) return;
+    eggFound[id] = Date.now();
+    saveEggs();
+    updateEggBadge();
+    var badge = $("#eggBadge");
+    if (badge) { badge.classList.add("has-new"); setTimeout(function () { badge.classList.remove("has-new"); }, 600); }
+    var egg = EGGS.find(function (e) { return e.id === id; });
+    if (egg) showEggToast(egg);
+  }
+  function showEggToast(egg) {
+    var t = document.createElement("div");
+    t.className = "egg-toast";
+    t.innerHTML = '<span style="font-size:1.6rem">' + egg.emoji + '</span><div><b>🎉 发现彩蛋！</b><br><span style="opacity:.8">' + egg.name + '</span></div>';
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add("is-show"); });
+    setTimeout(function () { t.classList.remove("is-show"); setTimeout(function () { t.remove(); }, 400); }, 3500);
+  }
+  function updateEggBadge() {
+    var count = Object.keys(eggFound).length;
+    var el = $("#eggCount"); if (el) el.textContent = count + "/" + EGGS.length;
+    var found = $("#eggFound"); if (found) found.textContent = count;
+    var total = $("#eggTotal"); if (total) total.textContent = EGGS.length;
+  }
+  function renderEggGrid() {
+    var grid = $("#eggGrid");
+    if (!grid) return;
+    grid.innerHTML = EGGS.map(function (e) {
+      var found = !!eggFound[e.id];
+      return '<div class="egg-card' + (found ? " found" : "") + '">' +
+        '<span class="egg-card-emoji">' + e.emoji + '</span>' +
+        '<div class="egg-card-info">' +
+        '<div class="egg-card-name">' + (found ? e.name : "？？？") + '</div>' +
+        '<div class="egg-card-hint">' + (found ? "已发现" : e.hint) + '</div>' +
+        '</div></div>';
+    }).join("");
+  }
+  function setupEggs() {
+    loadEggs();
+    updateEggBadge();
+    // 夜猫子
+    var h = new Date().getHours();
+    if (h >= 0 && h < 6) discoverEgg("night-owl");
+    // 跳过开场
+    document.addEventListener("intro-done", function (e) {
+      if (e.detail && e.detail.skipped) discoverEgg("skip-intro");
+    });
+    // 雪天
+    var m = new Date().getMonth() + 1;
+    if (m === 12 || m === 1 || m === 2) discoverEgg("snow");
+    // 滚动到底部
+    var footSeen = false;
+    window.addEventListener("scroll", function () {
+      if (footSeen) return;
+      if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 50) {
+        footSeen = true;
+        discoverEgg("scroll-bottom");
+      }
+    }, { passive: true });
+    // Konami
+    document.addEventListener("keydown", function (e) {
+      konamiSeq.push(e.keyCode);
+      if (konamiSeq.length > KONAMI.length) konamiSeq.shift();
+      if (konamiSeq.length === KONAMI.length && konamiSeq.every(function (k, i) { return k === KONAMI[i]; })) {
+        discoverEgg("konami");
+      }
+    });
+    // 品牌十连击
+    var brand = $(".brand");
+    if (brand) brand.addEventListener("click", function () {
+      brandClicks++;
+      if (brandClicks >= 10) discoverEgg("ten-clicks");
+    });
+    // 徽章点击 → 打开弹窗
+    var badge = $("#eggBadge");
+    var modal = $("#eggModal");
+    if (badge && modal) {
+      badge.addEventListener("click", function () {
+        renderEggGrid();
+        modal.classList.add("is-open");
+        modal.setAttribute("aria-hidden", "false");
+      });
+    }
+    var closeBtn = $("#eggModalClose");
+    var bg = $("#eggModalBg");
+    function closeModal() { modal.classList.remove("is-open"); modal.setAttribute("aria-hidden", "true"); }
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (bg) bg.addEventListener("click", closeModal);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+    });
+  }
 
   /* ---------- 日常区视图切换（卡片 / 瀑布流）---------- */
   function setupDailyToggle() {
