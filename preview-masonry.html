@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>摄影瀑布流 · 效果预览</title>
+<style>
+  /* ===== 日落海景主题变量（和主站一致）===== */
+  :root {
+    --bg: #f7f0e7;
+    --surface: #fffaf2;
+    --ink: #2a1f15;
+    --ink-soft: #6b5a48;
+    --accent: #c96a2e;
+    --accent-soft: #fbeadb;
+    --accent-dark: #a6531f;
+    --sea: #5b8a8c;
+    --line: #e8dcc8;
+    --radius: 14px;
+    --shadow: 0 4px 20px rgba(166,83,31,.10);
+    --shadow-hover: 0 8px 30px rgba(166,83,31,.20);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ===== 顶部说明栏 ===== */
+  .preview-header {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 24px 24px;
+    text-align: center;
+  }
+
+  .preview-header h1 {
+    font-size: 2rem;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .preview-header p {
+    color: var(--ink-soft);
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto 24px;
+  }
+
+  .preview-badge {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* ===== 筛选标签 ===== */
+  .filter-bar {
+    max-width: 1200px;
+    margin: 0 auto 28px;
+    padding: 0 24px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 8px 18px;
+    border: 2px solid var(--line);
+    border-radius: 20px;
+    background: var(--surface);
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all .3s ease;
+  }
+
+  .filter-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .filter-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  /* ===== 瀑布流核心布局（CSS columns）===== */
+  .masonry {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 60px;
+    column-count: 3;          /* 3列 */
+    column-gap: 18px;         /* 列间距 */
+    column-fill: balance;     /* 尽量平衡各列高度 */
+  }
+
+  @media (max-width: 900px) {
+    .masonry { column-count: 2; }
+  }
+
+  @media (max-width: 500px) {
+    .masonry { column-count: 1; column-gap: 12px; }
+  }
+
+  /* ===== 每张照片卡片 ===== */
+  .masonry-item {
+    break-inside: avoid;       /* 不让卡片被列分割 */
+    margin-bottom: 18px;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    background: var(--surface);
+    cursor: pointer;
+    position: relative;
+    transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .35s ease;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: cardIn .6s ease forwards;
+  }
+
+  @keyframes cardIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .masonry-item:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .masonry-item img {
+    width: 100%;
+    display: block;
+    transition: transform .5s ease;
+  }
+
+  .masonry-item:hover img {
+    transform: scale(1.08);
+  }
+
+  /* 卡片标题/标签覆盖层 */
+  .masonry-overlay {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    padding: 32px 14px 12px;
+    background: linear-gradient(transparent, rgba(0,0,0,.7));
+    color: #fff;
+    opacity: 0;
+    transition: opacity .35s ease;
+  }
+
+  .masonry-item:hover .masonry-overlay {
+    opacity: 1;
+  }
+
+  .masonry-overlay .title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .masonry-overlay .category {
+    font-size: 0.78rem;
+    opacity: 0.8;
+  }
+
+  /* 隐藏被筛选掉的卡片 */
+  .masonry-item.hidden {
+    display: none;
+  }
+
+  /* ===== Lightbox ===== */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(20,12,6,.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    cursor: zoom-out;
+  }
+
+  .lightbox.open {
+    display: flex;
+    animation: lbFade .3s ease;
+  }
+
+  @keyframes lbFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .lightbox img {
+    max-width: 90vw;
+    max-height: 85vh;
+    border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 24px; right: 32px;
+    font-size: 2rem;
+    color: #fff;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity .2s;
+  }
+
+  .lightbox-close:hover { opacity: 1; }
+
+  .lightbox-caption {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,.8);
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  /* ===== 底部对比说明 ===== */
+  .compare {
+    max-width: 800px;
+    margin: 0 auto 60px;
+    padding: 24px;
+    background: var(--accent-soft);
+    border-radius: var(--radius);
+    border-left: 4px solid var(--accent);
+  }
+
+  .compare h3 {
+    color: var(--accent-dark);
+    font-size: 1.05rem;
+    margin-bottom: 10px;
+  }
+
+  .compare ul {
+    list-style: none;
+    color: var(--ink-soft);
+    font-size: 0.88rem;
+  }
+
+  .compare li {
+    padding: 4px 0;
+    padding-left: 20px;
+    position: relative;
+  }
+
+  .compare li::before {
+    content: "✦";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<div class="preview-header">
+  <span class="preview-badge">效果预览 · 未安装到主站</span>
+  <h1>🌊 摄影瀑布流</h1>
+  <p>这是把你的日常照片按不同宽高比自然排列的瀑布流（Masonry）布局。照片高度参差不齐，像瀑布一样流下来，比固定网格更生动。</p>
+</div>
+
+<!-- 筛选标签 -->
+<div class="filter-bar" id="filterBar">
+  <button class="filter-btn active" data-cat="all">全部</button>
+  <button class="filter-btn" data-cat="青岛">青岛在青理</button>
+  <button class="filter-btn" data-cat="旅游">不爱出门的旅游</button>
+  <button class="filter-btn" data-cat="玩具">我的小玩具们</button>
+  <button class="filter-btn" data-cat="美食">美食</button>
+  <button class="filter-btn" data-cat="其他">其他</button>
+</div>
+
+<!-- 瀑布流容器 -->
+<div class="masonry" id="masonry"></div>
+
+<!-- 对比说明 -->
+<div class="compare">
+  <h3>📋 瀑布流 vs 现在的卡片网格</h3>
+  <ul>
+    <li><b>瀑布流</b>：照片保持原始宽高比，高低错落，视觉更丰富，适合摄影展示</li>
+    <li><b>当前网格</b>：所有卡片统一高度，整齐但略呆板，适合配文字说明</li>
+    <li>安装后会替换「日常」区的图片展示方式，或作为独立「摄影」区</li>
+    <li>支持点击放大、分类筛选、入场动画、hover缩放</li>
+    <li>移动端自动从3列→2列→1列</li>
+  </ul>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <span class="lightbox-close" onclick="closeLightbox()">✕</span>
+  <img id="lbImg" src="">
+  <div class="lightbox-caption" id="lbCaption"></div>
+</div>
+
+<script>
+// ===== 用你的真实日常照片 =====
+var photos = [
+  { src: "content/daily/青岛在青理/校园晚霞.jpg", title: "校园晚霞", cat: "青岛" },
+  { src: "content/daily/青岛在青理/大海在头顶.jpg", title: "大海在头顶", cat: "青岛" },
+  { src: "content/daily/青岛在青理/天空分层.jpg", title: "天空分层", cat: "青岛" },
+  { src: "content/daily/青岛在青理/操场与晴天.jpg", title: "操场与晴天", cat: "青岛" },
+  { src: "content/daily/青岛在青理/图书馆前的大广场.jpg", title: "图书馆前的大广场", cat: "青岛" },
+  { src: "content/daily/青岛在青理/下雪了？.jpg", title: "下雪了？", cat: "青岛" },
+  { src: "content/daily/青岛在青理/狗学长们爱晒太阳.jpg", title: "狗学长们爱晒太阳", cat: "青岛" },
+  { src: "content/daily/青岛在青理/窗外风景（我真的很喜欢在走廊的窗户上趴着仰望外面）.jpg", title: "窗外风景", cat: "青岛" },
+  { src: "content/daily/不爱出门的旅游/上海.jpg", title: "上海", cat: "旅游" },
+  { src: "content/daily/不爱出门的旅游/上海外滩.jpg", title: "上海外滩", cat: "旅游" },
+  { src: "content/daily/不爱出门的旅游/云南的云.jpg", title: "云南的云", cat: "旅游" },
+  { src: "content/daily/不爱出门的旅游/云南的南.jpg", title: "云南的南", cat: "旅游" },
+  { src: "content/daily/不爱出门的旅游/南京.jpg", title: "南京", cat: "旅游" },
+  { src: "content/daily/不爱出门的旅游/南京先锋书店.jpg", title: "南京先锋书店", cat: "旅游" },
+  { src: "content/daily/不爱出门的旅游/南京步行街.jpg", title: "南京步行街", cat: "旅游" },
+  { src: "content/daily/不爱出门的旅游/南京超大的popmart.jpg", title: "南京超大的popmart", cat: "旅游" },
+  { src: "content/daily/不爱出门的旅游/江南古镇.jpg", title: "江南古镇", cat: "旅游" },
+  { src: "content/daily/不爱出门的旅游/非常非常难喝的绿豆汤（里面加了薄荷）.jpg", title: "非常非常难喝的绿豆汤", cat: "旅游" },
+  { src: "content/daily/我的小玩具们/MCX-印花集（崭新出厂）.jpg", title: "MCX-印花集", cat: "玩具" },
+  { src: "content/daily/我的小玩具们/MCX万岁！.jpg", title: "MCX万岁！", cat: "玩具" },
+  { src: "content/daily/我的小玩具们/我的发射器们.jpg", title: "我的发射器们", cat: "玩具" },
+  { src: "content/daily/我的小玩具们/灯厂的忠实粉丝.jpg", title: "灯厂的忠实粉丝", cat: "玩具" },
+  { src: "content/daily/美食就是好吃的意思！/兼职的美味杂货面.jpg", title: "兼职的美味杂货面", cat: "美食" },
+  { src: "content/daily/美食就是好吃的意思！/蟹黄面.jpg", title: "蟹黄面", cat: "美食" },
+  { src: "content/daily/工作日记/实习与我的同事们.jpg", title: "实习与我的同事们", cat: "其他" },
+  { src: "content/daily/回访校园.jpg", title: "回访校园", cat: "其他" },
+];
+
+// ===== 构建瀑布流 =====
+var grid = document.getElementById("masonry");
+photos.forEach(function(p, i) {
+  var card = document.createElement("div");
+  card.className = "masonry-item";
+  card.dataset.cat = p.cat;
+  card.style.animationDelay = (i * 0.05) + "s";
+  card.innerHTML =
+    '<img src="' + p.src + '" loading="lazy" alt="' + p.title + '">' +
+    '<div class="masonry-overlay">' +
+      '<div class="title">' + p.title + '</div>' +
+      '<div class="category">' + p.cat + '</div>' +
+    '</div>';
+  card.addEventListener("click", function() { openLightbox(p); });
+  grid.appendChild(card);
+});
+
+// ===== 筛选 =====
+document.getElementById("filterBar").addEventListener("click", function(e) {
+  if (!e.target.classList.contains("filter-btn")) return;
+  document.querySelectorAll(".filter-btn").forEach(function(b) {
+    b.classList.remove("active");
+  });
+  e.target.classList.add("active");
+  var cat = e.target.dataset.cat;
+  document.querySelectorAll(".masonry-item").forEach(function(item) {
+    if (cat === "all" || item.dataset.cat === cat) {
+      item.classList.remove("hidden");
+    } else {
+      item.classList.add("hidden");
+    }
+  });
+});
+
+// ===== Lightbox =====
+var lb = document.getElementById("lightbox");
+var lbImg = document.getElementById("lbImg");
+var lbCaption = document.getElementById("lbCaption");
+
+function openLightbox(p) {
+  lbImg.src = p.src;
+  lbCaption.textContent = p.title + " · " + p.cat;
+  lb.classList.add("open");
+}
+
+function closeLightbox() {
+  lb.classList.remove("open");
+}
+
+lb.addEventListener("click", function(e) {
+  if (e.target === lb || e.target.classList.contains("lightbox-close")) {
+    closeLightbox();
+  }
+});
+
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") closeLightbox();
+});
+</script>
+
+</body>
+</html>

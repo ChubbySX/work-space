@@ -20,6 +20,48 @@
   let musicVolume = 0;           // 当前音乐音量（0~MAX_MUSIC_VOL）
   var PRELOAD = { total: 0, loaded: 0, revealFn: null, active: false, done: false, startTime: 0 };
 
+  /* ---------- 开场齿轮咔哒声（Web Audio API，无需音频文件） ---------- */
+  function playGearSound() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctx.resume().then(function () {
+        var now = ctx.currentTime;
+        for (var i = 0; i < 3; i++) {
+          var t = now + i * 0.07;
+          // 机械咔哒声：短促带通滤波噪声
+          var buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.025), ctx.sampleRate);
+          var data = buf.getChannelData(0);
+          for (var j = 0; j < data.length; j++) {
+            data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / data.length, 3);
+          }
+          var src = ctx.createBufferSource();
+          src.buffer = buf;
+          var filter = ctx.createBiquadFilter();
+          filter.type = "bandpass";
+          filter.frequency.value = 600 + i * 300;
+          filter.Q.value = 4;
+          var gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.18, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+          src.connect(filter).connect(gain).connect(ctx.destination);
+          src.start(t);
+          // 低频撞击感
+          var osc = ctx.createOscillator();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(140, t);
+          osc.frequency.exponentialRampToValueAtTime(50, t + 0.04);
+          var og = ctx.createGain();
+          og.gain.setValueAtTime(0.12, t);
+          og.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+          osc.connect(og).connect(ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.05);
+        }
+        setTimeout(function () { ctx.close(); }, 1500);
+      });
+    } catch (e) {}
+  }
+
   /* ---------- 数据加载：优先 window.SITE_DATA（file:// 也能用） ---------- */
   function loadData() {
     return new Promise((resolve) => {
@@ -512,6 +554,7 @@
     const revealHome = (opts) => {
       if (hidden) return;
       hidden = true;
+      playGearSound();
       document.body.style.overflow = "";
       hero.classList.add("is-ready");               // 首页元素开始逐帧入场
       setTimeout(() => intro.classList.add("is-hidden"), 800); // 等滑出动画收尾
@@ -1729,5 +1772,29 @@
     setupNav();
     setupLightboxEvents();
     setupReveal();
+    setupDailyToggle();
   });
+
+  /* ---------- 日常区视图切换（卡片 / 瀑布流）---------- */
+  function setupDailyToggle() {
+    var grid = $("#dailyGrid");
+    var toggle = $("#dailyToggle");
+    if (!grid || !toggle) return;
+    var saved = localStorage.getItem("dailyView") || "card";
+    applyMode(saved);
+    toggle.addEventListener("click", function (e) {
+      var btn = e.target.closest(".vt-btn");
+      if (!btn) return;
+      var mode = btn.dataset.mode;
+      applyMode(mode);
+      localStorage.setItem("dailyView", mode);
+    });
+    function applyMode(mode) {
+      toggle.querySelectorAll(".vt-btn").forEach(function (b) {
+        b.classList.toggle("is-active", b.dataset.mode === mode);
+      });
+      grid.classList.toggle("is-card", mode === "card");
+      grid.classList.toggle("is-masonry", mode === "masonry");
+    }
+  }
 })();

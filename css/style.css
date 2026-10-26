@@ -694,6 +694,32 @@ code {
 }
 
 /* ---------- 日常（瀑布流） ---------- */
+/* 视图切换按钮 */
+.view-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.vt-btn {
+  padding: 8px 18px;
+  border: 2px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: .88rem;
+  font-weight: 500;
+  transition: all .3s ease;
+}
+.vt-btn:hover { border-color: var(--accent); color: var(--accent); }
+.vt-btn.is-active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ===== 瀑布流模式（默认）===== */
 .daily-grid {
   columns: 3 260px;
   column-gap: 18px;
@@ -717,6 +743,28 @@ code {
   will-change: transform;
 }
 .daily-item:hover img { transform: scale(1.09); }
+
+/* ===== 卡片模式（固定宽高比网格）===== */
+.daily-grid.is-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+  columns: auto;
+}
+.daily-grid.is-card .daily-item {
+  margin-bottom: 0;
+  break-inside: auto;
+}
+.daily-grid.is-card .daily-item img {
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  height: 100%;
+}
+.daily-grid.is-card .daily-meta {
+  aspect-ratio: 4 / 3;
+  height: auto;
+  inset: 0;
+}
 .daily-meta {
   position: absolute;
   inset: 0;
@@ -1878,4 +1926,11 @@ code {
 /* ---------- 移动端：隐藏滚动提示防重叠 ---------- */
 @media (max-width: 640px) {
   .hero-scroll { display: none; }
+  .daily-grid { columns: 2 140px; column-gap: 10px; }
+  .daily-grid.is-card { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .daily-item { margin-bottom: 10px; }
+}
+@media (max-width: 420px) {
+  .daily-grid { columns: 1; }
+  .daily-grid.is-card { grid-template-columns: 1fr; }
 }

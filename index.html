@@ -7,7 +7,7 @@
 <meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
 <link rel="icon" href="content/chubby-logo.jpg" type="image/jpeg">
 <script>document.documentElement.classList.add("js");</script>
-<link rel="stylesheet" href="css/style.css?v=39">
+<link rel="stylesheet" href="css/style.css?v=40">
 </head>
 <body>
 
@@ -169,7 +169,11 @@
       <h2 class="section-title">我的日常</h2>
       <p class="section-desc">记录生活里那些有意思的瞬间</p>
     </div>
-    <div class="daily-grid" id="dailyGrid">
+    <div class="view-toggle" id="dailyToggle">
+      <button class="vt-btn is-active" data-mode="card" aria-label="卡片模式">▦ 卡片</button>
+      <button class="vt-btn" data-mode="masonry" aria-label="瀑布流模式">≋ 瀑布流</button>
+    </div>
+    <div class="daily-grid is-card" id="dailyGrid">
       <div class="empty-state">还没有日常照片～ 请把图片放进 <code>content/daily/</code> 文件夹后运行 <code>node build.js</code></div>
     </div>
   </div>
@@ -319,6 +323,6 @@
 </div>
 
 <script src="js/data.js?v=24"></script>
-<script src="js/main.js?v=49"></script>
+<script src="js/main.js?v=51"></script>
 </body>
 </html>
