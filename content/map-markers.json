@@ -1,0 +1,17 @@
+[
+  { "name": "青岛理工大学", "desc": "我的大学 · 智能制造工程", "x": 42, "y": 30, "color": "#c96a2e", "icon": "🎓", "photos": [
+    "content/daily/青岛在青理/校园晚霞.jpg",
+    "content/daily/青岛在青理/图书馆前的大广场.jpg",
+    "content/daily/青岛在青理/大海在头顶.jpg",
+    "content/daily/青岛在青理/天空分层.jpg",
+    "content/daily/青岛在青理/操场与晴天.jpg",
+    "content/daily/青岛在青理/下雪了？.jpg",
+    "content/daily/青岛在青理/狗学长们爱晒太阳.jpg",
+    "content/daily/青岛在青理/窗外风景（我真的很喜欢在走廊的窗户上趴着仰望外面）.jpg"
+  ] },
+  { "name": "栈桥", "desc": "青岛的标志 · 回澜阁", "x": 36, "y": 52, "color": "#5b8a8c", "icon": "🌉", "photos": [] },
+  { "name": "五四广场", "desc": "红色雕塑「五月的风」", "x": 50, "y": 54, "color": "#d94a3a", "icon": "🌀", "photos": [] },
+  { "name": "八大关", "desc": "万国建筑博览", "x": 42, "y": 50, "color": "#8a7a5a", "icon": "🏛️", "photos": [] },
+  { "name": "崂山风景区", "desc": "海上第一名山", "x": 76, "y": 42, "color": "#5a9e3a", "icon": "⛰️", "photos": [] },
+  { "name": "金沙滩", "desc": "亚洲第一滩", "x": 22, "y": 62, "color": "#e8b840", "icon": "🏖️", "photos": [] }
+]

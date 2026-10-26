@@ -111,24 +111,6 @@ window.SITE_DATA = {
         "desc": "在这里写一句话介绍",
         "avatar": ""
       }
-    ],
-    "stats": [
-      {
-        "value": "8",
-        "label": "件作品"
-      },
-      {
-        "value": "6",
-        "label": "条日常"
-      },
-      {
-        "value": "3",
-        "label": "个进行中"
-      },
-      {
-        "value": "5",
-        "label": "个标签"
-      }
     ]
   },
   "daily": [
@@ -309,6 +291,8 @@ window.SITE_DATA = {
       "desc": "在blender里复刻一个水弹二号波，从分析零件结构到让其出现在我的画布场景中。目前正在做齿轮组啮合精度优化。",
       "goal": "完成一个属于我自己数据的二号波，便于我后续可能的3D打印计划",
       "progress": 55,
+      "start": "2024-09",
+      "end": "",
       "expected": "一个完整的、可实际使用的水弹二号波",
       "learned": "对wargame硬件的深入理解"
     },
@@ -317,6 +301,8 @@ window.SITE_DATA = {
       "desc": "从零搭建这个个人主页网站，借助Agent完成 HTML/CSS/JS，不依赖任何框架。包含作品展示、日常记录、背景音乐等功能。",
       "goal": "做一个好看、好用、能自动展示作品的个人主页",
       "progress": 80,
+      "start": "2025-01",
+      "end": "",
       "expected": "一个可以直接发布上线、随时更新内容的个人网站",
       "learned": "大模型真好用！"
     },
@@ -325,6 +311,9 @@ window.SITE_DATA = {
       "desc": "完全依靠agent来实现小程序/软件的制作，帮助玩家们理解圈子内各式各样的零件及其总成",
       "goal": "满足新手玩家们理解wargame水弹产品的组装需求",
       "progress": 30,
+      "start": "2024-06",
+      "end": "",
+      "url": "https://chubbysx.github.io/waterbead-magic/",
       "expected": "能够包含市面上绝大多数的原厂品牌和三方配件，辅助玩家搭配",
       "learned": "程序制作没学到什么，提示词和指令输入倒是熟练精进了不少"
     }
@@ -348,6 +337,10 @@ window.SITE_DATA = {
   ],
   "changelog": [
     {
+      "date": "2026-10-26 17:31",
+      "summary": "1.更新项目：2号波箱复刻.json、个人网站搭建.json、水弹的魔法.json；2.调整了 构建脚本（build.js +27 -8）；网页样式（style.css +265 -57）：新增 .friends-grid、.friend-card、.friend-avatar、.music-tracks、.dash-charts，移除 .stats、.skill-fill；网页结构（index.html +84 -12）；站点数据（data.js +73 -19）；页面交互逻辑（main.js +369 -95）：新增 .video、.idx、unlockAudio()、playGearSound()、fmtTime()，移除 .textContent、setupStats()；3.新增了 代码（map-designs.html +334 -0）：新增 .active；发布脚本（预览地图设计.bat +3 -0）；工具脚本（map-editor.html +167 -0）：新增 .dragging、.secondary、.clientX、renderPins()、startDrag()；工具脚本（打开地图编辑器.bat +3 -0）"
+    },
+    {
       "date": "2026-10-26 00:09",
       "summary": "1.内容更新"
     },
@@ -362,11 +355,72 @@ window.SITE_DATA = {
     {
       "date": "2026-10-25 23:51",
       "summary": "1.内容更新"
-    },
-    {
-      "date": "2026-10-25 23:51",
-      "summary": "1.内容更新"
     }
   ],
-  "version": "1.5.8.53"
+  "mapMarkers": [
+    {
+      "name": "青岛理工大学",
+      "desc": "我的大学 · 智能制造工程",
+      "x": 42,
+      "y": 30,
+      "color": "#c96a2e",
+      "icon": "🎓",
+      "photos": [
+        "content/daily/青岛在青理/校园晚霞.jpg",
+        "content/daily/青岛在青理/图书馆前的大广场.jpg",
+        "content/daily/青岛在青理/大海在头顶.jpg",
+        "content/daily/青岛在青理/天空分层.jpg",
+        "content/daily/青岛在青理/操场与晴天.jpg",
+        "content/daily/青岛在青理/下雪了？.jpg",
+        "content/daily/青岛在青理/狗学长们爱晒太阳.jpg",
+        "content/daily/青岛在青理/窗外风景（我真的很喜欢在走廊的窗户上趴着仰望外面）.jpg"
+      ]
+    },
+    {
+      "name": "栈桥",
+      "desc": "青岛的标志 · 回澜阁",
+      "x": 36,
+      "y": 52,
+      "color": "#5b8a8c",
+      "icon": "🌉",
+      "photos": []
+    },
+    {
+      "name": "五四广场",
+      "desc": "红色雕塑「五月的风」",
+      "x": 50,
+      "y": 54,
+      "color": "#d94a3a",
+      "icon": "🌀",
+      "photos": []
+    },
+    {
+      "name": "八大关",
+      "desc": "万国建筑博览",
+      "x": 42,
+      "y": 50,
+      "color": "#8a7a5a",
+      "icon": "🏛️",
+      "photos": []
+    },
+    {
+      "name": "崂山风景区",
+      "desc": "海上第一名山",
+      "x": 76,
+      "y": 42,
+      "color": "#5a9e3a",
+      "icon": "⛰️",
+      "photos": []
+    },
+    {
+      "name": "金沙滩",
+      "desc": "亚洲第一滩",
+      "x": 22,
+      "y": 62,
+      "color": "#e8b840",
+      "icon": "🏖️",
+      "photos": []
+    }
+  ],
+  "version": "1.5.31.76"
 };

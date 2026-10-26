@@ -21,44 +21,54 @@
   var PRELOAD = { total: 0, loaded: 0, revealFn: null, active: false, done: false, startTime: 0 };
 
   /* ---------- 开场齿轮咔哒声（Web Audio API，无需音频文件） ---------- */
-  function playGearSound() {
+  // 共享 AudioContext：首次用户交互时创建，确保浏览器允许播放
+  var gearCtx = null;
+  function unlockAudio() {
+    if (gearCtx) { if (gearCtx.state === "suspended") gearCtx.resume().catch(function(){}); return; }
     try {
-      var ctx = new (window.AudioContext || window.webkitAudioContext)();
-      ctx.resume().then(function () {
-        var now = ctx.currentTime;
-        for (var i = 0; i < 3; i++) {
-          var t = now + i * 0.07;
-          // 机械咔哒声：短促带通滤波噪声
-          var buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.025), ctx.sampleRate);
-          var data = buf.getChannelData(0);
-          for (var j = 0; j < data.length; j++) {
-            data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / data.length, 3);
-          }
-          var src = ctx.createBufferSource();
-          src.buffer = buf;
-          var filter = ctx.createBiquadFilter();
-          filter.type = "bandpass";
-          filter.frequency.value = 600 + i * 300;
-          filter.Q.value = 4;
-          var gain = ctx.createGain();
-          gain.gain.setValueAtTime(0.18, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
-          src.connect(filter).connect(gain).connect(ctx.destination);
-          src.start(t);
-          // 低频撞击感
-          var osc = ctx.createOscillator();
-          osc.type = "triangle";
-          osc.frequency.setValueAtTime(140, t);
-          osc.frequency.exponentialRampToValueAtTime(50, t + 0.04);
-          var og = ctx.createGain();
-          og.gain.setValueAtTime(0.12, t);
-          og.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
-          osc.connect(og).connect(ctx.destination);
-          osc.start(t);
-          osc.stop(t + 0.05);
+      gearCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (gearCtx.state === "suspended") gearCtx.resume().catch(function(){});
+    } catch (e) {}
+  }
+  ["click", "touchstart", "keydown"].forEach(function (ev) {
+    document.addEventListener(ev, unlockAudio, { passive: true });
+  });
+
+  function playGearSound() {
+    if (!gearCtx || gearCtx.state !== "running") return;
+    try {
+      var now = gearCtx.currentTime;
+      for (var i = 0; i < 3; i++) {
+        var t = now + i * 0.07;
+        // 机械咔哒声：短促带通滤波噪声
+        var buf = gearCtx.createBuffer(1, Math.floor(gearCtx.sampleRate * 0.025), gearCtx.sampleRate);
+        var data = buf.getChannelData(0);
+        for (var j = 0; j < data.length; j++) {
+          data[j] = (Math.random() * 2 - 1) * Math.pow(1 - j / data.length, 3);
         }
-        setTimeout(function () { ctx.close(); }, 1500);
-      });
+        var src = gearCtx.createBufferSource();
+        src.buffer = buf;
+        var filter = gearCtx.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 600 + i * 300;
+        filter.Q.value = 4;
+        var gain = gearCtx.createGain();
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+        src.connect(filter).connect(gain).connect(gearCtx.destination);
+        src.start(t);
+        // 低频撞击感
+        var osc = gearCtx.createOscillator();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(50, t + 0.04);
+        var og = gearCtx.createGain();
+        og.gain.setValueAtTime(0.12, t);
+        og.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+        osc.connect(og).connect(gearCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.05);
+      }
     } catch (e) {}
   }
 
@@ -113,31 +123,15 @@
       if (p.intro.sub) $("#introSub").textContent = p.intro.sub;
     }
 
-    // 技能进度条（替代标签）
-    var skills = p.skills || [];
-    if (skills.length) {
-      $("#tagList").innerHTML = '<div class="skills">' + skills.map(function (s) {
-        var lvl = Math.max(0, Math.min(100, s.level || 0));
-        return '<div class="skill-row"><span class="skill-name">' + esc(s.name) + '</span>' +
-          '<span class="skill-track"><span class="skill-fill" style="--lvl:' + lvl + '%"></span></span>' +
-          '<span class="skill-val">' + lvl + '</span></div>';
-      }).join("") + '</div>';
-    } else {
-      var tags = p.tags || [];
-      $("#tagList").innerHTML = tags.map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join("");
-    }
+    // 标签（技能已在数据看板雷达图展示）
+    var tags = p.tags || [];
+    $("#tagList").innerHTML = tags.map(function (t) { return '<span class="tag">' + esc(t) + '</span>'; }).join("");
 
     // 简介（数组或字符串）
     const bioEl = $("#bio");
     let paras = p.bio || [];
     if (typeof paras === "string") paras = [paras];
     bioEl.innerHTML = paras.map((t) => `<p>${esc(t)}</p>`).join("");
-
-    // 数据
-    const stats = p.stats || [];
-    $("#stats").innerHTML = stats
-      .map((s) => `<div class="stat"><b>${esc(s.value)}</b><span>${esc(s.label)}</span></div>`)
-      .join("");
   }
 
   /* ---------- 渲染：日常（单图 / 图片组 / 视频） ---------- */
@@ -205,9 +199,10 @@
     var item = daily[dayOfYear % daily.length];
     var img = $("#featuredImg");
     var src = "";
-    if (item.type === "album") src = item.thumb || item.files[0];
-    else if (item.type === "video") src = item.thumb || item.poster || "";
-    else src = item.thumb || item.src;
+    // 使用原图而非缩略图（今日精选展示较大尺寸，需要清晰度）
+    if (item.type === "album") src = item.files && item.files.length ? item.files[0] : "";
+    else if (item.type === "video") src = item.poster || "";
+    else src = item.src || "";
     if (!src) { el.style.display = "none"; return; }
     img.src = src;
     img.alt = item.title || "今日精选";
@@ -603,10 +598,12 @@
     const revealHome = (opts) => {
       if (hidden) return;
       hidden = true;
-      playGearSound();
       document.body.style.overflow = "";
       hero.classList.add("is-ready");               // 首页元素开始逐帧入场
-      setTimeout(() => intro.classList.add("is-hidden"), 800); // 等滑出动画收尾
+      setTimeout(() => {
+        intro.classList.add("is-hidden");           // 向上滑退动画开始
+        playGearSound();                             // 齿轮声与滑退同步出现
+      }, 800);
       document.dispatchEvent(new CustomEvent("intro-done", { detail: { skipped: !!(opts && opts.skipped) } }));
     };
 
@@ -691,40 +688,6 @@
     setTimeout(startTick, 26000);
   }
 
-  /* ---------- 统计数字滚动 ---------- */
-  function setupStats() {
-    const statsEl = $("#stats");
-    if (!statsEl) return;
-    const nums = $$(".stat b", statsEl);
-    if (!nums.length) return;
-    const reduced =
-      window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) return;
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (!e.isIntersecting) return;
-          io.unobserve(e.target);
-          nums.forEach((b) => {
-            const end = parseInt(b.textContent, 10);
-            if (isNaN(end)) return;
-            const t0 = performance.now();
-            const dur = 900;
-            const step = (t) => {
-              const p = Math.min(1, (t - t0) / dur);
-              b.textContent = Math.round(end * (1 - Math.pow(1 - p, 3)));
-              if (p < 1) requestAnimationFrame(step);
-            };
-            requestAnimationFrame(step);
-          });
-        });
-      },
-      { threshold: 0.4 }
-    );
-    io.observe(statsEl);
-  }
-
   /* ---------- 左侧章节导航 ---------- */
   function setupSideNav() {
     const dots = $$(".side-dot");
@@ -763,6 +726,13 @@
     const videoVol = $("#videoVol");
     const videoVolVal = $("#videoVolVal");
     const musicIcon = $("#musicIcon");
+    const musicNow = $("#musicNow");
+    const musicPrev = $("#musicPrev");
+    const musicNext = $("#musicNext");
+    const musicBar = $("#musicBar");
+    const musicBarFill = $("#musicBarFill");
+    const musicTime = $("#musicTime");
+    const musicTotal = $("#musicTotal");
     if (!audio || !playBtn) return;
 
     let currentTrack = 0;
@@ -775,6 +745,13 @@
 
     function updateIcon() {
       if (musicIcon) musicIcon.textContent = TRACKS[currentTrack].icon;
+      if (musicNow) musicNow.textContent = TRACKS[currentTrack].icon + " " + TRACKS[currentTrack].name;
+    }
+
+    function fmtTime(s) {
+      if (!s || isNaN(s)) return "0:00";
+      var m = Math.floor(s / 60), sec = Math.floor(s % 60);
+      return m + ":" + (sec < 10 ? "0" : "") + sec;
     }
 
     function switchTrack(idx) {
@@ -905,7 +882,41 @@
       if (card.classList.contains("is-collapsed")) toggleCollapse();
     });
 
-    audio.addEventListener("ended", function () { if (isPlaying) audio.play().catch(function () {}); });
+    audio.addEventListener("ended", function () {
+      // 自动播放下一首（循环到最后再回到第一首）
+      var next = (currentTrack + 1) % TRACKS.length;
+      switchTrack(next);
+    });
+
+    // 进度条
+    audio.addEventListener("timeupdate", function () {
+      if (musicBarFill && audio.duration) {
+        musicBarFill.style.width = (audio.currentTime / audio.duration * 100) + "%";
+      }
+      if (musicTime) musicTime.textContent = fmtTime(audio.currentTime);
+    });
+    audio.addEventListener("loadedmetadata", function () {
+      if (musicTotal) musicTotal.textContent = fmtTime(audio.duration);
+    });
+    // 点击进度条跳转
+    if (musicBar) musicBar.addEventListener("click", function (e) {
+      var rect = musicBar.getBoundingClientRect();
+      var pct = (e.clientX - rect.left) / rect.width;
+      if (audio.duration) audio.currentTime = pct * audio.duration;
+    });
+    // 上一首/下一首
+    if (musicPrev) musicPrev.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var prev = (currentTrack - 1 + TRACKS.length) % TRACKS.length;
+      switchTrack(prev);
+      if (!isPlaying) { audio.volume = calcVol(); musicVolume = calcVol(); audio.play().then(function () { setPlaying(true); }).catch(function () {}); }
+    });
+    if (musicNext) musicNext.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var next = (currentTrack + 1) % TRACKS.length;
+      switchTrack(next);
+      if (!isPlaying) { audio.volume = calcVol(); musicVolume = calcVol(); audio.play().then(function () { setPlaying(true); }).catch(function () {}); }
+    });
 
     updateIcon();
     // 开场动画结束后自动渐入播放
@@ -957,6 +968,153 @@
     });
   }
 
+  /* ---------- 数据看板 ---------- */
+  function renderDashboard(data) {
+    var p = data.profile || {};
+    var daily = data.daily || [];
+    var works = data.works || [];
+    var projects = data.projects || [];
+    var timeline = p.timeline || [];
+    var friends = p.friends || [];
+    var tags = p.tags || [];
+    var skills = p.skills || [];
+    var stats = [
+      { emoji: "🎬", num: works.length, label: "件作品" },
+      { emoji: "📸", num: daily.length, label: "条日常" },
+      { emoji: "🔧", num: projects.length, label: "个项目" },
+      { emoji: "📅", num: timeline.length, label: "个里程碑" },
+      { emoji: "🏷️", num: tags.length, label: "个标签" },
+      { emoji: "🤝", num: friends.length, label: "位好友" }
+    ];
+    $("#dashStats").innerHTML = stats.map(function (s) {
+      return '<div class="dash-stat"><span class="dash-stat-emoji">' + s.emoji + '</span>' +
+        '<div class="dash-stat-num" data-target="' + s.num + '">0</div>' +
+        '<div class="dash-stat-label">' + s.label + '</div></div>';
+    }).join("");
+    var byType = { video: 0, image: 0, doc: 0 };
+    works.forEach(function (w) { if (byType[w.type] !== undefined) byType[w.type]++; });
+    var maxV = Math.max(1, byType.video, byType.image, byType.doc);
+    var barColors = { video: "var(--accent)", image: "var(--sea)", doc: "var(--accent-dark)" };
+    var barLabels = { video: "视频", image: "图片", doc: "文档" };
+    var barsHtml = "";
+    ["video", "image", "doc"].forEach(function (t) {
+      var w = (byType[t] / maxV * 100);
+      barsHtml += '<div class="dash-bar-row"><span class="dash-bar-label">' + barLabels[t] + '</span>' +
+        '<div class="dash-bar-track"><div class="dash-bar-fill" data-w="' + w + '" style="width:0;background:' + barColors[t] + '"></div></div>' +
+        '<span class="dash-bar-val">' + byType[t] + '</span></div>';
+    });
+    $("#dashBars").innerHTML = barsHtml;
+    if (skills.length >= 3) renderRadar(skills);
+    else $("#dashRadar").innerHTML = '<p style="color:var(--ink-faint);font-size:.85rem;text-align:center">至少需要3项技能才能绘制雷达图</p>';
+    function animateDashboard() {
+      $$(".dash-stat-num").forEach(function (el) {
+        var target = +el.dataset.target;
+        if (target === 0 || el.dataset.done) return;
+        el.dataset.done = "1";
+        var cur = 0, step = Math.max(1, Math.ceil(target / 30));
+        var timer = setInterval(function () { cur += step; if (cur >= target) { cur = target; clearInterval(timer); } el.textContent = cur; }, 30);
+      });
+      $$(".dash-bar-fill").forEach(function (el) { if (el.dataset.done) return; el.dataset.done = "1"; setTimeout(function () { el.style.width = el.dataset.w + "%"; }, 100); });
+    }
+    var dashEl = $("#dashboard");
+    if (dashEl) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { animateDashboard(); io.disconnect(); } });
+      }, { threshold: 0.2 });
+      io.observe(dashEl);
+    }
+  }
+  function renderRadar(skills) {
+    var n = skills.length, cx = 160, cy = 160, R = 80, levels = 4;
+    var html = '<svg viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">';
+    for (var lv = levels; lv >= 1; lv--) {
+      var pts = [];
+      for (var i = 0; i < n; i++) { var ang = -Math.PI/2 + i*2*Math.PI/n; var r = R*lv/levels; pts.push((cx+Math.cos(ang)*r)+","+(cy+Math.sin(ang)*r)); }
+      html += '<polygon points="'+pts.join(" ")+'" fill="'+(lv===levels?"rgba(201,106,46,.04)":"none")+'" stroke="var(--line)" stroke-width="1" opacity=".5"/>';
+    }
+    for (var i = 0; i < n; i++) { var ang = -Math.PI/2 + i*2*Math.PI/n; html += '<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+Math.cos(ang)*R)+'" y2="'+(cy+Math.sin(ang)*R)+'" stroke="var(--line)" stroke-width="1" opacity=".4"/>'; }
+    var dpts = [];
+    for (var i = 0; i < n; i++) { var ang = -Math.PI/2 + i*2*Math.PI/n; var r = R*(skills[i].level||0)/100; dpts.push((cx+Math.cos(ang)*r)+","+(cy+Math.sin(ang)*r)); }
+    html += '<polygon points="'+dpts.join(" ")+'" fill="rgba(201,106,46,.25)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>';
+    for (var i = 0; i < n; i++) { var ang = -Math.PI/2 + i*2*Math.PI/n; var r = R*(skills[i].level||0)/100; html += '<circle cx="'+(cx+Math.cos(ang)*r)+'" cy="'+(cy+Math.sin(ang)*r)+'" r="4" fill="var(--accent)"/>'; }
+    for (var i = 0; i < n; i++) { var ang = -Math.PI/2 + i*2*Math.PI/n; var r = R+18; var lx = cx+Math.cos(ang)*r, ly = cy+Math.sin(ang)*r; var anchor = Math.abs(Math.cos(ang)) < 0.3 ? "middle" : (Math.cos(ang) > 0 ? "start" : "end"); html += '<text x="'+lx+'" y="'+ly+'" text-anchor="'+anchor+'" dominant-baseline="middle" font-size="11" fill="var(--ink-soft)">'+esc(skills[i].name)+'</text>'; }
+    html += '</svg>';
+    $("#dashRadar").innerHTML = html;
+  }
+
+  /* ---------- 项目甘特图 ---------- */
+  function renderGantt(projects) {
+    var wrap = $("#ganttChart");
+    if (!wrap || !projects || !projects.length) return;
+    var hasDates = projects.some(function (p) { return p.start; });
+    if (!hasDates) { if ($("#ganttWrap")) $("#ganttWrap").style.display = "none"; return; }
+
+    function parseMonth(s) {
+      if (!s) return null;
+      var parts = s.split("-"); var m = parseInt(parts[0], 10) * 12 + parseInt(parts[1] || "1", 10);
+      return m;
+    }
+    var now = new Date();
+    var nowMonth = now.getFullYear() * 12 + (now.getMonth() + 1);
+    var minM = Infinity, maxM = 0;
+    projects.forEach(function (p) {
+      var s = parseMonth(p.start) || nowMonth;
+      var e = p.end ? parseMonth(p.end) : nowMonth;
+      if (e < s) e = s;
+      if (p.end === "") e = nowMonth; // 进行中
+      minM = Math.min(minM, s); maxM = Math.max(maxM, e);
+    });
+    var span = Math.max(1, maxM - minM);
+
+    // 时间轴
+    var axisHtml = '<div class="gantt-axis">';
+    for (var i = 0; i <= 4; i++) {
+      var m = minM + Math.round(span * i / 4);
+      var yr = Math.floor(m / 12), mo = m % 12 || 12;
+      axisHtml += '<span>' + (mo < 10 ? "0" + mo : mo) + "/" + (yr + "").slice(-2) + '</span>';
+    }
+    axisHtml += '</div>';
+
+    var rowsHtml = "";
+    projects.forEach(function (p) {
+      var s = parseMonth(p.start) || nowMonth;
+      var e = p.end ? parseMonth(p.end) : nowMonth;
+      if (p.end === "") e = nowMonth;
+      if (e < s) e = s;
+      var left = (s - minM) / span * 100;
+      var width = Math.max(3, (e - s) / span * 100);
+      var prog = p.progress || 0;
+      var isDone = prog >= 100 && p.end;
+      var pctLeft = left + width;
+      var pctStyle = pctLeft > 88 ? "right:8px" : "left:calc(" + pctLeft + "% + 8px)";
+      rowsHtml += '<div class="gantt-row' + (p.end === "" ? " ongoing" : "") + '">' +
+        '<span class="gantt-label">' + esc(p.name) + '</span>' +
+        '<div class="gantt-track"><div class="gantt-bar' + (isDone ? " done" : "") + '" style="left:' + left + '%;width:' + width + '%">' +
+        '<div class="gantt-bar-fill" style="width:' + prog + '%"></div>' +
+        '</div><span class="gantt-pct" style="' + pctStyle + '">' + prog + '%</span>' +
+        '</div></div>';
+    });
+
+    wrap.innerHTML = axisHtml + rowsHtml;
+
+    // 动画：进入视口时触发 bar 填充
+    var ganttEl = $("#ganttWrap");
+    if (ganttEl) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            $$(".gantt-bar", wrap).forEach(function (bar) {
+              bar.style.opacity = "0";
+              setTimeout(function () { bar.style.transition = "opacity .5s"; bar.style.opacity = "1"; }, 100);
+            });
+            io.disconnect();
+          }
+        });
+      }, { threshold: 0.15 });
+      io.observe(ganttEl);
+    }
+  }
+
   /* ---------- 渲染：我正在做的（项目卡片） ---------- */
   function renderProjects(projects) {
     const grid = $("#projectsGrid");
@@ -978,6 +1136,7 @@
               '</div>' +
               (p.expected ? '<div class="project-field"><span class="project-label">期望结果</span><span class="project-value">' + esc(p.expected) + '</span></div>' : '') +
               (p.learned ? '<div class="project-field"><span class="project-label">我收获了什么</span><span class="project-value">' + esc(p.learned) + '</span></div>' : '') +
+              (p.url ? '<a class="project-link" href="' + esc(p.url) + '" target="_blank" rel="noopener">🌐 访问网站</a>' : '') +
             '</div>';
         return (
           '<article class="project-card reveal" style="--p:' + progress + '%;transition-delay:' + ((i % 4) * 80) + 'ms">' +
@@ -985,6 +1144,7 @@
               '<div class="project-back">' +
                 '<span class="project-back-mark">?</span>' +
                 '<span class="flip-hint">点击翻开</span>' +
+                (p.url ? '<span class="project-back-link">🌐 有网站</span>' : '') +
               '</div>' +
               body +
             '</div>' +
@@ -997,6 +1157,9 @@
       card.addEventListener("click", function () {
         card.classList.add("is-flipped");
       });
+      // 阻止链接点击冒泡到卡片（避免误触发翻转）
+      var link = card.querySelector(".project-link");
+      if (link) link.addEventListener("click", function (e) { e.stopPropagation(); });
     });
   }
 
@@ -1283,6 +1446,114 @@
       }
       if (typeof discoverEgg === "function") discoverEgg("dark-mode");
     });
+  }
+
+  /* ---------- 季节主题 ---------- */
+  function setupSeasonalThemes() {
+    var btn = $("#seasonToggle");
+    if (!btn) return;
+    var SEASONS = [
+      { id: "spring", icon: "🌸", name: "春" },
+      { id: "summer", icon: "🌊", name: "夏" },
+      { id: "autumn", icon: "🍂", name: "秋" },
+      { id: "winter", icon: "❄️", name: "冬" }
+    ];
+    function detectSeason() {
+      var m = new Date().getMonth() + 1;
+      if (m >= 3 && m <= 5) return "spring";
+      if (m >= 6 && m <= 8) return "summer";
+      if (m >= 9 && m <= 11) return "autumn";
+      return "winter";
+    }
+    var saved = null;
+    try { saved = localStorage.getItem("season"); } catch (e) {}
+    var current = saved || detectSeason();
+    function applySeason(id) {
+      if (id === "autumn") document.documentElement.removeAttribute("data-season");
+      else document.documentElement.setAttribute("data-season", id);
+      var s = SEASONS.find(function (x) { return x.id === id; });
+      if (s) btn.textContent = s.icon;
+    }
+    applySeason(current);
+    btn.addEventListener("click", function () {
+      var idx = SEASONS.findIndex(function (x) { return x.id === current; });
+      idx = (idx + 1) % SEASONS.length;
+      current = SEASONS[idx].id;
+      try { localStorage.setItem("season", current); } catch (e) {}
+      applySeason(current);
+    });
+  }
+
+  /* ---------- 青岛地图（底图 + 编号标记 + 点击展开照片） ---------- */
+  function setupMap() {
+    var container = $("#cityMap");
+    var markersEl = $("#mapMarkers");
+    var popupEl = $("#mapPopup");
+    if (!container || !markersEl || !popupEl) return;
+
+    var MARKERS = (window.SITE_DATA && window.SITE_DATA.mapMarkers) || [];
+    if (!MARKERS.length) return;
+
+    // 渲染编号标记
+    markersEl.innerHTML = MARKERS.map(function (m, i) {
+      var hasPhotos = m.photos && m.photos.length;
+      return '<div class="map-pin" data-idx="' + i + '" ' +
+        'style="left:' + m.x + '%;top:' + m.y + '%;background:' + m.color +
+        ';--pin-glow:' + m.color + '33;">' +
+        "<span>" + (i + 1) + "</span>" +
+        '<div class="map-pin-label">' + m.icon + " " + m.name +
+        (hasPhotos ? ' <em>(' + m.photos.length + '张)</em>' : "") + "</div>" +
+        "</div>";
+    }).join("");
+
+    // 点击标记 → 展开照片弹层
+    var currentIdx = -1;
+    document.querySelectorAll(".map-pin").forEach(function (pin) {
+      pin.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var idx = parseInt(pin.dataset.idx, 10);
+        var m = MARKERS[idx];
+        if (!m) return;
+        pin.classList.add("is-pulse");
+        setTimeout(function () { pin.classList.remove("is-pulse"); }, 600);
+
+        // 同一标记再次点击 → 收起
+        if (currentIdx === idx) {
+          closePopup();
+          return;
+        }
+        currentIdx = idx;
+
+        var photosHtml = "";
+        if (m.photos && m.photos.length) {
+          photosHtml = '<div class="map-popup-photos">' +
+            m.photos.map(function (src) {
+              return '<img src="' + src + '" alt="' + esc(m.name) + '" loading="lazy">';
+            }).join("") +
+            "</div>";
+        } else {
+          photosHtml = '<p class="map-popup-empty">还没有这里的风景照～</p>';
+        }
+
+        popupEl.innerHTML =
+          '<div class="map-popup-head">' +
+            '<span class="map-popup-title">' + m.icon + " " + esc(m.name) + "</span>" +
+            '<button class="map-popup-close" id="mapPopupClose" aria-label="关闭">✕</button>' +
+          "</div>" +
+          '<p class="map-popup-desc">' + esc(m.desc) + "</p>" +
+          photosHtml;
+        popupEl.classList.add("is-open");
+
+        var closeBtn = $("#mapPopupClose");
+        if (closeBtn) closeBtn.addEventListener("click", closePopup);
+      });
+    });
+
+    function closePopup() {
+      popupEl.classList.remove("is-open");
+      currentIdx = -1;
+      setTimeout(function () { popupEl.innerHTML = ""; }, 300);
+    }
   }
 
   /* ---------- 访问统计（localStorage） ---------- */
@@ -1732,6 +2003,8 @@
   setupSideNav();
   setupMusic();
   setupThemeToggle();
+  setupSeasonalThemes();
+  setupMap();
   setupVisitCounter();
   setupEasterEgg();
   setupHeroParallax();
@@ -1812,13 +2085,14 @@
     renderFeatured(DATA.daily);
     renderWorks(DATA.works);
     renderProjects(DATA.projects);
+    renderDashboard(DATA);
+    renderGantt(DATA.projects);
     renderWishlist(DATA.wishlist);
     renderChangelog(DATA.changelog);
     setupFilters(DATA.works);
     renderContact(p.contact);
     renderFriends(p.friends);
     setupTyped();
-    setupStats();
 
     $("#year").textContent = new Date().getFullYear();
     var svEl = $("#siteVersion"); if (svEl) svEl.textContent = (window.SITE_DATA && window.SITE_DATA.version) || "1.0.0.1";

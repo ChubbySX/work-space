@@ -7,7 +7,7 @@
 <meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
 <link rel="icon" href="content/chubby-logo.jpg" type="image/jpeg">
 <script>document.documentElement.classList.add("js");</script>
-<link rel="stylesheet" href="css/style.css?v=43">
+<link rel="stylesheet" href="css/style.css?v=53">
 </head>
 <body>
 
@@ -36,14 +36,18 @@
       <li><a href="#home" class="nav-link is-active">首页</a></li>
       <li><a href="#about" class="nav-link">关于我</a></li>
       <li><a href="#timeline" class="nav-link">成长轨迹</a></li>
+      <li><a href="#dashboard" class="nav-link">数据看板</a></li>
       <li><a href="#projects" class="nav-link">我正在做的</a></li>
       <li><a href="#daily" class="nav-link">日常</a></li>
       <li><a href="#works" class="nav-link">作品</a></li>
       <li><a href="#wishlist" class="nav-link">我还想做的</a></li>
       <li><a href="#contact" class="nav-link">联系</a></li>
+      <li><a href="#friends" class="nav-link">友链</a></li>
+      <li><a href="#map" class="nav-link">地图</a></li>
       <li><a href="#changelog" class="nav-link">更新历史</a></li>
     </ul>
     <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">🌙</button>
+    <button class="season-toggle" id="seasonToggle" aria-label="切换季节主题">🍂</button>
     <button class="nav-toggle" id="navToggle" aria-label="打开菜单">
       <span></span><span></span><span></span>
     </button>
@@ -57,26 +61,38 @@
   <a href="#home" class="side-dot" style="top:0%" data-label="首页">
     <span class="side-label">首页</span>
   </a>
-  <a href="#about" class="side-dot" style="top:14%" data-label="关于我">
+  <a href="#about" class="side-dot" style="top:9%" data-label="关于我">
     <span class="side-label">关于我</span>
   </a>
-  <a href="#timeline" class="side-dot" style="top:29%" data-label="成长轨迹">
+  <a href="#timeline" class="side-dot" style="top:18%" data-label="成长轨迹">
     <span class="side-label">成长轨迹</span>
   </a>
-  <a href="#projects" class="side-dot" style="top:43%" data-label="我正在做的">
+  <a href="#dashboard" class="side-dot" style="top:27%" data-label="数据看板">
+    <span class="side-label">数据看板</span>
+  </a>
+  <a href="#projects" class="side-dot" style="top:36%" data-label="我正在做的">
     <span class="side-label">我正在做的</span>
   </a>
-  <a href="#daily" class="side-dot" style="top:57%" data-label="日常">
+  <a href="#daily" class="side-dot" style="top:45%" data-label="日常">
     <span class="side-label">日常</span>
   </a>
-  <a href="#works" class="side-dot" style="top:71%" data-label="作品">
+  <a href="#works" class="side-dot" style="top:55%" data-label="作品">
     <span class="side-label">作品</span>
   </a>
-  <a href="#wishlist" class="side-dot" style="top:86%" data-label="我还想做的">
+  <a href="#wishlist" class="side-dot" style="top:64%" data-label="我还想做的">
     <span class="side-label">我还想做的</span>
   </a>
-  <a href="#contact" class="side-dot" style="top:100%" data-label="联系">
+  <a href="#contact" class="side-dot" style="top:73%" data-label="联系">
     <span class="side-label">联系</span>
+  </a>
+  <a href="#friends" class="side-dot" style="top:82%" data-label="友情链接">
+    <span class="side-label">友情链接</span>
+  </a>
+  <a href="#map" class="side-dot" style="top:91%" data-label="我的城市">
+    <span class="side-label">我的城市</span>
+  </a>
+  <a href="#changelog" class="side-dot" style="top:100%" data-label="更新历史">
+    <span class="side-label">更新历史</span>
   </a>
 </nav>
 
@@ -129,7 +145,6 @@
 
       <div class="about-body reveal">
         <div class="bio" id="bio"></div>
-        <div class="stats" id="stats"></div>
       </div>
     </div>
   </div>
@@ -147,6 +162,30 @@
   </div>
 </section>
 
+<!-- ============ 数据看板 ============ -->
+<section class="section" id="dashboard">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="section-tag">Dashboard</p>
+      <h2 class="section-title">数据看板</h2>
+      <p class="section-desc">网站内容一览</p>
+    </div>
+    <div class="dashboard">
+      <div class="dash-stats" id="dashStats"></div>
+      <div class="dash-charts">
+        <div class="dash-card reveal">
+          <h3 class="dash-card-title">📊 作品分布</h3>
+          <div class="dash-bars" id="dashBars"></div>
+        </div>
+        <div class="dash-card reveal">
+          <h3 class="dash-card-title">🎯 技能雷达</h3>
+          <div class="dash-radar" id="dashRadar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ 我正在做的 ============ -->
 <section class="section" id="projects">
   <div class="container">
@@ -157,6 +196,10 @@
     </div>
     <div class="projects-grid" id="projectsGrid">
       <div class="empty-state">还没有项目～ 把项目信息写成 .json 文件放进 <code>content/projects/</code> 后运行 <code>node build.js</code></div>
+    </div>
+    <div class="gantt-wrap reveal" id="ganttWrap">
+      <h3 class="gantt-title">📅 项目时间线</h3>
+      <div class="gantt-chart" id="ganttChart"></div>
     </div>
   </div>
 </section>
@@ -285,6 +328,24 @@
   </div>
 </section>
 
+<!-- ============ 青岛地图 ============ -->
+<section class="section" id="map">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="section-tag">Qingdao</p>
+      <h2 class="section-title">我所在的城市</h2>
+      <p class="section-desc">在青岛生活和探索的地方</p>
+    </div>
+    <div class="map-wrap reveal">
+      <div class="map-img-container" id="cityMap">
+        <img class="map-img" src="content/map/qingdao-map.jpg?v=2" alt="青岛地图" loading="lazy">
+        <div class="map-markers" id="mapMarkers"></div>
+      </div>
+    </div>
+    <div class="map-popup" id="mapPopup"></div>
+  </div>
+</section>
+
 <!-- ============ 更新历史 ============ -->
 <section class="section section-alt" id="changelog">
   <div class="container">
@@ -336,10 +397,21 @@
     <button class="music-collapse" id="musicCollapse" aria-label="收起/展开">—</button>
   </div>
   <div class="music-body" id="musicBody">
+    <div class="music-eq" id="musicEq"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="music-progress">
+      <span class="music-time" id="musicTime">0:00</span>
+      <div class="music-bar" id="musicBar"><div class="music-bar-fill" id="musicBarFill"></div></div>
+      <span class="music-time" id="musicTotal">1:00</span>
+    </div>
     <div class="music-tracks" id="musicTracks">
       <button class="track-btn is-active" data-track="0">🌊 海风海浪</button>
       <button class="track-btn" data-track="1">🌿 春日鸟鸣</button>
       <button class="track-btn" data-track="2">🏙️ 都市喧嚣</button>
+    </div>
+    <div class="music-nav">
+      <button class="music-nav-btn" id="musicPrev" aria-label="上一首">⏮</button>
+      <span class="music-now" id="musicNow">🌊 海风海浪</span>
+      <button class="music-nav-btn" id="musicNext" aria-label="下一首">⏭</button>
     </div>
     <div class="music-volumes">
       <div class="vol-row">
@@ -356,7 +428,7 @@
     <p class="music-hint">视频音量控制日常与作品板块中所有视频</p>
   </div>
 </div>
-<audio id="bgMusic" loop preload="none"></audio>
+<audio id="bgMusic" preload="none"></audio>
 
 <!-- ============ 灯箱 ============ -->
 <div class="lightbox" id="lightbox" aria-hidden="true">
@@ -367,7 +439,7 @@
   <p class="lightbox-caption" id="lightboxCaption"></p>
 </div>
 
-<script src="js/data.js?v=24"></script>
-<script src="js/main.js?v=54"></script>
+<script src="js/data.js?v=27"></script>
+<script src="js/main.js?v=64"></script>
 </body>
 </html>

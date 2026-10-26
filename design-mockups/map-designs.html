@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>青岛地图 · 四套设计方案对比</title>
+<style>
+/* ===== 网站设计令牌 ===== */
+:root {
+  --bg: #f7f0e7; --surface: #fffbf4; --ink: #2e2620; --ink-soft: #6b5f53;
+  --ink-faint: #9c8f80; --line: #e8dccb; --accent: #c96a2e; --accent-soft: #fbeadb;
+  --accent-dark: #a6531f; --sea: #5b8a8c; --bg2: #f4eada; --radius: 16px;
+  --shadow: 0 10px 30px rgba(96,58,22,.10); --font: "PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: var(--font); background: var(--bg); color: var(--ink); line-height:1.6; }
+.header { background: var(--surface); border-bottom: 2px solid var(--accent); padding: 24px 20px; text-align:center; }
+.header h1 { font-size: 1.4rem; color: var(--ink); }
+.header p { color: var(--ink-soft); font-size: .85rem; margin-top:4px; }
+.tabs { display:flex; gap:0; justify-content:center; flex-wrap:wrap; padding: 12px; background:var(--surface); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:100; }
+.tab-btn { padding: 10px 20px; border: none; background: transparent; color: var(--ink-soft); font-family:var(--font); font-size:.9rem; cursor:pointer; border-bottom: 3px solid transparent; transition: all .2s; border-radius: 8px 8px 0 0; }
+.tab-btn:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight:700; background: var(--accent-soft); }
+.panel { display:none; padding: 24px 16px 48px; max-width: 860px; margin: 0 auto; }
+.panel.active { display:block; }
+.concept { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; }
+.concept h3 { font-size: .95rem; color: var(--accent-dark); margin-bottom: 4px; }
+.concept p { font-size: .82rem; color: var(--ink-soft); }
+.photo-ph { display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.85); font-size:.75rem; font-weight:600; text-shadow:0 1px 3px rgba(0,0,0,.3); }
+
+/* ===== 通用地图数据 ===== */
+/* SVG viewBox 0 0 400 300 */
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🗺️ 青岛地图 · 四套设计方案</h1>
+  <p>点击下方标签切换设计 · 点击地图标记查看照片效果</p>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="1">设计一 · 水彩明信片</button>
+  <button class="tab-btn" data-tab="2">设计二 · 夜间点亮</button>
+  <button class="tab-btn" data-tab="3">设计三 · 旅行手账</button>
+  <button class="tab-btn" data-tab="4">设计四 · 地图+画廊联动</button>
+</div>
+
+<!-- ===================== 设计一：水彩明信片 ===================== -->
+<div class="panel active" id="panel-1">
+  <div class="concept">
+    <h3>设计一 · 水彩明信片</h3>
+    <p>柔和水彩渐变地图，陆地如水彩晕染，标记点为水彩圆形徽章，点击弹出拍立得风格照片卡。整体暖色调，像手绘明信片。</p>
+  </div>
+  <div class="map1-wrap" style="border-radius:14px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line);">
+    <svg id="map1" viewBox="0 0 400 300" style="display:block;width:100%;height:auto;">
+      <defs>
+        <linearGradient id="sea1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#d4e8ea"/><stop offset="100%" stop-color="#a8c8ca"/>
+        </linearGradient>
+        <radialGradient id="land1" cx="50%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#fde8d0"/><stop offset="60%" stop-color="#f5d4a8"/><stop offset="100%" stop-color="#e8b878"/>
+        </radialGradient>
+        <filter id="blur1"><feGaussianBlur stdDeviation="2"/></filter>
+      </defs>
+      <rect width="400" height="300" fill="url(#sea1)"/>
+      <path d="M 30,280 Q 60,275 90,280 Q 120,285 150,280 M 250,275 Q 270,272 290,275 Q 310,278 330,275 M 200,295 Q 220,292 240,295" stroke="#7aafb1" stroke-width="1" fill="none" opacity=".4"/>
+      <path id="land1-shape" d="M 13,13 L 387,13 Q 383,45 375,70 Q 368,110 358,150 Q 345,190 310,225 Q 290,248 268,260 Q 248,278 228,288 Q 212,283 198,280 Q 192,276 185,273 Q 186,258 188,248 Q 191,233 194,223 Q 197,208 200,198 Q 203,190 206,183 L 168,183 Q 158,198 152,210 Q 146,225 148,235 Q 151,250 148,270 Q 158,280 172,285 Q 188,288 180,295 Q 150,292 120,285 Q 100,278 85,272 Q 68,240 52,203 Q 39,158 26,126 Q 19,78 13,50 Z" fill="url(#land1)" stroke="#d4a060" stroke-width="2" stroke-linejoin="round" filter="url(#blur1)" opacity=".88"/>
+      <path id="land1-crisp" d="M 13,13 L 387,13 Q 383,45 375,70 Q 368,110 358,150 Q 345,190 310,225 Q 290,248 268,260 Q 248,278 228,288 Q 212,283 198,280 Q 192,276 185,273 Q 186,258 188,248 Q 191,233 194,223 Q 197,208 200,198 Q 203,190 206,183 L 168,183 Q 158,198 152,210 Q 146,225 148,235 Q 151,250 148,270 Q 158,280 172,285 Q 188,288 180,295 Q 150,292 120,285 Q 100,278 85,272 Q 68,240 52,203 Q 39,158 26,126 Q 19,78 13,50 Z" fill="none" stroke="#c9853f" stroke-width="1.5" stroke-linejoin="round"/>
+      <text x="190" y="235" text-anchor="middle" font-size="8" fill="#9c8f80" opacity=".5" font-family="var(--font)">胶州湾</text>
+      <text x="330" y="278" text-anchor="middle" font-size="8" fill="#9c8f80" opacity=".5" font-family="var(--font)">黄 海</text>
+      <g id="map1-markers"></g>
+    </svg>
+  </div>
+  <div id="map1-photo" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:200;">
+    <div id="map1-card" style="background:#fff;padding:12px 12px 40px;border-radius:4px;box-shadow:0 12px 40px rgba(0,0,0,.3);transform:rotate(-2deg);max-width:320px;">
+      <div id="map1-img" class="photo-ph" style="width:280px;height:190px;border-radius:2px;"></div>
+      <p id="map1-caption" style="text-align:center;margin-top:10px;font-size:.85rem;color:var(--ink-soft);font-family:var(--font);"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 设计二：夜间点亮 ===================== -->
+<div class="panel" id="panel-2">
+  <div class="concept">
+    <h3>设计二 · 夜间点亮</h3>
+    <p>深色背景（复用开场动画的深蓝渐变），陆地为暗色剪影带边缘微光。标记点为脉冲发光圆点，滚动到视图时逐个点亮。点击打开深色照片灯箱。风格戏剧感强，与开场动画呼应。</p>
+  </div>
+  <div class="map2-wrap" style="border-radius:14px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.4);">
+    <svg id="map2" viewBox="0 0 400 300" style="display:block;width:100%;height:auto;background:linear-gradient(135deg,#0d1630,#1b2b54 40%,#241d4a 70%,#3c2142);">
+      <defs>
+        <filter id="glow2"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <radialGradient id="landGlow2" cx="50%" cy="35%" r="60%">
+          <stop offset="0%" stop-color="#1a2640"/><stop offset="100%" stop-color="#0d1018"/>
+        </radialGradient>
+      </defs>
+      <path d="M 30,280 Q 60,275 90,280 Q 120,285 150,280 M 250,275 Q 270,272 290,275 Q 310,278 330,275" stroke="#3a5a8c" stroke-width="1" fill="none" opacity=".25"/>
+      <path d="M 13,13 L 387,13 Q 383,45 375,70 Q 368,110 358,150 Q 345,190 310,225 Q 290,248 268,260 Q 248,278 228,288 Q 212,283 198,280 Q 192,276 185,273 Q 186,258 188,248 Q 191,233 194,223 Q 197,208 200,198 Q 203,190 206,183 L 168,183 Q 158,198 152,210 Q 146,225 148,235 Q 151,250 148,270 Q 158,280 172,285 Q 188,288 180,295 Q 150,292 120,285 Q 100,278 85,272 Q 68,240 52,203 Q 39,158 26,126 Q 19,78 13,50 Z" fill="url(#landGlow2)" stroke="#3a6a8a" stroke-width="1.2" stroke-linejoin="round"/>
+      <text x="190" y="235" text-anchor="middle" font-size="8" fill="#4a6a8c" opacity=".5">胶州湾</text>
+      <text x="330" y="278" text-anchor="middle" font-size="8" fill="#4a6a8c" opacity=".5">黄 海</text>
+      <g id="map2-markers"></g>
+    </svg>
+  </div>
+  <div id="map2-photo" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(8,6,12,.92);display:none;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:16px;">
+    <div id="map2-img" class="photo-ph" style="width:340px;height:230px;border-radius:8px;"></div>
+    <div style="text-align:center;color:#ddd;">
+      <p id="map2-name" style="font-size:1.1rem;font-weight:700;"></p>
+      <p id="map2-desc" style="font-size:.82rem;color:#888;margin-top:4px;"></p>
+    </div>
+    <button id="map2-close" style="margin-top:8px;padding:8px 24px;border:1px solid #555;background:transparent;color:#aaa;border-radius:8px;cursor:pointer;font-family:var(--font);">关闭 ✕</button>
+  </div>
+</div>
+
+<!-- ===================== 设计三：旅行手账 ===================== -->
+<div class="panel" id="panel-3">
+  <div class="concept">
+    <h3>设计三 · 旅行手账盖章</h3>
+    <p>米色纸张质感背景，陆地用虚线手绘风格。标记点为旋转的护照盖章（圆形徽章+日期），虚线路线串联走过的地点。点击打开手账式照片条目（照片+手写描述+日期）。怀旧、温暖、有故事感。</p>
+  </div>
+  <div class="map3-wrap" style="border-radius:14px;overflow:hidden;box-shadow:var(--shadow);background:#f5ead0;border:1px solid #d4c0a0;position:relative;">
+    <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 28px,rgba(160,130,90,.06) 28px,rgba(160,130,90,.06) 29px);pointer-events:none;"></div>
+    <svg id="map3" viewBox="0 0 400 300" style="display:block;width:100%;height:auto;position:relative;">
+      <rect width="400" height="300" fill="#f0e2c8"/>
+      <path d="M 13,13 L 387,13 Q 383,45 375,70 Q 368,110 358,150 Q 345,190 310,225 Q 290,248 268,260 Q 248,278 228,288 Q 212,283 198,280 Q 192,276 185,273 Q 186,258 188,248 Q 191,233 194,223 Q 197,208 200,198 Q 203,190 206,183 L 168,183 Q 158,198 152,210 Q 146,225 148,235 Q 151,250 148,270 Q 158,280 172,285 Q 188,288 180,295 Q 150,292 120,285 Q 100,278 85,272 Q 68,240 52,203 Q 39,158 26,126 Q 19,78 13,50 Z" fill="#fde8c8" stroke="#c9853f" stroke-width="1.5" stroke-dasharray="3 2" stroke-linejoin="round"/>
+      <text x="190" y="235" text-anchor="middle" font-size="8" fill="#a09080" opacity=".6" font-style="italic">胶州湾</text>
+      <text x="330" y="278" text-anchor="middle" font-size="8" fill="#a09080" opacity=".6" font-style="italic">黄 海</text>
+      <path id="route3" d="M 300,68 Q 250,80 280,120 Q 290,160 270,200 Q 240,230 100,280" stroke="#c96a2e" stroke-width="1.5" fill="none" stroke-dasharray="4 3" opacity=".5"/>
+      <g id="map3-markers"></g>
+    </svg>
+  </div>
+  <div id="map3-photo" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:200;">
+    <div id="map3-card" style="background:#fdf6e8;padding:20px 24px;border-radius:8px;box-shadow:0 12px 40px rgba(0,0,0,.3);max-width:360px;border:1px solid #d4c0a0;">
+      <div id="map3-img" class="photo-ph" style="width:300px;height:200px;border-radius:6px;border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.15);"></div>
+      <p id="map3-date" style="font-size:.75rem;color:#a09080;margin-top:12px;font-style:italic;"></p>
+      <p id="map3-name" style="font-size:1rem;font-weight:700;color:var(--ink);margin-top:4px;"></p>
+      <p id="map3-desc" style="font-size:.85rem;color:var(--ink-soft);margin-top:6px;line-height:1.8;"></p>
+      <button id="map3-close" style="margin-top:14px;padding:6px 20px;border:1px solid #d4c0a0;background:transparent;color:var(--ink-soft);border-radius:6px;cursor:pointer;font-family:var(--font);font-size:.82rem;">合上日记 ✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 设计四：地图+画廊联动 ===================== -->
+<div class="panel" id="panel-4">
+  <div class="concept">
+    <h3>设计四 · 地图+画廊联动</h3>
+    <p>上半部分迷你地图（编号标记），下半部分照片卡片网格。点击地图编号 → 滚动并高亮对应卡片；点击卡片 → 地图上对应编号脉冲。最实用，适合浏览多张照片，风格与网站现有卡片网格一致。</p>
+  </div>
+  <div style="display:flex;gap:20px;flex-wrap:wrap;">
+    <div style="flex:1;min-width:300px;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line);background:var(--surface);">
+      <svg id="map4" viewBox="0 0 400 300" style="display:block;width:100%;height:auto;background:var(--bg2);">
+        <rect width="400" height="300" fill="#eef0f2"/>
+        <path d="M 13,13 L 387,13 Q 383,45 375,70 Q 368,110 358,150 Q 345,190 310,225 Q 290,248 268,260 Q 248,278 228,288 Q 212,283 198,280 Q 192,276 185,273 Q 186,258 188,248 Q 191,233 194,223 Q 197,208 200,198 Q 203,190 206,183 L 168,183 Q 158,198 152,210 Q 146,225 148,235 Q 151,250 148,270 Q 158,280 172,285 Q 188,288 180,295 Q 150,292 120,285 Q 100,278 85,272 Q 68,240 52,203 Q 39,158 26,126 Q 19,78 13,50 Z" fill="#fde8d0" stroke="#c9853f" stroke-width="1.2" stroke-linejoin="round"/>
+        <text x="190" y="235" text-anchor="middle" font-size="7" fill="#9c8f80" opacity=".5">胶州湾</text>
+        <text x="330" y="278" text-anchor="middle" font-size="7" fill="#9c8f80" opacity=".5">黄海</text>
+        <g id="map4-markers"></g>
+      </svg>
+    </div>
+    <div style="flex:1;min-width:300px;">
+      <div id="map4-gallery" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 通用数据 =====
+var MARKERS = [
+  { name:"青岛理工大学", desc:"我的大学 · 智能制造工程", lat:36.242, lng:120.400, color:"#c96a2e", icon:"🎓", photo:"linear-gradient(135deg,#e8c890,#c96a2e)", date:"2023.09" },
+  { name:"栈桥", desc:"青岛的标志 · 回澜阁", lat:36.059, lng:120.314, color:"#5b8a8c", icon:"🌉", photo:"linear-gradient(135deg,#7eb8ba,#3a6a6c)", date:"2024.05" },
+  { name:"五四广场", desc:"红色雕塑「五月的风」", lat:36.060, lng:120.388, color:"#d94a3a", icon:"🌀", photo:"linear-gradient(135deg,#e87060,#a0202a)", date:"2024.07" },
+  { name:"八大关", desc:"万国建筑博览", lat:36.067, lng:120.354, color:"#8a7a5a", icon:"🏛️", photo:"linear-gradient(135deg,#c8b890,#8a7a5a)", date:"2024.10" },
+  { name:"崂山风景区", desc:"海上第一名山", lat:36.157, lng:120.624, color:"#5a9e3a", icon:"⛰️", photo:"linear-gradient(135deg,#7ab85a,#3a7a2a)", date:"2024.03" },
+  { name:"金沙滩", desc:"亚洲第一滩", lat:35.964, lng:120.168, color:"#e8b840", icon:"🏖️", photo:"linear-gradient(135deg,#f5d870,#d4a020)", date:"2024.08" }
+];
+var LNG_MIN=119.50, LNG_MAX=121.00, LAT_MIN=35.93, LAT_MAX=37.10, W=400, H=300;
+function px(lng){return (lng-LNG_MIN)/(LNG_MAX-LNG_MIN)*W;}
+function py(lat){return (LAT_MAX-lat)/(LAT_MAX-LAT_MIN)*H;}
+
+// ===== Tab 切换 =====
+document.querySelectorAll(".tab-btn").forEach(function(btn){
+  btn.addEventListener("click",function(){
+    document.querySelectorAll(".tab-btn").forEach(function(b){b.classList.remove("active");});
+    document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("active");});
+    btn.classList.add("active");
+    document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+  });
+});
+
+// ===== 设计一：水彩明信片 =====
+(function(){
+  var g=document.getElementById("map1-markers");
+  MARKERS.forEach(function(m,i){
+    var x=px(m.lng),y=py(m.lat);
+    var s='<g class="m1-marker" data-idx="'+i+'" style="cursor:pointer;">';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="9" fill="'+m.color+'" opacity=".25"/>';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="5" fill="'+m.color+'" stroke="#fff" stroke-width="2"/>';
+    s+='<text x="'+x+'" y="'+(y-14)+'" text-anchor="middle" font-size="7" fill="#6b5f53" font-weight="600">'+m.icon+" "+m.name+'</text>';
+    s+='</g>';
+    g.insertAdjacentHTML("beforeend",s);
+  });
+  g.querySelectorAll(".m1-marker").forEach(function(el){
+    el.addEventListener("click",function(){
+      var m=MARKERS[el.dataset.idx];
+      var ov=document.getElementById("map1-photo");
+      var img=document.getElementById("map1-img");
+      var cap=document.getElementById("map1-caption");
+      img.style.background=m.photo;
+      img.textContent=m.icon+" "+m.name;
+      cap.textContent=m.name+" · "+m.desc;
+      ov.style.display="flex";
+    });
+  });
+  document.getElementById("map1-photo").addEventListener("click",function(e){
+    if(e.target===this) this.style.display="none";
+  });
+})();
+
+// ===== 设计二：夜间点亮 =====
+(function(){
+  var g=document.getElementById("map2-markers");
+  MARKERS.forEach(function(m,i){
+    var x=px(m.lng),y=py(m.lat);
+    var s='<g class="m2-marker" data-idx="'+i+'" style="cursor:pointer;opacity:0;transition:opacity .6s ease '+(i*0.15)+'s;">';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="10" fill="'+m.color+'" opacity=".15" filter="url(#glow2)"/>';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="6" fill="'+m.color+'" opacity=".3"/>';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="3.5" fill="'+m.color+'" stroke="#fff" stroke-width="1"/>';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="3.5" fill="none" stroke="'+m.color+'" stroke-width="1"><animate attributeName="r" from="3.5" to="14" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" from=".6" to="0" dur="2s" repeatCount="indefinite"/></circle>';
+    s+='<text x="'+x+'" y="'+(y-14)+'" text-anchor="middle" font-size="7" fill="#ddd" font-weight="600">'+m.icon+" "+m.name+'</text>';
+    s+='</g>';
+    g.insertAdjacentHTML("beforeend",s);
+  });
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        g.querySelectorAll(".m2-marker").forEach(function(el){el.style.opacity="1";});
+      }
+    });
+  },{threshold:.2});
+  io.observe(document.getElementById("map2"));
+  g.querySelectorAll(".m2-marker").forEach(function(el){
+    el.addEventListener("click",function(){
+      var m=MARKERS[el.dataset.idx];
+      var ov=document.getElementById("map2-photo");
+      document.getElementById("map2-img").style.background=m.photo;
+      document.getElementById("map2-img").textContent=m.icon+" "+m.name;
+      document.getElementById("map2-name").textContent=m.icon+" "+m.name;
+      document.getElementById("map2-desc").textContent=m.desc;
+      ov.style.display="flex";
+    });
+  });
+  document.getElementById("map2-close").addEventListener("click",function(){
+    document.getElementById("map2-photo").style.display="none";
+  });
+})();
+
+// ===== 设计三：旅行手账 =====
+(function(){
+  var g=document.getElementById("map3-markers");
+  MARKERS.forEach(function(m,i){
+    var x=px(m.lng),y=py(m.lat);
+    var rot=(i%2===0?-1:1)*(8+Math.random()*6);
+    var s='<g class="m3-marker" data-idx="'+i+'" style="cursor:pointer;" transform="translate('+x+','+y+') rotate('+rot+')">';
+    s+='<circle r="13" fill="none" stroke="'+m.color+'" stroke-width="1.5" opacity=".7"/>';
+    s+='<circle r="13" fill="'+m.color+'" opacity=".12"/>';
+    s+='<circle r="4" fill="'+m.color+'"/>';
+    s+='<text y="-18" text-anchor="middle" font-size="5.5" fill="'+m.color+'" font-weight="700" transform="rotate('+-rot+')">'+m.name+'</text>';
+    s+='<text y="22" text-anchor="middle" font-size="4.5" fill="#a09080" transform="rotate('+-rot+')">'+m.date+'</text>';
+    s+='</g>';
+    g.insertAdjacentHTML("beforeend",s);
+  });
+  g.querySelectorAll(".m3-marker").forEach(function(el){
+    el.addEventListener("click",function(){
+      var m=MARKERS[el.dataset.idx];
+      var ov=document.getElementById("map3-photo");
+      document.getElementById("map3-img").style.background=m.photo;
+      document.getElementById("map3-img").textContent=m.icon+" "+m.name;
+      document.getElementById("map3-date").textContent="📅 "+m.date;
+      document.getElementById("map3-name").textContent=m.icon+" "+m.name;
+      document.getElementById("map3-desc").textContent=m.desc;
+      ov.style.display="flex";
+    });
+  });
+  document.getElementById("map3-close").addEventListener("click",function(){
+    document.getElementById("map3-photo").style.display="none";
+  });
+  document.getElementById("map3-photo").addEventListener("click",function(e){
+    if(e.target===this) this.style.display="none";
+  });
+})();
+
+// ===== 设计四：地图+画廊联动 =====
+(function(){
+  var g=document.getElementById("map4-markers");
+  var gal=document.getElementById("map4-gallery");
+  MARKERS.forEach(function(m,i){
+    var x=px(m.lng),y=py(m.lat);
+    var s='<g class="m4-marker" data-idx="'+i+'" style="cursor:pointer;">';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="12" fill="'+m.color+'" opacity=".12"/>';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="9" fill="'+m.color+'" stroke="#fff" stroke-width="2"/>';
+    s+='<text x="'+x+'" y="'+(y+3)+'" text-anchor="middle" font-size="8" fill="#fff" font-weight="700">'+(i+1)+'</text>';
+    s+='</g>';
+    g.insertAdjacentHTML("beforeend",s);
+    var card='<div class="m4-card" data-idx="'+i+'" style="border:2px solid transparent;border-radius:10px;overflow:hidden;cursor:pointer;transition:all .3s;background:var(--surface);box-shadow:var(--shadow);">';
+    card+='<div class="photo-ph m4-card-img" data-idx="'+i+'" style="height:120px;background:'+m.photo+';">'+(i+1)+' · '+m.name+'</div>';
+    card+='<div style="padding:8px 10px;"><p style="font-size:.8rem;font-weight:700;color:var(--ink);">'+m.icon+" "+m.name+'</p><p style="font-size:.7rem;color:var(--ink-soft);margin-top:2px;">'+m.desc+'</p></div>';
+    card+='</div>';
+    gal.insertAdjacentHTML("beforeend",card);
+  });
+  // 点击地图标记 → 高亮卡片
+  g.querySelectorAll(".m4-marker").forEach(function(el){
+    el.addEventListener("click",function(){
+      var idx=el.dataset.idx;
+      var card=gal.querySelector('.m4-card[data-idx="'+idx+'"]');
+      if(card){card.scrollIntoView({behavior:"smooth",block:"center"});card.style.borderColor=MARKERS[idx].color;card.style.boxShadow="0 0 0 4px "+MARKERS[idx].color+"22";setTimeout(function(){card.style.borderColor="transparent";card.style.boxShadow="var(--shadow)";},2000);}
+      // 标记脉冲
+      var dot=el.querySelector("circle:nth-child(2)");
+      if(dot){dot.setAttribute("r","14");setTimeout(function(){dot.setAttribute("r","9");},300);}
+    });
+  });
+  // 点击卡片 → 地图脉冲
+  gal.querySelectorAll(".m4-card").forEach(function(el){
+    el.addEventListener("click",function(){
+      var idx=el.dataset.idx;
+      var marker=g.querySelector('.m4-marker[data-idx="'+idx+'"]');
+      if(marker){
+        var dot=marker.querySelector("circle:nth-child(2)");
+        if(dot){dot.setAttribute("r","16");setTimeout(function(){dot.setAttribute("r","9");},400);}
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

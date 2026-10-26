@@ -297,6 +297,30 @@ function readChangelog() {
   }
 }
 
+/* ---------- 读取地图标记（content/map-markers.json）---------- */
+function readMapMarkers() {
+  const f = path.join(CONTENT, "map-markers.json");
+  if (!isFile(f)) return [];
+  try {
+    const arr = JSON.parse(readText(f));
+    if (!Array.isArray(arr)) return [];
+    return arr.map(function (m) {
+      return {
+        name: String(m.name || ""),
+        desc: String(m.desc || ""),
+        x: Math.max(0, Math.min(100, Number(m.x) || 0)),
+        y: Math.max(0, Math.min(100, Number(m.y) || 0)),
+        color: String(m.color || "#c96a2e"),
+        icon: String(m.icon || ""),
+        photos: Array.isArray(m.photos) ? m.photos.map(function (p) { return String(p); }) : []
+      };
+    });
+  } catch (e) {
+    console.error("⚠ content/map-markers.json 解析失败：" + e.message);
+    return [];
+  }
+}
+
 /* ---------- 读取版本号（content/version.json）---------- */
 function readVersion() {
   const f = path.join(CONTENT, "version.json");
@@ -336,6 +360,7 @@ const works = scanWorks();
 const daily = scanDaily();
 const projects = scanProjects();
 const changelog = readChangelog();
+const mapMarkers = readMapMarkers();
 const version = bumpBuildVersion(readVersion());
 
 /* "我还想做的"清单从 profile.json 读取（统一在一个文件里管理） */
@@ -350,14 +375,6 @@ const wishlist = (profile.wishlist || []).map(function (item) {
 /* 清除 profile 里的 _说明 注释字段（只用于 profile.json 内部，不输出到数据） */
 Object.keys(profile).forEach(function (k) { if (k.startsWith("_")) delete profile[k]; });
 
-/* 始终按实际内容自动统计（覆盖 profile.json 里的 stats） */
-profile.stats = [
-  { value: String(works.length), label: "件作品" },
-  { value: String(daily.length), label: "条日常" },
-  { value: String(projects.length), label: "个进行中" },
-  { value: String((profile.tags || []).length), label: "个标签" },
-];
-
 const data = {
   profile,
   daily,
@@ -365,6 +382,7 @@ const data = {
   projects,
   wishlist,
   changelog,
+  mapMarkers,
   version,
 };
 
@@ -379,4 +397,5 @@ console.log("   作品       " + data.works.length + " 个（" +
 console.log("   项目       " + data.projects.length + " 个");
 console.log("   清单       " + data.wishlist.length + " 条");
 console.log("   更新历史   " + data.changelog.length + " 条");
+console.log("   地图标记   " + (data.mapMarkers ? data.mapMarkers.length : 0) + " 个");
 console.log("   输出：data.json + js/data.js");

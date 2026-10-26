@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>地图标记编辑器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; background: #f7f0e7; color: #333; padding: 16px; }
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 1.3rem; margin-bottom: 10px; }
+.steps { background: #fffbf4; border-radius: 10px; padding: 12px 16px; margin-bottom: 14px;
+  font-size: .85rem; line-height: 1.7; border: 1px solid #e8d5c0; }
+.steps b { color: #c96a2e; }
+.map-box { position: relative; display: inline-block; max-width: 100%; line-height: 0;
+  border-radius: 10px; overflow: hidden; box-shadow: 0 6px 20px rgba(96,58,22,.15); }
+.map-box img { display: block; max-width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+.pin {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; font-weight: 700; color: #fff;
+  border: 3px solid #fff; box-shadow: 0 3px 10px rgba(0,0,0,.35);
+  cursor: grab; z-index: 2; touch-action: none; transition: transform .15s;
+  line-height: 1;
+}
+.pin:hover { transform: translate(-50%, -50%) scale(1.15); }
+.pin.dragging { cursor: grabbing; transform: translate(-50%, -50%) scale(1.25); z-index: 10; }
+.pin-info {
+  position: absolute; bottom: calc(100% + 5px); left: 50%; transform: translateX(-50%);
+  white-space: nowrap; font-size: .68rem; font-weight: 600; color: #333;
+  background: #fff; padding: 3px 8px; border-radius: 5px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2); pointer-events: none; line-height: 1.4; text-align: center;
+}
+.toolbar { margin: 14px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+button { padding: 10px 18px; border: none; border-radius: 8px; background: #c96a2e;
+  color: #fff; font-size: .9rem; cursor: pointer; transition: opacity .2s; }
+button:hover { opacity: .85; }
+button.secondary { background: #5b8a8c; }
+textarea { width: 100%; height: 220px; font-family: "Consolas", monospace; font-size: .78rem;
+  border: 2px solid #e0d0c0; border-radius: 8px; padding: 10px; background: #fffbf4;
+  color: #555; resize: vertical; }
+.hint { font-size: .75rem; color: #999; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🗺️ 地图标记编辑器</h1>
+  <div class="steps">
+    <b>使用方法：</b><br>
+    1. 在下方地图上拖动编号标记到正确位置（支持触屏）<br>
+    2. 调整完毕后点击「📋 复制 JSON」<br>
+    3. 用记事本打开 <code>content/map-markers.json</code>，全选删除后粘贴<br>
+    4. 双击「发布上线.bat」重新构建并上线
+  </div>
+  <div class="map-box" id="mapBox">
+    <img src="../content/map/qingdao-map.jpg" id="mapImg" alt="青岛地图" draggable="false">
+  </div>
+  <div class="toolbar">
+    <button onclick="copyJSON()">📋 复制 JSON</button>
+    <button class="secondary" onclick="downloadJSON()">💾 下载文件</button>
+    <button class="secondary" onclick="resetPositions()">↺ 重置位置</button>
+  </div>
+  <textarea id="jsonOutput" readonly></textarea>
+  <div class="hint">↑ 这里实时显示标记位置数据，复制后粘贴到 content/map-markers.json</div>
+</div>
+
+<script>
+var DEFAULT_MARKERS = [
+  { name: "青岛理工大学", desc: "我的大学 · 智能制造工程", x: 42, y: 30, color: "#c96a2e", icon: "🎓", thumb: "content/daily/青岛在青理/校园晚霞.jpg" },
+  { name: "栈桥", desc: "青岛的标志 · 回澜阁", x: 36, y: 52, color: "#5b8a8c", icon: "🌉", thumb: "" },
+  { name: "五四广场", desc: "红色雕塑「五月的风」", x: 50, y: 54, color: "#d94a3a", icon: "🌀", thumb: "" },
+  { name: "八大关", desc: "万国建筑博览", x: 42, y: 50, color: "#8a7a5a", icon: "🏛️", thumb: "" },
+  { name: "崂山风景区", desc: "海上第一名山", x: 76, y: 42, color: "#5a9e3a", icon: "⛰️", thumb: "" },
+  { name: "金沙滩", desc: "亚洲第一滩", x: 22, y: 62, color: "#e8b840", icon: "🏖️", thumb: "" }
+];
+var MARKERS = JSON.parse(JSON.stringify(DEFAULT_MARKERS));
+var dragPin = null;
+
+function renderPins() {
+  var box = document.getElementById("mapBox");
+  box.querySelectorAll(".pin").forEach(function(p) { p.remove(); });
+  MARKERS.forEach(function(m, i) {
+    var pin = document.createElement("div");
+    pin.className = "pin";
+    pin.style.left = m.x + "%";
+    pin.style.top = m.y + "%";
+    pin.style.background = m.color;
+    pin.dataset.idx = i;
+    pin.innerHTML = (i + 1) + '<div class="pin-info">' + m.icon + " " + m.name +
+      "<br>x:" + m.x + "% &nbsp;y:" + m.y + "%</div>";
+    pin.addEventListener("mousedown", startDrag);
+    pin.addEventListener("touchstart", startDrag, { passive: false });
+    box.appendChild(pin);
+  });
+  updateJSON();
+}
+
+function startDrag(e) {
+  e.preventDefault();
+  dragPin = e.currentTarget;
+  dragPin.classList.add("dragging");
+  document.addEventListener("mousemove", onDrag);
+  document.addEventListener("mouseup", endDrag);
+  document.addEventListener("touchmove", onDrag, { passive: false });
+  document.addEventListener("touchend", endDrag);
+}
+
+function onDrag(e) {
+  if (!dragPin) return;
+  e.preventDefault();
+  var box = document.getElementById("mapBox");
+  var rect = box.getBoundingClientRect();
+  var cx = e.clientX, cy = e.clientY;
+  if (e.touches && e.touches.length) { cx = e.touches[0].clientX; cy = e.touches[0].clientY; }
+  var x = Math.max(0, Math.min(100, Math.round((cx - rect.left) / rect.width * 100)));
+  var y = Math.max(0, Math.min(100, Math.round((cy - rect.top) / rect.height * 100)));
+  var idx = parseInt(dragPin.dataset.idx);
+  MARKERS[idx].x = x;
+  MARKERS[idx].y = y;
+  dragPin.style.left = x + "%";
+  dragPin.style.top = y + "%";
+  var info = dragPin.querySelector(".pin-info");
+  if (info) info.innerHTML = MARKERS[idx].icon + " " + MARKERS[idx].name +
+    "<br>x:" + x + "% &nbsp;y:" + y + "%";
+  updateJSON();
+}
+
+function endDrag() {
+  if (dragPin) dragPin.classList.remove("dragging");
+  dragPin = null;
+  document.removeEventListener("mousemove", onDrag);
+  document.removeEventListener("mouseup", endDrag);
+  document.removeEventListener("touchmove", onDrag);
+  document.removeEventListener("touchend", endDrag);
+}
+
+function updateJSON() {
+  document.getElementById("jsonOutput").value = JSON.stringify(MARKERS, null, 2);
+}
+
+function copyJSON() {
+  var ta = document.getElementById("jsonOutput");
+  ta.select();
+  try { document.execCommand("copy"); alert("✅ 已复制！\n\n请打开 content/map-markers.json 全选粘贴"); }
+  catch (e) { ta.select(); alert("复制失败，请手动选中文本框内容复制"); }
+}
+
+function downloadJSON() {
+  var blob = new Blob([JSON.stringify(MARKERS, null, 2) + "\n"], { type: "application/json" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "map-markers.json";
+  a.click();
+}
+
+function resetPositions() {
+  MARKERS = JSON.parse(JSON.stringify(DEFAULT_MARKERS));
+  renderPins();
+}
+
+var img = document.getElementById("mapImg");
+if (img.complete && img.naturalWidth > 0) renderPins();
+else img.addEventListener("load", renderPins);
+</script>
+</body>
+</html>
