@@ -133,14 +133,18 @@ window.SITE_DATA = {
         "content/daily/不爱出门的旅游/南京先锋书店.jpg",
         "content/daily/不爱出门的旅游/南京步行街.jpg",
         "content/daily/不爱出门的旅游/南京超大的popmart.jpg",
+        "content/daily/不爱出门的旅游/我在洪崖洞.jpg",
+        "content/daily/不爱出门的旅游/我在重庆！.jpg",
         "content/daily/不爱出门的旅游/江南古镇.jpg",
+        "content/daily/不爱出门的旅游/这就是重庆，猜猜我在几层？.jpg",
+        "content/daily/不爱出门的旅游/重庆洪崖洞.jpg",
         "content/daily/不爱出门的旅游/非常非常难喝的绿豆汤（里面加了薄荷）.jpg"
       ],
       "thumb": "content/.thumbs/daily/不爱出门的旅游/上海.webp",
       "title": "不爱出门的旅游",
       "date": "",
       "desc": "去探索、去涉足那些别人赖以生活的地域",
-      "size": "10 张"
+      "size": "14 张"
     },
     {
       "type": "image",
@@ -154,13 +158,20 @@ window.SITE_DATA = {
     {
       "type": "album",
       "files": [
-        "content/daily/工作日记/实习与我的同事们.jpg"
+        "content/daily/工作日记/USB口钣金件.jpg",
+        "content/daily/工作日记/制作个人主页的一晚.jpg",
+        "content/daily/工作日记/实习与我的同事们.jpg",
+        "content/daily/工作日记/懂机加工吗？.jpg",
+        "content/daily/工作日记/无法加工出来的子弹.jpg",
+        "content/daily/工作日记/机器人操纵.jpg",
+        "content/daily/工作日记/精准手动机加工.jpg",
+        "content/daily/工作日记/负八级钳工锉的螺母.jpg"
       ],
-      "thumb": "content/.thumbs/daily/工作日记/实习与我的同事们.webp",
+      "thumb": "content/.thumbs/daily/工作日记/USB口钣金件.webp",
       "title": "工作日记",
       "date": "",
       "desc": "既然人们无法避免的要工作，那不如开心一点咯？",
-      "size": "1 张"
+      "size": "8 张"
     },
     {
       "type": "album",
@@ -192,11 +203,15 @@ window.SITE_DATA = {
       "type": "album",
       "files": [
         "content/daily/青岛在青理/下雪了？.jpg",
+        "content/daily/青岛在青理/体测的操场.jpg",
+        "content/daily/青岛在青理/冬天，小电车也会盖雪被.jpg",
         "content/daily/青岛在青理/图书馆前的大广场.jpg",
         "content/daily/青岛在青理/大海在头顶.jpg",
         "content/daily/青岛在青理/天空分层.jpg",
+        "content/daily/青岛在青理/宿舍楼下的雪.jpg",
         "content/daily/青岛在青理/操场与晴天.jpg",
         "content/daily/青岛在青理/校园晚霞.jpg",
+        "content/daily/青岛在青理/校园红枫夜.jpg",
         "content/daily/青岛在青理/狗学长们爱晒太阳.jpg",
         "content/daily/青岛在青理/窗外风景（我真的很喜欢在走廊的窗户上趴着仰望外面）.jpg"
       ],
@@ -204,7 +219,7 @@ window.SITE_DATA = {
       "title": "青岛在青理",
       "date": "",
       "desc": "校园随手拍",
-      "size": "8 张"
+      "size": "12 张"
     }
   ],
   "works": [
@@ -251,6 +266,20 @@ window.SITE_DATA = {
       "tags": [],
       "poster": "content/works/video/狐狸森林.poster.jpg",
       "size": "6.6 MB"
+    },
+    {
+      "type": "video",
+      "file": "content/works/video/移栽机！.mp4",
+      "thumb": "",
+      "title": "移栽机！",
+      "date": "",
+      "desc": "移栽机运转",
+      "tags": [
+        "机械",
+        "移栽机"
+      ],
+      "poster": "content/works/video/移栽机！.poster.jpg",
+      "size": "7.5 MB"
     },
     {
       "type": "image",
@@ -345,24 +374,8 @@ window.SITE_DATA = {
   ],
   "changelog": [
     {
-      "date": "2026-10-26 20:04",
-      "summary": "1.调整了 个人资料（profile.json +3 -1）；网页样式（style.css +3 -2）：新增 .no-trans；网页结构（index.html +2 -2）；站点数据（data.js +13 -5）；页面交互逻辑（main.js +4 -2）；工具脚本（analyze_and_record.js +1 -1）；发布脚本（发布上线.bat +13 -20）"
-    },
-    {
-      "date": "2026-10-26 20:01",
-      "summary": "1.调整了 网页样式（style.css +57 -14）：新增 .dash-bar-track、.ongoing、.grabbing、.no-trans、.map-zoom-hint，移除 .site-header；网页结构（index.html +15 -6）；站点数据（data.js +9 -45）；页面交互逻辑（main.js +185 -7）：新增 .idx、.clientWidth、.offsetWidth、.left、applyZoom()；工具脚本（analyze_and_record.js +14 -3）；工具脚本（map-editor.html +248 -29）：新增 .mcard-toggle、.mcard-body、.field、.add-btn、.btn；发布脚本（发布上线.bat +1 -1）；2.新增了 工具脚本（sync_version.js +11 -0）"
-    },
-    {
-      "date": "2026-10-26 19:53",
-      "summary": "1.调整了 网页样式（style.css +57 -14）：新增 .dash-bar-track、.ongoing、.grabbing、.no-trans、.map-zoom-hint，移除 .site-header；网页结构（index.html +15 -6）；站点数据（data.js +5 -41）；页面交互逻辑（main.js +185 -7）：新增 .idx、.clientWidth、.offsetWidth、.left、applyZoom()；工具脚本（analyze_and_record.js +13 -2）；工具脚本（map-editor.html +248 -29）：新增 .mcard-toggle、.mcard-body、.field、.add-btn、.btn；发布脚本（发布上线.bat +1 -1）；2.新增了 工具脚本（sync_version.js +11 -0）"
-    },
-    {
-      "date": "2026-10-26 18:19",
-      "summary": "1.内容更新"
-    },
-    {
-      "date": "2026-10-26 18:11",
-      "summary": "1.内容更新"
+      "date": "2026-10-26 22:20",
+      "summary": "1.新增日常照：我在洪崖洞.jpg、我在洪崖洞.txt、我在重庆！.jpg、我在重庆！.txt 等30张；2.新增视频：移栽机！.mp4；3.调整了 网页样式（style.css +7 -8）：移除 .no-trans；网页结构（index.html +2 -2）；页面交互逻辑（main.js +3 -4）"
     }
   ],
   "mapMarkers": [
@@ -394,5 +407,5 @@ window.SITE_DATA = {
       "photos": []
     }
   ],
-  "version": "1.9.0.101"
+  "version": "1.9.2.103"
 };

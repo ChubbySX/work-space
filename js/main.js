@@ -1643,10 +1643,10 @@
       var ccX = container.clientWidth / 2;
 
       function applyZoom(animate) {
-        if (animate) { zoomInner.classList.remove("no-trans"); markersEl.classList.remove("no-trans"); }
-        else { zoomInner.classList.add("no-trans"); markersEl.classList.add("no-trans"); }
+        if (animate) zoomInner.classList.remove("no-trans");
+        else zoomInner.classList.add("no-trans");
         zoomInner.style.transform = "translate(" + mPanX + "px," + mPanY + "px) scale(" + mZoom + ")";
-        markersEl.style.transform = "scale(" + (1 / mZoom) + ")";
+        markersEl.style.setProperty("--inv-zoom", String(1 / mZoom));
       }
 
       function clampPan() {
@@ -1688,7 +1688,6 @@
         mPanSY = e.clientY - mPanY;
         container.classList.add("grabbing");
         zoomInner.classList.add("no-trans");
-        markersEl.classList.add("no-trans");
         e.preventDefault();
       });
       document.addEventListener("mousemove", function (e) {
