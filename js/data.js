@@ -337,6 +337,10 @@ window.SITE_DATA = {
   ],
   "changelog": [
     {
+      "date": "2026-10-26 18:19",
+      "summary": "1.内容更新"
+    },
+    {
       "date": "2026-10-26 18:11",
       "summary": "1.内容更新"
     },
@@ -351,10 +355,6 @@ window.SITE_DATA = {
     {
       "date": "2026-10-26 17:31",
       "summary": "1.更新项目：2号波箱复刻.json、个人网站搭建.json、水弹的魔法.json；2.调整了 构建脚本（build.js +27 -8）；网页样式（style.css +265 -57）：新增 .friends-grid、.friend-card、.friend-avatar、.music-tracks、.dash-charts，移除 .stats、.skill-fill；网页结构（index.html +84 -12）；站点数据（data.js +73 -19）；页面交互逻辑（main.js +369 -95）：新增 .video、.idx、unlockAudio()、playGearSound()、fmtTime()，移除 .textContent、setupStats()；3.新增了 代码（map-designs.html +334 -0）：新增 .active；发布脚本（预览地图设计.bat +3 -0）；工具脚本（map-editor.html +167 -0）：新增 .dragging、.secondary、.clientX、renderPins()、startDrag()；工具脚本（打开地图编辑器.bat +3 -0）"
-    },
-    {
-      "date": "2026-10-26 00:09",
-      "summary": "1.内容更新"
     }
   ],
   "mapMarkers": [
@@ -422,5 +422,5 @@ window.SITE_DATA = {
       "photos": []
     }
   ],
-  "version": "1.6.9.84"
+  "version": "1.6.10.85"
 };
