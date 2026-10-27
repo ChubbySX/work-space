@@ -25,7 +25,7 @@
     "x": 32.41,
     "y": 81.38,
     "color": "#159d94",
-    "icon": "📍",
+    "icon": "🚄",
     "photos": []
   },
   {
@@ -34,7 +34,7 @@
     "x": 60.01,
     "y": 62.93,
     "color": "#2dc830",
-    "icon": "📍",
+    "icon": "🚉",
     "photos": []
   },
   {
@@ -43,7 +43,7 @@
     "x": 55.88,
     "y": 69.96,
     "color": "#9bedf3",
-    "icon": "📍",
+    "icon": "🚆",
     "photos": []
   },
   {
@@ -52,7 +52,7 @@
     "x": 56.32,
     "y": 70.56,
     "color": "#4c2dc8",
-    "icon": "📍",
+    "icon": "🌊",
     "photos": []
   },
   {
@@ -61,7 +61,12 @@
     "x": 42.4,
     "y": 71.03,
     "color": "#fb4828",
-    "icon": "📍",
-    "photos": []
+    "icon": "🏭",
+    "photos": [
+      "content/daily/实习是探索/思锐智能！.jpg",
+      "content/daily/实习是探索/思锐厂外.jpg",
+      "content/daily/实习是探索/思锐的眺望.jpg",
+      "content/daily/实习是探索/思锐真的很漂亮.jpg"
+    ]
   }
 ]

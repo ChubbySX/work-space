@@ -211,7 +211,19 @@ code {
   50% { transform: scale(1.12); opacity: .95; }
 }
 
-/* 云层已移除（移动端灰色块问题） */
+/* 云层（桌面端显示，移动端隐藏） */
+.hero-cloud {
+  position: absolute;
+  opacity: .5;
+  filter: blur(10px);
+  z-index: 2;
+  pointer-events: none;
+  will-change: transform;
+  display: block;
+}
+.hero-cloud.c1 { width: 320px; height: 80px; top: 16%; }
+.hero-cloud.c2 { width: 420px; height: 100px; top: 34%; }
+.hero-cloud.c3 { width: 240px; height: 65px; top: 10%; }
 
 /* 近景雾气（底部暖色渐变，JS 驱动缓慢飘动 + 滚动视差） */
 .hero-mist {
@@ -225,6 +237,10 @@ code {
     linear-gradient(180deg, transparent 0%, rgba(255,180,100,.1) 45%, rgba(255,140,60,.2) 100%);
   z-index: 2;
   will-change: transform;
+}
+/* 移动端隐藏云层和光斑（避免灰色块/三驼峰） */
+@media (max-width: 768px) {
+  .hero-cloud, .hero-blob { display: none !important; }
 }
 /* 首屏底部渐变融入下一页，滚动不突兀 */
 .hero::after {
@@ -487,6 +503,12 @@ code {
 .project-progress-val {
   font-size: .85rem; font-weight: 700; color: var(--accent);
 }
+
+/* 项目暂停状态 */
+.project-badge { display: inline-block; font-size: .62rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; vertical-align: middle; margin-left: 6px; letter-spacing: .5px; }
+.project-badge.paused { background: var(--ink-faint); color: #fff; opacity: .65; }
+.project-progress.paused i { background: linear-gradient(90deg, var(--ink-faint), #aaa); }
+.project-card.is-paused { opacity: .82; }
 
 /* 进度条入场动画 */
 .project-card .project-progress i { width: 0; }
@@ -1074,6 +1096,20 @@ code {
   padding: 48px 24px;
 }
 
+/* ---------- 友链空位（广告位招租） ---------- */
+.friends-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--ink-soft);
+  background: repeating-linear-gradient(45deg, var(--surface), var(--surface) 12px, var(--bg) 12px, var(--bg) 24px);
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: default;
+}
+
 /* ---------- 联系 ---------- */
 .contact-grid {
   display: grid;
@@ -1172,6 +1208,7 @@ code {
 .lightbox-body {
   max-width: min(1000px, 92vw);
   max-height: 80vh;
+  margin: auto;
   display: grid;
   place-items: center;
 }
@@ -1280,7 +1317,10 @@ code {
     border-top: 1px solid var(--line);
   }
   .hero { padding-top: calc(var(--nav-h) + 24px); }
-  .lightbox { padding: 20px; }
+  .lightbox { padding: 12px; overflow-y: auto; }
+  .lightbox-body { max-height: 72vh; }
+  .lightbox-body video { max-height: 65vh; width: 100%; object-fit: contain; }
+  .lightbox-body img { max-height: 65vh; }
   .lightbox-prev { left: 8px; }
   .lightbox-next { right: 8px; }
   .to-top { right: 16px; bottom: 16px; }
@@ -2128,10 +2168,17 @@ code {
 .gantt-bar.done .gantt-bar-fill { border-radius: 8px; }
 .gantt-pct { position: absolute; top: 50%; transform: translateY(-50%); font-size: .72rem; font-weight: 700; color: var(--accent-dark); white-space: nowrap; z-index: 1; }
 .gantt-pct.ongoing { color: var(--accent-dark); }
+.gantt-bar.paused { opacity: .5; }
+.gantt-bar.paused .gantt-bar-fill { background: linear-gradient(90deg, var(--ink-faint), #aaa); }
+.gantt-pct.paused { color: var(--ink-faint); }
+
+/* 雷达图顶点悬停 */
+.radar-vertex { transition: r .2s, filter .2s; }
+.radar-vertex:hover { filter: drop-shadow(0 0 4px var(--accent)); }
 @media (max-width: 600px) { .gantt-label { width: 70px; font-size: .75rem; } .gantt-axis { padding-left: 80px; } }
 
 /* ---------- 青岛地图（底图 + 编号标记 + 点击展开照片） ---------- */
-.map-img-container { position: relative; display: flex; justify-content: center; align-items: flex-start; overflow: hidden; border-radius: 14px; max-height: 720px; cursor: grab; }
+.map-img-container { position: relative; display: flex; justify-content: center; align-items: flex-start; overflow: hidden; border-radius: 14px; max-height: 720px; cursor: grab; touch-action: pan-y; }
 .map-img-container.grabbing { cursor: grabbing; }
 .map-zoom-inner { position: relative; transform-origin: center top; transition: transform .35s cubic-bezier(.22,1,.36,1); will-change: transform; background: var(--bg); }
 .map-zoom-inner.no-trans { transition: none; }
@@ -2139,7 +2186,7 @@ code {
 [data-theme="dark"] .map-img { mix-blend-mode: screen; filter: invert(1) hue-rotate(180deg) brightness(.9); }
 .map-markers { position: absolute; inset: 0; pointer-events: none; }
 .map-pin {
-  position: absolute; transform: scale(var(--inv-zoom, 1)) translate(-50%, -50%);
+  position: absolute; transform: translate(-50%, -50%) scale(var(--inv-zoom, 1));
   width: 28px; height: 28px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: .72rem; font-weight: 700; color: #fff;
@@ -2147,7 +2194,7 @@ code {
   cursor: pointer; pointer-events: auto; z-index: 2;
   transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .2s;
 }
-.map-pin:hover { transform: scale(var(--inv-zoom, 1)) translate(-50%, -50%) scale(1.3); box-shadow: 0 5px 16px rgba(0,0,0,.4); z-index: 5; }
+.map-pin:hover { transform: translate(-50%, -50%) scale(calc(var(--inv-zoom, 1) * 1.3)); box-shadow: 0 5px 16px rgba(0,0,0,.4); z-index: 5; }
 .map-pin-label {
   position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
   white-space: nowrap; font-size: .68rem; font-weight: 600; color: var(--ink);
@@ -2158,9 +2205,9 @@ code {
 .map-pin-label em { font-style: normal; color: var(--accent); font-size: .62rem; }
 .map-pin.is-pulse { animation: map-pin-pulse .6s ease; }
 @keyframes map-pin-pulse {
-  0% { transform: scale(var(--inv-zoom, 1)) translate(-50%,-50%) scale(1); }
-  50% { transform: scale(var(--inv-zoom, 1)) translate(-50%,-50%) scale(1.5); box-shadow: 0 0 0 8px var(--pin-glow, transparent), 0 4px 12px rgba(0,0,0,.3); }
-  100% { transform: scale(var(--inv-zoom, 1)) translate(-50%,-50%) scale(1); }
+  0% { transform: translate(-50%,-50%) scale(var(--inv-zoom, 1)); }
+  50% { transform: translate(-50%,-50%) scale(calc(var(--inv-zoom, 1) * 1.5)); box-shadow: 0 0 0 8px var(--pin-glow, transparent), 0 4px 12px rgba(0,0,0,.3); }
+  100% { transform: translate(-50%,-50%) scale(var(--inv-zoom, 1)); }
 }
 
 /* 地图弹层（点击标记展开） */
@@ -2191,6 +2238,16 @@ code {
   font-size: .65rem; color: var(--ink-faint); background: var(--surface); padding: 2px 10px;
   border-radius: 10px; pointer-events: none; opacity: .7; z-index: 15; transition: opacity .3s; }
 .map-img-container:hover .map-zoom-hint { opacity: 0; }
+.map-keytip { position: absolute; bottom: 8px; right: 12px; font-size: .62rem; color: var(--ink-soft);
+  background: var(--surface); padding: 3px 10px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.1);
+  pointer-events: none; z-index: 15; transition: opacity .3s; }
+.map-img-container:hover .map-keytip { opacity: 0; }
+.map-zoom-hint .hint-m { display: none; }
+@media (max-width: 640px) {
+  .map-keytip { display: none; }
+  .map-zoom-hint .hint-d { display: none; }
+  .map-zoom-hint .hint-m { display: inline; }
+}
 
 /* 地图悬停预览面板（光标放在锚点上时，侧边弹出照片缩略图） */
 .map-preview {

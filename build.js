@@ -388,6 +388,21 @@ const data = {
 
 writeData(data);
 
+/* 自动升级 index.html 中 data.js 的缓存版本号（?v=N → ?v=N+1），避免浏览器缓存旧数据 */
+function bumpDataCacheVersion() {
+  var htmlPath = path.join(ROOT, "index.html");
+  var html = fs.readFileSync(htmlPath, "utf8");
+  var m = html.match(/js\/data\.js\?v=(\d+)/);
+  if (m) {
+    var oldV = parseInt(m[1], 10);
+    var newV = oldV + 1;
+    html = html.replace("js/data.js?v=" + oldV, "js/data.js?v=" + newV);
+    fs.writeFileSync(htmlPath, html, "utf8");
+    console.log("   缓存刷新   data.js?v=" + oldV + " → ?v=" + newV);
+  }
+}
+bumpDataCacheVersion();
+
 console.log("✅ 构建完成：");
 console.log("   日常       " + data.daily.length + " 条");
 console.log("   作品       " + data.works.length + " 个（" +

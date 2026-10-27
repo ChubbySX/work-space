@@ -19,6 +19,12 @@
   const MAX_MUSIC_VOL = 0.0825;  // 音乐音量上限（当前设置的50%）
   let musicVolume = 0;           // 当前音乐音量（0~MAX_MUSIC_VOL）
   var PRELOAD = { total: 0, loaded: 0, revealFn: null, active: false, done: false, startTime: 0 };
+  var eggFound = {};
+  var tracksPlayed = {};
+  var brandClicks = 0;
+  var flippedCards = {};
+  var seasonsTried = {};
+  var sectionsVisited = {};
 
   /* ---------- 开场齿轮咔哒声（Web Audio API，无需音频文件） ---------- */
   // 共享 AudioContext：首次用户交互时创建，确保浏览器允许播放
@@ -390,7 +396,7 @@
   function renderFriends(friends) {
     var grid = $("#friendsGrid");
     if (!grid) return;
-    if (!friends || !friends.length) { grid.innerHTML = '<div class="empty-state">还没有友情链接～ 编辑 <code>content/profile.json</code> 里的 friends 字段</div>'; return; }
+    if (!friends || !friends.length) { grid.innerHTML = '<div class="friends-empty">广告位招租！（皮一下，欢迎各位好盆友们互挂友链）</div>'; return; }
     grid.innerHTML = friends.map(function (f, i) {
       var initial = (f.name || "?").charAt(0);
       var avatar = f.avatar
@@ -418,8 +424,10 @@
       let inner = "";
       const srcFile = item.file || item.src || "";
       if (kind === "video" || isVideoFile(srcFile)) {
+        // 彩蛋：视频鉴赏
+        if (typeof discoverEgg === "function") discoverEgg("video-viewer");
         inner = srcFile
-          ? `<video src="${esc(srcFile)}" controls autoplay></video>
+          ? `<video src="${esc(srcFile)}" controls autoplay preload="metadata" playsinline></video>
              <div class="video-controls">
                <span class="vc-label">倍速</span>
                <button class="vc-btn" data-rate="0.5">0.5×</button>
@@ -1055,7 +1063,7 @@
     var dpts = [];
     for (var i = 0; i < n; i++) { var ang = -Math.PI/2 + i*2*Math.PI/n; var r = R*(skills[i].level||0)/100; dpts.push((cx+Math.cos(ang)*r)+","+(cy+Math.sin(ang)*r)); }
     html += '<polygon points="'+dpts.join(" ")+'" fill="rgba(201,106,46,.25)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>';
-    for (var i = 0; i < n; i++) { var ang = -Math.PI/2 + i*2*Math.PI/n; var r = R*(skills[i].level||0)/100; html += '<circle cx="'+(cx+Math.cos(ang)*r)+'" cy="'+(cy+Math.sin(ang)*r)+'" r="4" fill="var(--accent)"/>'; }
+    for (var i = 0; i < n; i++) { var ang = -Math.PI/2 + i*2*Math.PI/n; var r = R*(skills[i].level||0)/100; html += '<circle cx="'+(cx+Math.cos(ang)*r)+'" cy="'+(cy+Math.sin(ang)*r)+'" r="5" fill="var(--accent)" class="radar-vertex" style="cursor:pointer"><title>'+esc(skills[i].name)+'：'+(skills[i].level||0)+'</title></circle>'; }
     for (var i = 0; i < n; i++) { var ang = -Math.PI/2 + i*2*Math.PI/n; var r = R+18; var lx = cx+Math.cos(ang)*r, ly = cy+Math.sin(ang)*r; var anchor = Math.abs(Math.cos(ang)) < 0.3 ? "middle" : (Math.cos(ang) > 0 ? "start" : "end"); html += '<text x="'+lx+'" y="'+ly+'" text-anchor="'+anchor+'" dominant-baseline="middle" font-size="11" fill="var(--ink-soft)">'+esc(skills[i].name)+'</text>'; }
     html += '</svg>';
     $("#dashRadar").innerHTML = html;
@@ -1068,49 +1076,61 @@
     var hasDates = projects.some(function (p) { return p.start; });
     if (!hasDates) { if ($("#ganttWrap")) $("#ganttWrap").style.display = "none"; return; }
 
-    function parseMonth(s) {
+    function parseDate(s) {
       if (!s) return null;
-      var parts = s.split("-"); var m = parseInt(parts[0], 10) * 12 + parseInt(parts[1] || "1", 10);
-      return m;
+      var parts = s.split("-");
+      var y = parseInt(parts[0], 10);
+      var m = parseInt(parts[1] || "1", 10);
+      var d = parseInt(parts[2] || "1", 10);
+      return y * 372 + (m - 1) * 31 + d;
+    }
+    function fmtDate(days) {
+      var y = Math.floor(days / 372);
+      var rem = days % 372;
+      var m = Math.floor(rem / 31) + 1;
+      var d = rem % 31 + 1;
+      return (m < 10 ? "0" + m : m) + "/" + (d < 10 ? "0" + d : d);
     }
     var now = new Date();
-    var nowMonth = now.getFullYear() * 12 + (now.getMonth() + 1);
-    var minM = Infinity, maxM = 0;
+    var nowDays = now.getFullYear() * 372 + now.getMonth() * 31 + now.getDate();
+    var minD = Infinity, maxD = 0;
     projects.forEach(function (p) {
-      var s = parseMonth(p.start) || nowMonth;
-      var e = p.end ? parseMonth(p.end) : nowMonth;
+      var s = parseDate(p.start) || nowDays;
+      var e = p.end ? parseDate(p.end) : nowDays;
       if (e < s) e = s;
-      if (p.end === "") e = nowMonth; // 进行中
-      minM = Math.min(minM, s); maxM = Math.max(maxM, e);
+      if (p.end === "" && p.status !== "paused") e = nowDays;
+      minD = Math.min(minD, s); maxD = Math.max(maxD, e);
     });
-    var span = Math.max(1, maxM - minM);
+    var span = Math.max(1, maxD - minD);
 
     // 时间轴
     var axisHtml = '<div class="gantt-axis">';
     for (var i = 0; i <= 4; i++) {
-      var m = minM + Math.round(span * i / 4);
-      var yr = Math.floor(m / 12), mo = m % 12 || 12;
-      axisHtml += '<span>' + (mo < 10 ? "0" + mo : mo) + "/" + (yr + "").slice(-2) + '</span>';
+      var dd = minD + Math.round(span * i / 4);
+      axisHtml += '<span>' + fmtDate(dd) + '</span>';
     }
     axisHtml += '</div>';
 
     var rowsHtml = "";
     projects.forEach(function (p) {
-      var s = parseMonth(p.start) || nowMonth;
-      var e = p.end ? parseMonth(p.end) : nowMonth;
-      if (p.end === "") e = nowMonth;
+      var s = parseDate(p.start) || nowDays;
+      var isPaused = p.status === "paused";
+      var e = p.end ? parseDate(p.end) : nowDays;
+      if (p.end === "" && !isPaused) e = nowDays;
       if (e < s) e = s;
-      var left = (s - minM) / span * 100;
+      var left = (s - minD) / span * 100;
       var width = Math.max(3, (e - s) / span * 100);
       var prog = p.progress || 0;
       var isDone = prog >= 100 && p.end;
       var pctLeft = left + width;
       var pctStyle = pctLeft > 88 ? "right:8px" : "left:calc(" + pctLeft + "% + 8px)";
-      rowsHtml += '<div class="gantt-row' + (p.end === "" ? " ongoing" : "") + '">' +
+      var statusCls = isPaused ? " paused" : (p.end === "" ? " ongoing" : "");
+      var statusTxt = isPaused ? "已暂停 " : (p.end === "" ? "进行中 " : "");
+      rowsHtml += '<div class="gantt-row' + statusCls + '">' +
         '<span class="gantt-label">' + esc(p.name) + '</span>' +
-        '<div class="gantt-track"><div class="gantt-bar' + (isDone ? " done" : "") + '" style="left:' + left + '%;width:' + width + '%">' +
+        '<div class="gantt-track"><div class="gantt-bar' + (isDone ? " done" : "") + statusCls + '" style="left:' + left + '%;width:' + width + '%">' +
         '<div class="gantt-bar-fill" style="width:' + prog + '%"></div>' +
-        '</div><span class="gantt-pct' + (p.end === "" ? " ongoing" : "") + '" style="' + pctStyle + '">' + (p.end === "" ? "进行中 " : "") + prog + '%</span>' +
+        '</div><span class="gantt-pct' + statusCls + '" style="' + pctStyle + '">' + statusTxt + prog + '%</span>' +
         '</div></div>';
     });
 
@@ -1146,22 +1166,22 @@
         var progress = Math.max(0, Math.min(100, p.progress || 0));
         var body =
             '<div class="project-body">' +
-              '<h3 class="project-name">' + esc(p.name) + '</h3>' +
+              '<h3 class="project-name">' + esc(p.name) + (p.status === "paused" ? ' <span class="project-badge paused">⏸ 已暂停</span>' : '') + '</h3>' +
               (p.desc ? '<p class="project-desc">' + esc(p.desc) + '</p>' : '') +
               (p.goal ? '<div class="project-field"><span class="project-label">目标</span><span class="project-value">' + esc(p.goal) + '</span></div>' : '') +
               '<div class="project-field project-progress-field">' +
                 '<div class="project-progress-head">' +
-                  '<span class="project-label">进度</span>' +
+                  '<span class="project-label">进度' + (p.status === "paused" ? '（已暂停）' : '') + '</span>' +
                   '<span class="project-progress-val">' + progress + '%</span>' +
                 '</div>' +
-                '<span class="project-progress"><i></i></span>' +
+                '<span class="project-progress' + (p.status === "paused" ? " paused" : "") + '"><i></i></span>' +
               '</div>' +
               (p.expected ? '<div class="project-field"><span class="project-label">期望结果</span><span class="project-value">' + esc(p.expected) + '</span></div>' : '') +
               (p.learned ? '<div class="project-field"><span class="project-label">我收获了什么</span><span class="project-value">' + esc(p.learned) + '</span></div>' : '') +
               (p.url ? '<a class="project-link" href="' + esc(p.url) + '" target="_blank" rel="noopener">🌐 访问网站</a>' : '') +
             '</div>';
         return (
-          '<article class="project-card reveal" style="--p:' + progress + '%;transition-delay:' + ((i % 4) * 80) + 'ms">' +
+          '<article class="project-card reveal' + (p.status === "paused" ? " is-paused" : "") + '" style="--p:' + progress + '%;transition-delay:' + ((i % 4) * 80) + 'ms">' +
             '<div class="project-card-inner">' +
               '<div class="project-back">' +
                 '<span class="project-back-mark">?</span>' +
@@ -1178,6 +1198,15 @@
     $$(".project-card", grid).forEach(function (card) {
       card.addEventListener("click", function () {
         card.classList.add("is-flipped");
+        // 彩蛋：翻牌达人
+        if (!card.dataset.eggCounted) {
+          card.dataset.eggCounted = "1";
+          if (typeof discoverEgg === "function") {
+            var total = $$(".project-card", grid).length;
+            var flipped = $$(".project-card.is-flipped", grid).length;
+            if (flipped >= total) discoverEgg("card-flipper");
+          }
+        }
       });
       // 阻止链接点击冒泡到卡片（避免误触发翻转）
       var link = card.querySelector(".project-link");
@@ -1495,6 +1524,9 @@
       else document.documentElement.setAttribute("data-season", id);
       var s = SEASONS.find(function (x) { return x.id === id; });
       if (s) btn.textContent = s.icon;
+      // 彩蛋：四季收藏
+      seasonsTried[id] = true;
+      if (Object.keys(seasonsTried).length >= 4 && typeof discoverEgg === "function") discoverEgg("season-collector");
     }
     applySeason(current);
     btn.addEventListener("click", function () {
@@ -1538,6 +1570,8 @@
         var idx = parseInt(pin.dataset.idx, 10);
         var m = MARKERS[idx];
         if (!m) return;
+        // 彩蛋：地图探索
+        if (typeof discoverEgg === "function") discoverEgg("map-explorer");
         pin.classList.add("is-pulse");
         setTimeout(function () { pin.classList.remove("is-pulse"); }, 600);
 
@@ -1665,8 +1699,9 @@
 
       applyZoom(false);
 
-      // 滚轮缩放（以光标位置为中心）
+      // 滚轮缩放（Shift+滚轮，以光标位置为中心；不按Shift → 页面正常滚动）
       container.addEventListener("wheel", function (e) {
+        if (!e.shiftKey) return;
         e.preventDefault();
         var rect = container.getBoundingClientRect();
         var mx = e.clientX - rect.left, my = e.clientY - rect.top;
@@ -1680,7 +1715,7 @@
         applyZoom(false);
       }, { passive: false });
 
-      // 拖拽平移（点锚点或按钮时不触发）
+      // 鼠标拖拽平移（点锚点或按钮时不触发）
       container.addEventListener("mousedown", function (e) {
         if (e.target.closest(".map-pin") || e.target.closest(".map-zoom-btn")) return;
         mPanning = true;
@@ -1701,23 +1736,43 @@
         if (mPanning) { mPanning = false; container.classList.remove("grabbing"); }
       });
 
-      // 触摸平移
-      var tPan = null;
+      // 触摸：单指 → 页面正常滚动；双指 → 缩放+平移
+      var tPinch = null;
+      function tDist(a, b) {
+        var dx = a.clientX - b.clientX, dy = a.clientY - b.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+      function tMid(a, b) {
+        return { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+      }
       container.addEventListener("touchstart", function (e) {
         if (e.target.closest(".map-pin") || e.target.closest(".map-zoom-btn")) return;
-        if (e.touches.length === 1) {
-          tPan = { x: e.touches[0].clientX - mPanX, y: e.touches[0].clientY - mPanY };
+        if (e.touches.length === 2) {
+          var m = tMid(e.touches[0], e.touches[1]);
+          tPinch = {
+            d0: tDist(e.touches[0], e.touches[1]),
+            z0: mZoom, mx0: m.x, my0: m.y, px0: mPanX, py0: mPanY
+          };
         }
       }, { passive: true });
       container.addEventListener("touchmove", function (e) {
-        if (!tPan || e.touches.length !== 1) return;
+        if (!tPinch || e.touches.length !== 2) return;
         e.preventDefault();
-        mPanX = e.touches[0].clientX - tPan.x;
-        mPanY = e.touches[0].clientY - tPan.y;
+        var m = tMid(e.touches[0], e.touches[1]);
+        var d = tDist(e.touches[0], e.touches[1]);
+        var r = d / tPinch.d0;
+        var nz = Math.max(1, Math.min(6, tPinch.z0 * r));
+        var ar = nz / tPinch.z0;
+        mPanX = m.x - (tPinch.mx0 - tPinch.px0) * ar;
+        mPanY = m.y - (tPinch.my0 - tPinch.py0) * ar;
+        mZoom = nz;
         clampPan();
         applyZoom(false);
       }, { passive: false });
-      container.addEventListener("touchend", function () { tPan = null; });
+      container.addEventListener("touchend", function (e) {
+        if (e.touches.length < 2) tPinch = null;
+      });
+      container.addEventListener("touchcancel", function () { tPinch = null; });
 
       // 缩放按钮
       var btnIn = $("#mapZoomIn"), btnOut = $("#mapZoomOut"), btnFit = $("#mapZoomFit");
@@ -2001,6 +2056,32 @@
     var mist = $("#heroMist");
     var mistScrollY = 0;
 
+    /* ====== 云层配置（桌面端才有，移动端 CSS display:none） ====== */
+    var isMobile = window.matchMedia("(max-width: 768px)").matches;
+    var cloudDefs = [
+      { el: $("#cloud1"), w: 320 },
+      { el: $("#cloud2"), w: 420 },
+      { el: $("#cloud3"), w: 240 },
+    ].filter(function (c) { return c.el; });
+    var SPEED_MIN = 18, SPEED_MAX = 52;
+    var PAUSE_GAP_MIN = 3000, PAUSE_GAP_MAX = 7000;
+    var PAUSE_DUR_MIN = 800, PAUSE_DUR_MAX = 2800;
+    function randSpeed() { return SPEED_MIN + Math.random() * (SPEED_MAX - SPEED_MIN); }
+    function randGap() { return PAUSE_GAP_MIN + Math.random() * (PAUSE_GAP_MAX - PAUSE_GAP_MIN); }
+    var cloudState = cloudDefs.map(function (c) {
+      var vw = window.innerWidth;
+      return {
+        el: c.el, w: c.w,
+        x: Math.random() * vw,
+        speed: randSpeed(),
+        pausing: false,
+        pauseTimer: randGap(),
+        scrollY: 0,
+        pf: 0.03 + Math.random() * 0.04,
+      };
+    });
+    var cloudScrollY = 0;
+
     /* ====== 飞鸟配置 ====== */
     var birdDefs = [
       { el: $("#bird1"), w: 40, h: 20 },
@@ -2048,6 +2129,23 @@
         mist.style.transform = "translate(" + mx.toFixed(1) + "px," + (mistScrollY * 0.2).toFixed(1) + "px)";
       }
 
+      /* 云层：变速度飘动 + 随机暂停（桌面端） */
+      if (!isMobile) {
+        cloudState.forEach(function (c) {
+          if (c.pausing) {
+            c.pauseTimer -= dt * 1000;
+            c.speed *= 0.92;
+            if (c.pauseTimer <= 0) { c.pausing = false; c.speed = randSpeed(); c.pauseTimer = randGap(); }
+          } else {
+            c.pauseTimer -= dt * 1000;
+            if (c.pauseTimer <= 0) { c.pausing = true; c.pauseTimer = PAUSE_DUR_MIN + Math.random() * (PAUSE_DUR_MAX - PAUSE_DUR_MIN); }
+          }
+          c.x += c.speed * dt;
+          if (c.x > vw + c.w + 60) { c.x = -c.w - 60; c.speed = randSpeed(); }
+          c.el.style.transform = "translate(" + c.x.toFixed(1) + "px," + (cloudScrollY * c.pf).toFixed(1) + "px)";
+        });
+      }
+
       requestAnimationFrame(tick);
     }
 
@@ -2057,10 +2155,11 @@
       if (photo) photo.style.transform = "translateY(" + (y * 0.1) + "px)";
       if (sun) sun.style.marginTop = (y * 0.05) + "px";
       mistScrollY = y;
+      cloudScrollY = y;
     }
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    /* 始终启动云层 + 雾气动画（用户明确要求） */
+    /* 始终启动云层 + 雾气 + 飞鸟动画 */
     requestAnimationFrame(tick);
   }
 
@@ -2211,50 +2310,63 @@
     }
 
     const p = DATA.profile || {};
-    renderProfile(p);
-    renderTimeline(p.timeline);
-    renderDaily(DATA.daily);
-    renderFeatured(DATA.daily);
-    renderWorks(DATA.works);
-    renderProjects(DATA.projects);
-    renderDashboard(DATA);
-    renderGantt(DATA.projects);
-    renderWishlist(DATA.wishlist);
-    renderChangelog(DATA.changelog);
-    setupFilters(DATA.works);
-    renderContact(p.contact);
-    renderFriends(p.friends);
-    setupTyped();
+    // 防御性渲染：单个函数出错不影响其他模块
+    function safe(label, fn) {
+      try { fn(); }
+      catch (err) { console.error("[渲染失败] " + label + ":", err.message); }
+    }
+    safe("profile",   function () { renderProfile(p); });
+    safe("timeline",  function () { renderTimeline(p.timeline); });
+    safe("daily",     function () { renderDaily(DATA.daily); });
+    safe("featured",  function () { renderFeatured(DATA.daily); });
+    safe("works",     function () { renderWorks(DATA.works); });
+    safe("projects",  function () { renderProjects(DATA.projects); });
+    safe("dashboard", function () { renderDashboard(DATA); });
+    safe("gantt",     function () { renderGantt(DATA.projects); });
+    safe("wishlist",  function () { renderWishlist(DATA.wishlist); });
+    safe("changelog", function () { renderChangelog(DATA.changelog); });
+    safe("filters",   function () { setupFilters(DATA.works); });
+    safe("contact",   function () { renderContact(p.contact); });
+    safe("friends",   function () { renderFriends(p.friends); });
+    safe("typed",     function () { setupTyped(); });
 
     $("#year").textContent = new Date().getFullYear();
     var svEl = $("#siteVersion"); if (svEl) svEl.textContent = (window.SITE_DATA && window.SITE_DATA.version) || "1.0.0.1";
 
-    setupNav();
-    setupLightboxEvents();
-    setupReveal();
-    setupDailyToggle();
-    setupEggs();
+    safe("nav",       function () { setupNav(); });
+    safe("lightbox",  function () { setupLightboxEvents(); });
+    safe("reveal",    function () { setupReveal(); });
+    safe("daily-tgl", function () { setupDailyToggle(); });
+    safe("eggs",      function () { setupEggs(); });
+    safe("hero-par",  function () { setupHeroParallax(); });
   });
 
   /* ---------- 彩蛋合集系统 ---------- */
   var EGGS = [
     { id: "night-owl", emoji: "🦉", name: "夜猫子", hint: "深夜造访（0~6点）" },
     { id: "dark-mode", emoji: "🌙", name: "暗影模式", hint: "切换深色主题" },
-    { id: "snow", emoji: "⛄", name: "雪天来了", hint: "冬日访问网站" },
     { id: "music-lover", emoji: "🎧", name: "音乐发烧友", hint: "听完3首背景音乐" },
     { id: "skip-intro", emoji: "⏭️", name: "急性子", hint: "跳过开场动画" },
     { id: "scroll-bottom", emoji: "📜", name: "到底了", hint: "滚动到页面最底部" },
-    { id: "konami", emoji: "🎮", name: "科乐美秘籍", hint: "↑↑↓↓←→←→BA" },
-    { id: "ten-clicks", emoji: "👆", name: "十连击", hint: "点击左上角logo十次" }
+    { id: "ten-clicks", emoji: "👆", name: "十连击", hint: "点击左上角logo十次" },
+    { id: "site-tour", emoji: "🗺️", name: "全站巡游", hint: "浏览所有板块" },
+    { id: "card-flipper", emoji: "🃏", name: "翻牌达人", hint: "翻开全部项目卡片" },
+    { id: "map-explorer", emoji: "📍", name: "地图探索", hint: "点击地图上的标记" },
+    { id: "season-collector", emoji: "🍂", name: "四季收藏", hint: "体验春夏秋冬四种主题" },
+    { id: "video-viewer", emoji: "🎬", name: "视频鉴赏", hint: "在灯箱中观看视频" },
+    { id: "daily-toggle", emoji: "🔄", name: "双面日常", hint: "切换日常的展示方式" }
   ];
-  var eggFound = {};
-  var tracksPlayed = {};
-  var brandClicks = 0;
-  var konamiSeq = [];
-  var KONAMI = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]; // ↑↑↓↓←→←→BA
+  // 彩蛋变量已在 IIFE 顶部声明（eggFound / tracksPlayed / brandClicks / flippedCards / seasonsTried / sectionsVisited）
 
   function loadEggs() {
     try { eggFound = JSON.parse(localStorage.getItem("eggs") || "{}"); } catch (e) { eggFound = {}; }
+    // 清理已移除的彩蛋记录
+    var validIds = EGGS.map(function (e) { return e.id; });
+    var changed = false;
+    Object.keys(eggFound).forEach(function (k) {
+      if (validIds.indexOf(k) < 0) { delete eggFound[k]; changed = true; }
+    });
+    if (changed) saveEggs();
   }
   function saveEggs() {
     try { localStorage.setItem("eggs", JSON.stringify(eggFound)); } catch (e) {}
@@ -2306,9 +2418,6 @@
     document.addEventListener("intro-done", function (e) {
       if (e.detail && e.detail.skipped) discoverEgg("skip-intro");
     });
-    // 雪天
-    var m = new Date().getMonth() + 1;
-    if (m === 12 || m === 1 || m === 2) discoverEgg("snow");
     // 滚动到底部
     var footSeen = false;
     window.addEventListener("scroll", function () {
@@ -2318,14 +2427,25 @@
         discoverEgg("scroll-bottom");
       }
     }, { passive: true });
-    // Konami
-    document.addEventListener("keydown", function (e) {
-      konamiSeq.push(e.keyCode);
-      if (konamiSeq.length > KONAMI.length) konamiSeq.shift();
-      if (konamiSeq.length === KONAMI.length && konamiSeq.every(function (k, i) { return k === KONAMI[i]; })) {
-        discoverEgg("konami");
-      }
-    });
+    // 全站巡游：追踪所有 section 可见
+    var SECTIONS = ["home", "about", "timeline", "dashboard", "projects", "daily", "works", "friends", "map", "wishlist", "contact", "changelog"];
+    if (window.IntersectionObserver) {
+      var secObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) {
+            var id = en.target.id;
+            if (id && SECTIONS.indexOf(id) >= 0) {
+              sectionsVisited[id] = true;
+              if (Object.keys(sectionsVisited).length >= SECTIONS.length) discoverEgg("site-tour");
+            }
+          }
+        });
+      }, { rootMargin: "-20% 0px -20% 0px" });
+      SECTIONS.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) secObs.observe(el);
+      });
+    }
     // 品牌十连击
     var brand = $(".brand");
     if (brand) brand.addEventListener("click", function () {
@@ -2365,6 +2485,8 @@
       var mode = btn.dataset.mode;
       applyMode(mode);
       localStorage.setItem("dailyView", mode);
+      // 彩蛋：双面日常
+      if (typeof discoverEgg === "function") discoverEgg("daily-toggle");
     });
     function applyMode(mode) {
       toggle.querySelectorAll(".vt-btn").forEach(function (b) {

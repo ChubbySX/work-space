@@ -7,7 +7,7 @@
 <meta name="description" content="钟智轩（Chubby / 小典）的个人主页 —— 机械、建模、动手爱好者的日常与作品集。">
 <link rel="icon" href="content/chubby-logo.jpg" type="image/jpeg">
 <script>document.documentElement.classList.add("js");</script>
-<link rel="stylesheet" href="css/style.css?v=65">
+<link rel="stylesheet" href="css/style.css?v=70">
 </head>
 <body>
 
@@ -37,13 +37,13 @@
       <li><a href="#about" class="nav-link">关于我</a></li>
       <li><a href="#timeline" class="nav-link">成长轨迹</a></li>
       <li><a href="#dashboard" class="nav-link">数据看板</a></li>
-      <li><a href="#projects" class="nav-link">我正在做的</a></li>
       <li><a href="#daily" class="nav-link">日常</a></li>
+      <li><a href="#projects" class="nav-link">我正在做的</a></li>
       <li><a href="#works" class="nav-link">作品</a></li>
       <li><a href="#wishlist" class="nav-link">我还想做的</a></li>
+      <li><a href="#map" class="nav-link">地图</a></li>
       <li><a href="#contact" class="nav-link">联系</a></li>
       <li><a href="#friends" class="nav-link">友链</a></li>
-      <li><a href="#map" class="nav-link">地图</a></li>
       <li><a href="#changelog" class="nav-link">更新历史</a></li>
       <li class="nav-toggles-mobile">
         <button class="theme-toggle" id="themeToggle" aria-label="切换深色模式">🌙</button>
@@ -72,11 +72,11 @@
   <a href="#dashboard" class="side-dot" style="top:27%" data-label="数据看板">
     <span class="side-label">数据看板</span>
   </a>
-  <a href="#projects" class="side-dot" style="top:36%" data-label="我正在做的">
-    <span class="side-label">我正在做的</span>
-  </a>
-  <a href="#daily" class="side-dot" style="top:45%" data-label="日常">
+  <a href="#daily" class="side-dot" style="top:36%" data-label="日常">
     <span class="side-label">日常</span>
+  </a>
+  <a href="#projects" class="side-dot" style="top:45%" data-label="我正在做的">
+    <span class="side-label">我正在做的</span>
   </a>
   <a href="#works" class="side-dot" style="top:55%" data-label="作品">
     <span class="side-label">作品</span>
@@ -84,14 +84,14 @@
   <a href="#wishlist" class="side-dot" style="top:64%" data-label="我还想做的">
     <span class="side-label">我还想做的</span>
   </a>
-  <a href="#contact" class="side-dot" style="top:73%" data-label="联系">
+  <a href="#map" class="side-dot" style="top:73%" data-label="我的城市">
+    <span class="side-label">我的城市</span>
+  </a>
+  <a href="#contact" class="side-dot" style="top:82%" data-label="联系">
     <span class="side-label">联系</span>
   </a>
-  <a href="#friends" class="side-dot" style="top:82%" data-label="友情链接">
+  <a href="#friends" class="side-dot" style="top:91%" data-label="友情链接">
     <span class="side-label">友情链接</span>
-  </a>
-  <a href="#map" class="side-dot" style="top:91%" data-label="我的城市">
-    <span class="side-label">我的城市</span>
   </a>
   <a href="#changelog" class="side-dot" style="top:100%" data-label="更新历史">
     <span class="side-label">更新历史</span>
@@ -104,8 +104,23 @@
   <div class="hero-bg" aria-hidden="true">
     <img class="hero-photo" src="content/hero-dusk.jpg?v=3" alt="青岛海边黄昏" fetchpriority="high">
     <div class="hero-sun" id="heroSun"></div>
-    <!-- 云层已移除（移动端灰色块问题） -->
     <div class="hero-mist" id="heroMist"></div>
+    <!-- 云层（桌面端显示，移动端隐藏） -->
+    <svg class="hero-cloud c1" id="cloud1" viewBox="0 0 320 80" aria-hidden="true">
+      <g fill="rgba(235,175,95,.55)">
+        <ellipse cx="50" cy="55" rx="45" ry="22"/><circle cx="80" cy="40" r="25"/><circle cx="120" cy="35" r="30"/><circle cx="165" cy="42" r="28"/><circle cx="210" cy="48" r="24"/><circle cx="250" cy="52" r="20"/><circle cx="285" cy="56" r="16"/><ellipse cx="160" cy="60" rx="140" ry="18"/>
+      </g>
+    </svg>
+    <svg class="hero-cloud c2" id="cloud2" viewBox="0 0 420 100" aria-hidden="true">
+      <g fill="rgba(220,155,80,.48)">
+        <ellipse cx="55" cy="68" rx="50" ry="24"/><circle cx="90" cy="48" r="28"/><circle cx="140" cy="38" r="34"/><circle cx="195" cy="45" r="32"/><circle cx="250" cy="52" r="30"/><circle cx="305" cy="58" r="26"/><circle cx="360" cy="62" r="22"/><circle cx="395" cy="66" r="18"/><ellipse cx="210" cy="72" rx="190" ry="20"/>
+      </g>
+    </svg>
+    <svg class="hero-cloud c3" id="cloud3" viewBox="0 0 240 65" aria-hidden="true">
+      <g fill="rgba(245,185,110,.42)">
+        <ellipse cx="40" cy="45" rx="38" ry="18"/><circle cx="65" cy="32" r="20"/><circle cx="100" cy="28" r="24"/><circle cx="140" cy="34" r="22"/><circle cx="178" cy="38" r="18"/><circle cx="210" cy="42" r="14"/><ellipse cx="120" cy="48" rx="105" ry="15"/>
+      </g>
+    </svg>
     <div class="hero-blob b1"></div>
     <div class="hero-blob b2"></div>
     <svg class="hero-bird" id="bird1" viewBox="0 0 40 20"><path d="M2,12 Q8,4 14,10 Q20,2 26,10 Q32,4 38,12" fill="none" stroke="rgba(40,30,20,.5)" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -186,24 +201,6 @@
   </div>
 </section>
 
-<!-- ============ 我正在做的 ============ -->
-<section class="section" id="projects">
-  <div class="container">
-    <div class="section-head reveal">
-      <p class="section-tag">Working On</p>
-      <h2 class="section-title">我正在做的</h2>
-      <p class="section-desc">手头正在进行的项目和探索</p>
-    </div>
-    <div class="projects-grid" id="projectsGrid">
-      <div class="empty-state">还没有项目～ 把项目信息写成 .json 文件放进 <code>content/projects/</code> 后运行 <code>node build.js</code></div>
-    </div>
-    <div class="gantt-wrap reveal" id="ganttWrap">
-      <h3 class="gantt-title">📅 项目时间线</h3>
-      <div class="gantt-chart" id="ganttChart"></div>
-    </div>
-  </div>
-</section>
-
 <!-- ============ 日常 ============ -->
 <section class="section section-alt" id="daily">
   <div class="container">
@@ -232,6 +229,24 @@
 
     <div class="daily-grid is-card" id="dailyGrid">
       <div class="empty-state">还没有日常照片～ 请把图片放进 <code>content/daily/</code> 文件夹后运行 <code>node build.js</code></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 我正在做的 ============ -->
+<section class="section" id="projects">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="section-tag">Working On</p>
+      <h2 class="section-title">我正在做的</h2>
+      <p class="section-desc">手头正在进行的项目和探索</p>
+    </div>
+    <div class="projects-grid" id="projectsGrid">
+      <div class="empty-state">还没有项目～ 把项目信息写成 .json 文件放进 <code>content/projects/</code> 后运行 <code>node build.js</code></div>
+    </div>
+    <div class="gantt-wrap reveal" id="ganttWrap">
+      <h3 class="gantt-title">📅 项目时间线</h3>
+      <div class="gantt-chart" id="ganttChart"></div>
     </div>
   </div>
 </section>
@@ -302,6 +317,37 @@
   </div>
 </section>
 
+<!-- ============ 青岛地图 ============ -->
+<section class="section" id="map">
+  <div class="container">
+    <div class="section-head reveal">
+      <p class="section-tag">Qingdao</p>
+      <h2 class="section-title">我所在的城市</h2>
+      <p class="section-desc">在青岛生活和探索的地方</p>
+    </div>
+    <div class="map-wrap reveal">
+      <div class="map-img-container" id="cityMap">
+        <div class="map-zoom-inner" id="mapZoomInner">
+          <img class="map-img" src="content/map/qingdao-map.jpg?v=5" alt="青岛地图" loading="lazy">
+          <div class="map-markers" id="mapMarkers"></div>
+        </div>
+        <div class="map-zoom-ctrl">
+          <button class="map-zoom-btn" id="mapZoomIn" aria-label="放大">＋</button>
+          <button class="map-zoom-btn" id="mapZoomOut" aria-label="缩小">－</button>
+          <button class="map-zoom-btn" id="mapZoomFit" aria-label="还原">⟲</button>
+        </div>
+        <div class="map-keytip">⇧ Shift + 滚轮缩放</div>
+        <div class="map-zoom-hint">
+          <span class="hint-d">拖拽平移 · Shift+滚轮缩放</span>
+          <span class="hint-m">双指缩放 · 双指拖动平移</span>
+        </div>
+      </div>
+    </div>
+    <div class="map-popup" id="mapPopup"></div>
+    <div class="map-preview" id="mapPreview"></div>
+  </div>
+</section>
+
 <!-- ============ 联系 ============ -->
 <section class="section section-alt" id="contact">
   <div class="container">
@@ -323,35 +369,8 @@
       <p class="section-desc">那些有趣的人和他们做的事</p>
     </div>
     <div class="friends-grid" id="friendsGrid">
-      <div class="empty-state">还没有友情链接～ 编辑 <code>content/profile.json</code> 里的 friends 字段后运行 <code>node build.js</code></div>
+      <div class="friends-empty">广告位招租！（皮一下，欢迎各位好盆友们互挂友链）</div>
     </div>
-  </div>
-</section>
-
-<!-- ============ 青岛地图 ============ -->
-<section class="section" id="map">
-  <div class="container">
-    <div class="section-head reveal">
-      <p class="section-tag">Qingdao</p>
-      <h2 class="section-title">我所在的城市</h2>
-      <p class="section-desc">在青岛生活和探索的地方</p>
-    </div>
-    <div class="map-wrap reveal">
-      <div class="map-img-container" id="cityMap">
-        <div class="map-zoom-inner" id="mapZoomInner">
-          <img class="map-img" src="content/map/qingdao-map.jpg?v=5" alt="青岛地图" loading="lazy">
-          <div class="map-markers" id="mapMarkers"></div>
-        </div>
-        <div class="map-zoom-ctrl">
-          <button class="map-zoom-btn" id="mapZoomIn" aria-label="放大">＋</button>
-          <button class="map-zoom-btn" id="mapZoomOut" aria-label="缩小">－</button>
-          <button class="map-zoom-btn" id="mapZoomFit" aria-label="还原">⟲</button>
-        </div>
-        <div class="map-zoom-hint">滚轮缩放 · 拖拽平移</div>
-      </div>
-    </div>
-    <div class="map-popup" id="mapPopup"></div>
-    <div class="map-preview" id="mapPreview"></div>
   </div>
 </section>
 
@@ -448,7 +467,7 @@
   <p class="lightbox-caption" id="lightboxCaption"></p>
 </div>
 
-<script src="js/data.js?v=27"></script>
-<script src="js/main.js?v=75"></script>
+<script src="js/data.js?v=43"></script>
+<script src="js/main.js?v=84"></script>
 </body>
 </html>
