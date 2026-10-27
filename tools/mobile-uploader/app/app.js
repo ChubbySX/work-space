@@ -15,17 +15,21 @@ function loadAlbums(){
   if (!base || !$tok.value) return;
   fetch(base + "/albums", { headers: { "Authorization": "Bearer " + $tok.value } })
     .then(r => r.json()).then(j => { if (j && j.albums) { ALBUMS = j.albums; rebuildSelects(); } })
-    .catch(() => {}); // optional; selects still have 日常/作品/新建
+    .catch(() => {}); // optional: 未连上 /albums 时 select 退回 日常/作品 兜底
 }
 function tagOptions(sel){
-  const fixed = ["日常", "作品"];
-  const all = [...new Set([...fixed, ...ALBUMS])];
   const cur = sel.value;
   sel.innerHTML = "";
-  for (const t of all){
+  // 占位：必选（避免静默落到不该去的相册）；ALBUMS 空 = /albums 没连上（旧 bridge）→ 只给 日常/作品 兜底
+  const ph = document.createElement("option");
+  ph.value = ""; ph.textContent = ALBUMS.length ? "选择相册 / 作品…" : "选择相册…（未连上相册列表，仅 日常/作品）";
+  ph.disabled = true; ph.selected = true; sel.appendChild(ph);
+  // 作品 + 日常内每一个相册（ALBUMS 来自 /albums = content/daily/* 实时读出）
+  const fixed = ALBUMS.length ? ["作品"] : ["作品", "日常"];
+  for (const t of [...new Set([...fixed, ...ALBUMS])]){
     const o = document.createElement("option"); o.value = t; o.textContent = t; sel.appendChild(o);
   }
-  const o = document.createElement("option"); o.value = "__new__"; o.textContent = "＋ 新建标签…"; sel.appendChild(o);
+  const o = document.createElement("option"); o.value = "__new__"; o.textContent = "＋ 新建相册…"; sel.appendChild(o);
   if (cur) sel.value = cur;
 }
 function rebuildSelects(){
@@ -47,7 +51,7 @@ function buildRow(file){
   row.appendChild(nameIn);
   const sel = document.createElement("select"); row.appendChild(sel); tagOptions(sel);
   const newTag = document.createElement("input"); newTag.type = "text"; newTag.className = "newtag";
-  newTag.placeholder = "新标签名（= 新相册名）"; row.appendChild(newTag);
+  newTag.placeholder = "新相册名（会新建到 日常/ 下）"; row.appendChild(newTag);
   sel.addEventListener("change", () => { newTag.style.display = (sel.value === "__new__") ? "block" : "none"; });
   const btn = document.createElement("button"); btn.textContent = "提交"; row.appendChild(btn);
   const st = document.createElement("div"); st.className = "st pend"; st.textContent = "待提交"; row.appendChild(st);
@@ -57,7 +61,8 @@ function buildRow(file){
 
 function submit(row, file, nameIn, sel, newTag, btn, st){
   let tag = sel.value;
-  if (tag === "__new__"){ tag = newTag.value.trim(); if (!tag){ st.className = "st fail"; st.textContent = "请填新标签名"; return; } }
+  if (!tag){ st.className = "st fail"; st.textContent = "请先选择相册"; return; }
+  if (tag === "__new__"){ tag = newTag.value.trim(); if (!tag){ st.className = "st fail"; st.textContent = "请填新相册名"; return; } }
   // name: user input or origName-without-ext, forced .jpg (compress_image.py outputs jpg)
   const base = nameIn.value.trim() || file.name.replace(/\.[^.]+$/, "");
   const name = base + ".jpg";
