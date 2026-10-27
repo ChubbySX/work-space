@@ -60,6 +60,8 @@
 
 **触发**：用户说「发布 / 上线」。
 
+> **单批发布**：内容 + 更新历史 + 版本号合成**一个 commit、一次 push** 上线（与 `发布上线.bat` 完全同一套流程；bat 是手动上线入口，双击即按此流程跑）。避免「内容已上传、版本号未同步」的分批错位。
+
 1. 若阶段 2 未跑或有新内容 → 先跑阶段 2。
 2. `git add .`
 3. 备份并分析：
@@ -67,27 +69,23 @@
    - `copy /Y content\version.json content\version.json.bak`
    - `"%NODE%" tools\analyze_and_record.js`（分析 `git diff --cached`，生成 changelog 顶部条目）
 4. `"%NODE%" build.js`（这次构建做版本号 `c+1, d+1`）。
-5. **🔴 STOP — 停下确认**。先**主动核对暂存区**：读 `git diff --cached --name-status`，逐项判断是否本次该发布的内容（`content/` 下 daily/works/profile/changelog/version、`.thumbs/`、`js/data.js`）。**若出现非内容文件（`build.js`、`css/`、`index.html`、`js/main.js`、`tools/` 或其它源码 / 配置）要明确告知用户**——它们会随这次提交进仓库；非本次意图就提示用户先 `git reset HEAD <file>` 取消暂存，清单干净后再继续。然后把以下内容列给用户，**等用户点头再继续**：
+5. `"%PY%" tools\bump_publish.py`（`b+1, c=0, d-1`，同步 `data.json` / `js/data.js` 版本字段）——**版本号在 commit 前定版**，随内容一个 commit 推送，没有第二次 commit / push。
+6. `git add .`（更新历史 + 版本号文件入暂存，与内容合成一个 commit）。
+7. **🔴 STOP — 停下确认**。先**主动核对暂存区**：读 `git diff --cached --name-status`，逐项判断是否本次该发布的内容（`content/` 下 daily/works/profile/changelog/version、`.thumbs/`、`js/data.js`）。**若出现非内容文件（`build.js`、`css/`、`index.html`、`js/main.js`、`tools/` 或其它源码 / 配置）要明确告知用户**——它们会随这次提交进仓库；非本次意图就提示用户先 `git reset HEAD <file>` 取消暂存，清单干净后再继续。然后把以下内容列给用户，**等用户点头再继续**：
    - 本次提交清单：`git diff --cached --name-status`
    - changelog 摘要：读 `content/changelog.json` 顶部条目
-   - 版本号将怎么变：当前 `content/version.json` 的值 + `bump_publish.py` 将做 `b+1, c=0, d-1`（还原本次 build 的 `d+1`；一次发布的净效果 = `b+1, c→0, d 不变`）。
-6. 用户确认后：
+   - 版本号变化：`bump_publish.py` 已执行（`b+1, c=0, d-1`，还原本次 build 的 `d+1`；一次发布的净效果 = `b+1, c→0, d 不变`）→ **读 `content/version.json` 当前值列给用户**（如 `1.12.0.137`），说明它随本次提交一起推送、一次到位。
+8. 用户确认后：
    - 取时间戳 `TS`（PowerShell: `Get-Date -Format yyyy-MM-dd_HHmm`）。
-   - `git commit -m "更新内容 <TS>"`
-   - **调用 `github-push` 技能推送**（探活 `github.com:443` + 重试；返回失败 → 进失败处理回滚）。
-7. push 成功后发版号：
-   - `"%PY%" tools\bump_publish.py`（`b+1, c=0, d-1`）
-   - `git add .`
-   - `git commit -m "发布版本号更新"`
-   - **调用 `github-push` 技能推送**；返回失败 → 进失败处理（版本号未同步）。
+   - `git commit -m "更新内容 <TS>"`（**内容 + 更新历史 + 版本号一个 commit**）。
+   - **调用 `github-push` 技能推送**（探活 `github.com:443` + 重试；返回失败 → 进失败处理回滚）——**唯一一次推送**，成功后内容与版本号同时上线。
 
 ## 失败处理（沿用 bat 现有健壮逻辑）
 
 | 场景 | 处理 |
 |---|---|
 | `make_posters.py` / `make_thumbs.py` / `build.js` 任一失败 | 停下报错，**不进入发布**；给脚本 stderr 关键行 |
-| `github-push` 返回失败（内容推送） | 回滚：`copy /Y content\changelog.json.bak content\changelog.json` + `copy /Y content\version.json.bak content\version.json` → `del content\changelog.json.bak content\version.json.bak` → `git reset --mixed HEAD~1`（撤销 commit）→ `"%NODE%" build.js` 重建 → 报告「未记录更新历史，版本号未变」（多半网络或 git 凭证问题），**不擅自重推** |
-| `github-push` 返回失败（版本号推送） | 内容已上线但版本未同步——明确告知「内容已上传、版本号未同步」，不静默 |
+| `github-push` 返回失败（唯一一次推送，内容+版本号一体） | **内容与版本号都未上线**。回滚：`copy /Y content\changelog.json.bak content\changelog.json` + `copy /Y content\version.json.bak content\version.json` → `del content\changelog.json.bak content\version.json.bak` → `git reset --mixed HEAD~1`（撤销 commit）→ `"%NODE%" build.js` 重建 → 报告「未记录更新历史，版本号未变」（多半网络或 git 凭证问题），**不擅自重推** |
 
 ## 约束
 
@@ -95,4 +93,5 @@
 - 不改站点样式 / 布局（日落海景风格、profile.json 控制台等不动）。
 - 压缩调 `D:\DS harnessw\work station\` 的 `compress_image.py` / `compress_video.ps1`（不重写）；**原图不进 `content/`、不进 git**；`待压缩/`、`已压缩/` 只清理本次自己的文件，不动用户其它文件。
 - 发布始终由用户显式触发，且 push 前必须停下确认。
+- `发布上线.bat` 是**手动上线入口**，与技能阶段 3 完全同一套单批流程（一个 commit、一次 push）。
 - 构建阶段不碰 git。
