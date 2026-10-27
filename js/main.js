@@ -461,10 +461,30 @@
           });
         });
       }
-      const cap = item.title || "";
-      $("#lightboxCaption").innerHTML = cap
-        ? esc(cap) + (item.desc ? `<br><small style="opacity:.75">${esc(item.desc)}</small>` : "")
-        : "";
+      // ===== 生成右侧配文（基于文件名 + 合集上下文） =====
+      const srcFile2 = item.file || item.src || "";
+      var baseName = srcFile2.split("/").pop().replace(/\.[^.]+$/, "");
+      var cleanName = baseName.replace(/^\d{4}[-_.]\d{2}[-_.]\d{2}[_\s]*/, "").trim();
+      var capTitle = item.title || cleanName || "";
+      var capDesc = item.desc || "";
+      // 判断合集来源
+      var collection = "";
+      if (srcFile2.indexOf("/daily/") !== -1) {
+        var parts = srcFile2.split("/");
+        var idx = parts.indexOf("daily");
+        if (idx >= 0 && parts[idx + 1]) collection = parts[idx + 1];
+      } else if (srcFile2.indexOf("/works/") !== -1) {
+        collection = "作品集";
+      }
+      var capHtml = '<div class="lb-cap-title">' + esc(capTitle) + '</div>';
+      if (capDesc) capHtml += '<div class="lb-cap-desc">' + esc(capDesc) + '</div>';
+      if (collection && collection !== capTitle) {
+        capHtml += '<div class="lb-cap-desc" style="opacity:.6;font-size:.8rem">收录于「' + esc(collection) + '」</div>';
+      }
+      if (cleanName && cleanName !== capTitle) {
+        capHtml += '<div class="lb-cap-file">' + esc(cleanName) + '</div>';
+      }
+      $("#lightboxCaption").innerHTML = capHtml;
       lb.classList.toggle("has-nav", lightboxList.length > 1);
     };
 
@@ -2082,15 +2102,6 @@
     });
     var cloudScrollY = 0;
 
-    /* ====== 飞鸟配置 ====== */
-    var birdDefs = [
-      { el: $("#bird1"), w: 40, h: 20 },
-      { el: $("#bird2"), w: 32, h: 16 },
-    ].filter(function (b) { return b.el; });
-    var birdState = birdDefs.map(function (b) {
-      return { el: b.el, w: b.w, h: b.h, active: false, x: 0, y: 0, speed: 0, nextFly: 4000 + Math.random() * 8000 };
-    });
-
     var lastTime = performance.now();
 
     function tick(now) {
@@ -2098,30 +2109,6 @@
       lastTime = now;
       if (dt > 0.1) dt = 0.1;
       var vw = window.innerWidth;
-
-      birdState.forEach(function (b) {
-        if (!b.active) {
-          b.nextFly -= dt * 1000;
-          if (b.nextFly <= 0) {
-            b.active = true;
-            b.x = -b.w - 20;
-            b.y = 60 + Math.random() * (window.innerHeight * 0.35);
-            b.speed = 80 + Math.random() * 60;
-            b.el.style.top = b.y + "px";
-            b.el.classList.add("flap");
-            b.el.style.opacity = "1";
-          }
-        } else {
-          b.x += b.speed * dt;
-          b.el.style.transform = "translateX(" + b.x.toFixed(1) + "px)";
-          if (b.x > vw + 20) {
-            b.active = false;
-            b.el.style.opacity = "0";
-            b.el.classList.remove("flap");
-            b.nextFly = 6000 + Math.random() * 12000;
-          }
-        }
-      });
 
       /* 雾气：正弦波缓慢左右飘 + 滚动视差 Y */
       if (mist) {

@@ -238,7 +238,7 @@ code {
   z-index: 2;
   will-change: transform;
 }
-/* 移动端隐藏云层和光斑（避免灰色块/三驼峰） */
+/* 移动端隐藏云层和光斑（避免灰色块） */
 @media (max-width: 768px) {
   .hero-cloud, .hero-blob { display: none !important; }
 }
@@ -1193,7 +1193,7 @@ code {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(12, 11, 10, .92);
+  background: rgba(12, 11, 10, .94);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1201,36 +1201,71 @@ code {
   opacity: 0;
   pointer-events: none;
   transition: opacity .25s;
-  padding: 40px;
+  padding: 24px;
 }
 .lightbox.is-open { opacity: 1; pointer-events: auto; }
 
-.lightbox-body {
-  max-width: min(1000px, 92vw);
-  max-height: 80vh;
+.lightbox-main {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: min(1500px, 96vw);
+  max-height: 92vh;
   margin: auto;
+}
+.lightbox-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-height: 90vh;
   display: grid;
   place-items: center;
 }
 .lightbox-body img {
   max-width: 100%;
-  max-height: 78vh;
+  max-height: 90vh;
   border-radius: 8px;
   box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  object-fit: contain;
 }
 .lightbox-body video {
   max-width: 100%;
-  max-height: 78vh;
+  max-height: 90vh;
   border-radius: 8px;
   background: #000;
 }
 
 .lightbox-caption {
-  margin-top: 16px;
+  flex: 0 0 280px;
+  width: 280px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px 20px;
   color: #fff;
-  font-size: .95rem;
-  text-align: center;
-  max-width: 700px;
+  background: rgba(255,255,255,.06);
+  border-radius: 12px;
+  border-left: 3px solid var(--accent);
+  font-size: .92rem;
+  line-height: 1.7;
+}
+.lightbox-caption:empty { display: none; }
+.lightbox-caption .lb-cap-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+.lightbox-caption .lb-cap-desc {
+  opacity: .82;
+  font-size: .88rem;
+  margin-bottom: 8px;
+}
+.lightbox-caption .lb-cap-file {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.12);
+  font-size: .78rem;
+  opacity: .55;
+  word-break: break-all;
 }
 
 .lightbox-close {
@@ -1318,9 +1353,11 @@ code {
   }
   .hero { padding-top: calc(var(--nav-h) + 24px); }
   .lightbox { padding: 12px; overflow-y: auto; }
-  .lightbox-body { max-height: 72vh; }
-  .lightbox-body video { max-height: 65vh; width: 100%; object-fit: contain; }
-  .lightbox-body img { max-height: 65vh; }
+  .lightbox-main { flex-direction: column; gap: 10px; }
+  .lightbox-body { max-height: 70vh; }
+  .lightbox-body video { max-height: 62vh; width: 100%; object-fit: contain; }
+  .lightbox-body img { max-height: 62vh; }
+  .lightbox-caption { flex: 0 0 auto; width: 100%; max-width: min(600px, 92vw); max-height: 22vh; padding: 14px 16px; }
   .lightbox-prev { left: 8px; }
   .lightbox-next { right: 8px; }
   .to-top { right: 16px; bottom: 16px; }
@@ -1530,19 +1567,6 @@ code {
   to { transform: translate(46px, -34px) scale(1.18); }
 }
 
-/* ---------- 飞鸟（偶尔飞过） ---------- */
-.hero-bird {
-  position: absolute;
-  z-index: 2;
-  pointer-events: none;
-  opacity: 0;
-  will-change: transform, opacity;
-}
-.hero-bird.flap path { animation: bird-flap .35s ease-in-out infinite alternate; transform-origin: center; }
-@keyframes bird-flap {
-  from { transform: scaleY(1); }
-  to { transform: scaleY(.55); }
-}
 
 /* ---------- 滚动进度条 ---------- */
 .scroll-progress {
@@ -1947,7 +1971,6 @@ code {
   .intro .intro-skip { animation: none; opacity: 1; }
   .intro-load i { animation: intro-load-sweep 1.6s ease-in-out infinite; }
   .hero-blob { animation: none; }
-  .hero-bird { display: none; }
   .work-card::after, .daily-item::after, .contact-item::after { display: none; }
   .js .hero-stagger { opacity: 1; transform: none; filter: none; transition: none; }
   .reveal { transition: none; }

@@ -15,8 +15,8 @@ window.SITE_DATA = {
     "avatar": "content/chubby-logo.jpg",
     "bio": [
       "大家好，我是钟智轩，也可以叫我 Chubby ，目前在青岛理工大学读智能制造工程。一个嘴上说喜欢体育运动、身体却诚实地缩在房间里折腾各种东西的普通人。",
-      "我和建模的缘分始于大一加入学校的方程式赛车队——学长们手把手教了 Catia，从此打开了工业建模的大门。后来又阴差阳错地接触到了 Blender，一头扎进了动画建模和渲染的坑里。虽然完全没有艺术审美天分（这件事让我痛苦了很久），但作品一件一件完工时，我的体会是：我不是在创作艺术品，而是在把脑子里的想法，一步步变成看得见、摸得着的东西。",
-      "动手是我最大的爱好。参加过慧鱼赛事，和队友们像拼乐高一样搭了一台韭菜收割打包机；也在半导体设备公司的生产车间实习过，那段日子让我发现自己其实还挺享受工作的。闲余时间，我还折腾水弹——在 Blender 里复刻波箱结构，做了一个帮助玩家理解零件的小平台。这些东西看起来毫不相干，但对我来说都是同一件事：把兴趣变成可以落地的成果。",
+      "我和建模的缘分始于从小浓厚的兴趣，而大一加入学校的方程式赛车队，便是打开了工业建模的大门。后来又阴差阳错地接触到了 Blender，一头扎进了动画建模和渲染的坑里。虽然完全没有艺术审美天分（这件事让我痛苦了很久），但作品一件一件完工时，我的体会是：我不是精雕玉琢创作工艺品的个人艺术家，而是在把脑子里的想法，一步步变成看得见、摸得着的东西的工程师。",
+      "动手是我最大的爱好。参加过慧鱼赛事，和队友们像拼乐高一样搭了一台韭菜收割打包机；也在半导体设备公司的生产车间实习过，那段日子让我发现自己其实还挺享受工作的。闲余时间，我还折腾水弹，买了不少发射器，既有满足我对发射器的自幼痴狂，又含对机械构造运行原理的琢磨。而又因为实际与成本所限，所以尝试在无垠广阔的Blender 里复刻波箱结构，顺带做了一个帮助玩家理解零件的小平台。这些东西看起来毫不相干，但对我来说都是同一件事：把兴趣变成可以落地的实打实的成果。",
       "坐标青岛，一个依山傍海的城市。傍晚的海边、晚霞和城市的灯光是我最喜欢的风景，主页的封面就承载了我对这座城市的心绪。虽然我不爱出门，但这座城市总有一种魔力，让我愿意在窗边多坐一会儿。",
       "这个网站是我借助 AI Agent 的力量从零搭建的——没有用任何框架，一行行 HTML/CSS/JS 生成出来的。它记录了我的作品、日常和想法，也会随着我的成长不断更新。",
       "如果你也对机械、建模、手工、水弹或者任何有趣的事情感兴趣，欢迎随时联系我！交个朋友，聊聊想法，或者互相挂个友链，都很好。"
@@ -142,15 +142,6 @@ window.SITE_DATA = {
       "size": "14 张"
     },
     {
-      "type": "image",
-      "src": "content/daily/回访校园.jpg",
-      "thumb": "content/.thumbs/daily/回访校园.webp",
-      "title": "回访校园",
-      "date": "",
-      "desc": "",
-      "size": "254.3 KB"
-    },
-    {
       "type": "album",
       "files": [
         "content/daily/实习是探索/思锐厂外.jpg",
@@ -175,59 +166,87 @@ window.SITE_DATA = {
         "content/daily/工作日记/机器人操纵.jpg",
         "content/daily/工作日记/潍柴的超绝挖挖机们.jpg",
         "content/daily/工作日记/精准手动机加工.jpg",
-        "content/daily/工作日记/负八级钳工锉的螺母.jpg"
+        "content/daily/工作日记/负八级钳工锉的螺母.jpg",
+        "content/daily/工作日记/这是我的工位，和我劳碌犯困的师哥.jpg"
       ],
       "thumb": "content/.thumbs/daily/工作日记/USB口钣金件.webp",
       "title": "工作日记",
       "date": "",
       "desc": "既然人们无法避免的要工作，那不如开心一点咯？",
-      "size": "9 张"
+      "size": "10 张"
     },
     {
       "type": "album",
       "files": [
+        "content/daily/我们都是“成功学长”/回去当“成功学长”传授经验.jpg",
+        "content/daily/我们都是“成功学长”/回母校，吃食堂.jpg",
+        "content/daily/我们都是“成功学长”/好的大学不比高中生差，我们难以融入高中生群体.jpg",
+        "content/daily/我们都是“成功学长”/文官请吃的食堂饭.jpg",
+        "content/daily/我们都是“成功学长”/新校区“当年我们哪有他们这条件”.jpg",
+        "content/daily/我们都是“成功学长”/猜猜这满是化学的对联是什么意思.jpg",
+        "content/daily/我们都是“成功学长”/返校相聚，像小混混一样.jpg"
+      ],
+      "thumb": "content/.thumbs/daily/我们都是“成功学长”/回去当“成功学长”传授经验.webp",
+      "title": "我们都是“成功学长”",
+      "date": "",
+      "desc": "新校区、新气象。什么都是新的，而我们这帮“老家伙”们回去看看，找找稀疏的回忆，看看年前的自己。“成功学长”们集结！",
+      "size": "7 张"
+    },
+    {
+      "type": "album",
+      "files": [
+        "content/daily/我的小玩具们/IQUNIX，买收纳盒送键盘.jpg",
         "content/daily/我的小玩具们/MCX-印花集（崭新出厂）.jpg",
         "content/daily/我的小玩具们/MCX万岁！.jpg",
+        "content/daily/我的小玩具们/一套爱心键帽.jpg",
         "content/daily/我的小玩具们/哇呜，tzb的透明波壳，9.9的波壳太棒了.jpg",
         "content/daily/我的小玩具们/我的发射器们.jpg",
+        "content/daily/我的小玩具们/无敌！这键盘无敌！.jpg",
         "content/daily/我的小玩具们/灯厂的忠实粉丝.jpg"
       ],
-      "thumb": "content/.thumbs/daily/我的小玩具们/MCX-印花集（崭新出厂）.webp",
+      "thumb": "content/.thumbs/daily/我的小玩具们/IQUNIX，买收纳盒送键盘.webp",
       "title": "我的小玩具们",
       "date": "",
       "desc": "我真的是太爱发射器了，这或许会是我为数不多的终身爱好（我的终身爱好真的不多吗？）",
-      "size": "5 张"
+      "size": "8 张"
     },
     {
       "type": "album",
       "files": [
+        "content/daily/手工艺人/拆波调齿.jpg",
+        "content/daily/手工艺人/机械绘图的下午.jpg",
         "content/daily/手工艺人/波箱内构，看这美丽的齿轮组.jpg",
-        "content/daily/手工艺人/测试电机齿高度.jpg"
+        "content/daily/手工艺人/测试电机齿高度.jpg",
+        "content/daily/手工艺人/记录第一次拆波.jpg",
+        "content/daily/手工艺人/超绝减速器课设.jpg"
       ],
-      "thumb": "content/.thumbs/daily/手工艺人/波箱内构，看这美丽的齿轮组.webp",
+      "thumb": "content/.thumbs/daily/手工艺人/拆波调齿.webp",
       "title": "手工艺人",
       "date": "",
       "desc": "有的时候我的梦想很小，小到一颗滑丝的螺栓；有的时候我的梦想很大，大到家里缺少一台CNC数控机床。",
-      "size": "2 张"
+      "size": "6 张"
     },
     {
       "type": "album",
       "files": [
         "content/daily/美食就是好吃的意思！/兼职的美味杂货面.jpg",
         "content/daily/美食就是好吃的意思！/海鲜面！其实也就那样.jpg",
+        "content/daily/美食就是好吃的意思！/漂亮饭.jpg",
         "content/daily/美食就是好吃的意思！/蟹黄面.jpg",
+        "content/daily/美食就是好吃的意思！/超级厚实的面包.jpg",
         "content/daily/美食就是好吃的意思！/青岛可是有不少好吃的.jpg"
       ],
       "thumb": "content/.thumbs/daily/美食就是好吃的意思！/兼职的美味杂货面.webp",
       "title": "美食就是好吃的意思！",
       "date": "",
       "desc": "",
-      "size": "4 张"
+      "size": "6 张"
     },
     {
       "type": "album",
       "files": [
         "content/daily/青岛在青理/下雪了？.jpg",
+        "content/daily/青岛在青理/体测完，我宝分发零食给大家回血.jpg",
         "content/daily/青岛在青理/体测的操场.jpg",
         "content/daily/青岛在青理/冬天，小电车也会盖雪被.jpg",
         "content/daily/青岛在青理/图书馆前的大广场.jpg",
@@ -247,7 +266,7 @@ window.SITE_DATA = {
       "title": "青岛在青理",
       "date": "",
       "desc": "校园随手拍",
-      "size": "15 张"
+      "size": "16 张"
     }
   ],
   "works": [
@@ -403,6 +422,10 @@ window.SITE_DATA = {
   ],
   "changelog": [
     {
+      "date": "2026-10-28 00:20",
+      "summary": "1.新增日常照：这是我的工位，和我劳碌犯困的师哥.jpg、这是我的工位，和我劳碌犯困的师哥.txt、我们都是“成功学长”.txt、回去当“成功学长”传授经验.txt 等36张；2.调整了 个人资料（profile.json +2 -2）；网页样式（style.css +52 -29）：新增 .lb-cap-title、.lb-cap-desc、.lb-cap-file、.lightbox-main、.lightbox-caption，移除 .hero-bird；网页结构（index.html +7 -7）；站点数据（data.js +40 -21）；页面交互逻辑（main.js +24 -37）：移除 .el"
+    },
+    {
       "date": "2026-10-27 20:36",
       "summary": "1.新增日常照：潍柴的超绝挖挖机们.jpg、潍柴的超绝挖挖机们.txt、哇呜，tzb的透明波壳，9.9的波壳太棒了.jpg、哇呜，tzb的透明波壳，9.9的波壳太棒了.txt 等19张；2.新增视频：地铁.mp4、宿舍.mp4、火控.mp4 等5个；3.更新项目：2号波箱复刻.json、个人网站搭建.json、水弹的魔法.json；4.调整了 构建脚本（build.js +15 -0）；个人资料（profile.json +13 -13）；网页样式（style.css +65 -8）：新增 .c1、.c2、.c3、.hero-cloud、.paused；网页结构（index.html +79 -60）；站点数据（data.js +62 -42）；页面交互逻辑（main.js +198 -76）：新增 .clientX、.x、.el、parseDate()、fmtDate()，移除 parseMonth()；工具脚本（map-editor.html +13 -10）；发布脚本（发布上线.bat +17 -1）；发布脚本（启动预览.bat +4 -4）"
     },
@@ -487,5 +510,5 @@ window.SITE_DATA = {
       ]
     }
   ],
-  "version": "1.12.0.137"
+  "version": "1.13.0.142"
 };

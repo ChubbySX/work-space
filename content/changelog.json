@@ -1,5 +1,9 @@
 [
   {
+    "date": "2026-10-28 00:20",
+    "summary": "1.新增日常照：这是我的工位，和我劳碌犯困的师哥.jpg、这是我的工位，和我劳碌犯困的师哥.txt、我们都是“成功学长”.txt、回去当“成功学长”传授经验.txt 等36张；2.调整了 个人资料（profile.json +2 -2）；网页样式（style.css +52 -29）：新增 .lb-cap-title、.lb-cap-desc、.lb-cap-file、.lightbox-main、.lightbox-caption，移除 .hero-bird；网页结构（index.html +7 -7）；站点数据（data.js +40 -21）；页面交互逻辑（main.js +24 -37）：移除 .el"
+  },
+  {
     "date": "2026-10-27 20:36",
     "summary": "1.新增日常照：潍柴的超绝挖挖机们.jpg、潍柴的超绝挖挖机们.txt、哇呜，tzb的透明波壳，9.9的波壳太棒了.jpg、哇呜，tzb的透明波壳，9.9的波壳太棒了.txt 等19张；2.新增视频：地铁.mp4、宿舍.mp4、火控.mp4 等5个；3.更新项目：2号波箱复刻.json、个人网站搭建.json、水弹的魔法.json；4.调整了 构建脚本（build.js +15 -0）；个人资料（profile.json +13 -13）；网页样式（style.css +65 -8）：新增 .c1、.c2、.c3、.hero-cloud、.paused；网页结构（index.html +79 -60）；站点数据（data.js +62 -42）；页面交互逻辑（main.js +198 -76）：新增 .clientX、.x、.el、parseDate()、fmtDate()，移除 parseMonth()；工具脚本（map-editor.html +13 -10）；发布脚本（发布上线.bat +17 -1）；发布脚本（启动预览.bat +4 -4）"
   },
