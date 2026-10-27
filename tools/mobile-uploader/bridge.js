@@ -105,3 +105,16 @@ function startServer(cfg){
 }
 
 module.exports = { startServer };
+
+if (require.main === module) {
+  const cfgPath = path.join(__dirname, "_bridge_config.json");
+  let cfg;
+  try { cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8")); }
+  catch (e) { console.error("无法读取配置 " + cfgPath + ": " + e.message); process.exit(1); }
+  if (!cfg.token || !cfg.uploadRoot) { console.error("配置缺 token 或 uploadRoot"); process.exit(1); }
+  const srv = startServer(cfg);
+  srv.on("listening", () => {
+    const a = srv.address();
+    console.log("bridge listening http://0.0.0.0:" + a.port + " (uploadRoot=" + cfg.uploadRoot + ")");
+  });
+}

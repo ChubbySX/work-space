@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#222236">
+<title>上传器</title>
+<style>
+body{margin:0;font:15px/1.5 system-ui,-apple-system,"Microsoft YaHei",sans-serif;background:#222236;color:#eee;padding:14px}
+h1{font-size:17px;margin:0 0 12px}
+.cfg{margin-bottom:12px}
+.cfg input{width:100%;padding:8px;border:1px solid #444;border-radius:6px;background:#1a1a2a;color:#eee;box-sizing:border-box;margin-top:4px}
+label{font-size:12px;color:#9aa}
+.pick{display:block;margin:14px 0;padding:18px;border:2px dashed #555;border-radius:10px;text-align:center;color:#9aa}
+.pick input{display:none}
+ul{list-style:none;padding:0;margin:0}
+li{padding:9px;border-bottom:1px solid #333;font-size:13px}
+li.ok{color:#5ad676} li.fail{color:#e85555} li.pend{color:#e8b442}
+button{background:#3a5;border:none;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;margin-left:8px}
+</style>
+</head>
+<body>
+<h1>📷 上传到网站</h1>
+<div class="cfg">
+  <label>桥接地址</label>
+  <input id="url" placeholder="http://192.168.x.x:8390">
+  <label style="margin-top:8px;display:block">Token</label>
+  <input id="tok" type="password" placeholder="token">
+</div>
+<label class="pick">选择 / 拍照<input type="file" accept="image/*" multiple></label>
+<ul id="list"></ul>
+<script src="app.js"></script>
+</body>
+</html>

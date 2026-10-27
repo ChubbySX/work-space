@@ -1,0 +1,8 @@
+{
+  "name": "上传器",
+  "short_name": "上传器",
+  "display": "standalone",
+  "start_url": "/",
+  "background_color": "#222236",
+  "theme_color": "#222236"
+}
