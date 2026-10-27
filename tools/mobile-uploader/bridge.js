@@ -1,8 +1,8 @@
 // bridge.js — mobile-uploader bridge: HTTP server, pure node (no deps).
 // POST /upload {name, data(base64)} + Bearer token -> store file + append _inbox.json
-// GET /status -> inbox summary {total,pending,processed,failed}
+// GET /status -> inbox summary {total,pending,processed,failed[,error]}
 // GET / -> serve app/ files (Task 2)
-const http = require("http"), fs = require("fs"), path = require("path");
+const http = require("http"), fs = require("fs"), path = require("path"), crypto = require("crypto");
 
 const MAX_BODY = 12 * 1024 * 1024; // 12MB cap on base64 body
 
@@ -15,9 +15,14 @@ function tsId(){
   const p = x => String(x).padStart(2, "0");
   return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}${String(d.getMilliseconds()).padStart(3,"0")}`;
 }
+// readInbox: distinguish corrupt from empty/missing. Returns {ok:true,arr} or {ok:false,error}
 function readInbox(root){
-  try { return JSON.parse(fs.readFileSync(path.join(root, "_inbox.json"), "utf8")); }
-  catch { return []; }
+  const p = path.join(root, "_inbox.json");
+  let raw;
+  try { raw = fs.readFileSync(p, "utf8"); }
+  catch { return { ok: true, arr: [] }; }               // missing = first run -> empty
+  try { return { ok: true, arr: JSON.parse(raw) }; }
+  catch { return { ok: false, error: "清单损坏" }; }     // corrupt -> caller backs up before fresh
 }
 function writeInbox(root, arr){
   fs.writeFileSync(path.join(root, "_inbox.json"), JSON.stringify(arr, null, 2), "utf8");
@@ -34,9 +39,11 @@ function startServer(cfg){
     const auth = req.headers["authorization"] || "";
     const tok = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     const authed = tok === token && !!token;
+    // deny(): drain+discard the request body (prevents unauth memory DoS via large body on a 401)
+    function deny(code, msg){ try { req.resume(); } catch {}; res.writeHead(code, {"Content-Type":"application/json"}); res.end(msg); return; }
 
-    if (req.method === "POST" && req.url === "/upload"){
-      if (!authed){ res.writeHead(401, {"Content-Type":"application/json"}); res.end('{"error":"unauthorized"}'); return; }
+    if (req.method === "POST" && req.url.split("?")[0] === "/upload"){
+      if (!authed){ return deny(401, '{"error":"unauthorized"}'); }
       let body = "", tooBig = false;
       req.on("data", c => {
         if (tooBig) return; // drain: discard further data after 413 sent
@@ -45,21 +52,31 @@ function startServer(cfg){
           tooBig = true;
           res.writeHead(413, {"Content-Type":"application/json"});
           res.end('{"error":"too large"}');
-          body = ""; // free mem
+          body = "";
         }
       });
       req.on("end", () => {
         if (tooBig) return;
         let j;
-        try { j = JSON.parse(body); } catch { res.writeHead(400, {"Content-Type":"application/json"}); res.end('{"error":"bad json"}'); return; }
-        if (!j || !j.name || typeof j.data !== "string"){ res.writeHead(400, {"Content-Type":"application/json"}); res.end('{"error":"missing name/data"}'); return; }
-        if (j.data.length > MAX_BODY){ res.writeHead(413, {"Content-Type":"application/json"}); res.end('{"error":"too large"}'); return; }
-        const id = tsId();
+        try { j = JSON.parse(body); } catch { return deny(400, '{"error":"bad json"}'); }
+        if (!j || !j.name || typeof j.data !== "string"){ return deny(400, '{"error":"missing name/data"}'); }
+        if (j.data.length > MAX_BODY){ return deny(413, '{"error":"too large"}'); }
+        // random suffix defeats same-millisecond same-name collisions (PWA fires concurrent POSTs)
+        const id = tsId() + "_" + crypto.randomBytes(3).toString("hex");
         const sn = safeName(j.name);
         const fname = `${id}_${sn}`;
         try {
           fs.writeFileSync(path.join(uploadRoot, fname), Buffer.from(j.data, "base64"));
-          const inbox = readInbox(uploadRoot);
+          // CONCURRENCY NOTE: readInbox+push+writeInbox use SYNCHRONOUS fs — this RMW runs
+          // atomically on the single-threaded event loop (no await/yield), so concurrent uploads
+          // cannot interleave or lose entries. Do NOT switch to async fs without a lock.
+          const r = readInbox(uploadRoot);
+          let inbox;
+          if (r.ok) { inbox = r.arr; }
+          else { // corrupt inbox: back up for recovery, start fresh
+            try { fs.renameSync(path.join(uploadRoot, "_inbox.json"), path.join(uploadRoot, "_inbox.json.corrupt-" + tsId())); } catch {}
+            inbox = [];
+          }
           inbox.push({ id, file: fname, origName: j.name, ts: id, status: "pending" });
           writeInbox(uploadRoot, inbox);
           res.writeHead(200, {"Content-Type":"application/json"});
@@ -72,11 +89,17 @@ function startServer(cfg){
       return;
     }
 
-    if (req.method === "GET" && req.url === "/status"){
-      if (!authed){ res.writeHead(401, {"Content-Type":"application/json"}); res.end('{"error":"unauthorized"}'); return; }
-      const inbox = readInbox(uploadRoot);
-      const sum = { total: inbox.length, pending: 0, processed: 0, failed: 0 };
-      for (const e of inbox) if (sum[e.status] != null) sum[e.status]++;
+    if (req.method === "GET" && req.url.split("?")[0] === "/status"){
+      if (!authed){ return deny(401, '{"error":"unauthorized"}'); }
+      const r = readInbox(uploadRoot);
+      let sum;
+      if (r.ok) {
+        const inbox = r.arr;
+        sum = { total: inbox.length, pending: 0, processed: 0, failed: 0 };
+        for (const e of inbox) if (sum[e.status] != null) sum[e.status]++;
+      } else {
+        sum = { total: 0, pending: 0, processed: 0, failed: 0, error: r.error };
+      }
       res.writeHead(200, {"Content-Type":"application/json"});
       res.end(JSON.stringify(sum));
       return;
@@ -84,9 +107,16 @@ function startServer(cfg){
 
     if (req.method === "GET"){
       const appDir = path.join(__dirname, "app");
-      const rel = req.url === "/" ? "index.html" : decodeURIComponent(req.url.slice(1).split("?")[0]);
+      const u = req.url.split("?")[0];
+      let rel;
+      if (u === "/") { rel = "index.html"; }
+      else { try { rel = decodeURIComponent(u.slice(1)); } catch { return deny(400, '{"error":"bad uri"}'); } }
       const fp = path.join(appDir, rel);
-      if (fp.startsWith(appDir) && fs.existsSync(fp) && fs.statSync(fp).isFile()){
+      // containment WITH separator (prevents sibling "app-*" prefix traversal)
+      const inside = fp === appDir || fp.startsWith(appDir + path.sep);
+      let isFile = false;
+      try { isFile = inside && fs.statSync(fp).isFile(); } catch { isFile = false; }
+      if (isFile){
         const ext = path.extname(fp).toLowerCase();
         const types = { ".html":"text/html; charset=utf-8", ".js":"text/javascript", ".css":"text/css", ".json":"application/json", ".png":"image/png", ".jpg":"image/jpeg", ".ico":"image/x-icon", ".webmanifest":"application/manifest+json" };
         res.writeHead(200, {"Content-Type": types[ext] || "application/octet-stream"});
@@ -98,7 +128,7 @@ function startServer(cfg){
       return;
     }
 
-    res.writeHead(405); res.end("method not allowed");
+    return deny(405, '{"error":"method not allowed"}');
   });
   srv.listen(bindPort);
   return srv;
