@@ -1,7 +1,8 @@
 // bridge.js — mobile-uploader bridge: HTTP server, pure node (no deps).
-// POST /upload {name, data(base64)} + Bearer token -> store file + append _inbox.json
+// POST /upload {origName, name, data(base64), tag} + Bearer -> store file + append _inbox.json
+// GET /albums -> existing daily album names (from siteRoot/content/daily) for the app's tag dropdown
 // GET /status -> inbox summary {total,pending,processed,failed[,error]}
-// GET / -> serve app/ files (Task 2)
+// GET / -> serve app/ files
 const http = require("http"), fs = require("fs"), path = require("path"), crypto = require("crypto");
 
 const MAX_BODY = 12 * 1024 * 1024; // 12MB cap on base64 body
@@ -30,6 +31,7 @@ function writeInbox(root, arr){
 
 function startServer(cfg){
   const token = cfg.token, uploadRoot = cfg.uploadRoot, bindPort = cfg.bindPort || 0;
+  const siteRoot = cfg.siteRoot || path.resolve(__dirname, "..", ".."); // personal-website repo root
   const srv = http.createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
@@ -41,6 +43,22 @@ function startServer(cfg){
     const authed = tok === token && !!token;
     // deny(): drain+discard the request body (prevents unauth memory DoS via large body on a 401)
     function deny(code, msg){ try { req.resume(); } catch {}; res.writeHead(code, {"Content-Type":"application/json"}); res.end(msg); return; }
+
+    // GET /albums — list existing daily album names (source of truth: siteRoot/content/daily)
+    if (req.method === "GET" && req.url.split("?")[0] === "/albums"){
+      if (!authed){ return deny(401, '{"error":"unauthorized"}'); }
+      let albums = [];
+      try {
+        const dailyDir = path.join(siteRoot, "content", "daily");
+        for (const name of fs.readdirSync(dailyDir)) {
+          try { if (fs.statSync(path.join(dailyDir, name)).isDirectory()) albums.push(name); } catch {}
+        }
+      } catch {} // siteRoot/content/daily missing -> empty list
+      albums.sort((a, b) => a.localeCompare(b, "zh"));
+      res.writeHead(200, {"Content-Type":"application/json"});
+      res.end(JSON.stringify({ albums }));
+      return;
+    }
 
     if (req.method === "POST" && req.url.split("?")[0] === "/upload"){
       if (!authed){ return deny(401, '{"error":"unauthorized"}'); }
@@ -77,7 +95,7 @@ function startServer(cfg){
             try { fs.renameSync(path.join(uploadRoot, "_inbox.json"), path.join(uploadRoot, "_inbox.json.corrupt-" + tsId())); } catch {}
             inbox = [];
           }
-          inbox.push({ id, file: fname, origName: j.name, ts: id, status: "pending" });
+          inbox.push({ id, file: fname, origName: j.origName || j.name, name: j.name, tag: j.tag || "日常", ts: id, status: "pending" });
           writeInbox(uploadRoot, inbox);
           res.writeHead(200, {"Content-Type":"application/json"});
           res.end(JSON.stringify({ ok: true, id }));

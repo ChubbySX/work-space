@@ -14,10 +14,16 @@ h1{font-size:17px;margin:0 0 12px}
 label{font-size:12px;color:#9aa}
 .pick{display:block;margin:14px 0;padding:18px;border:2px dashed #555;border-radius:10px;text-align:center;color:#9aa}
 .pick input{display:none}
-ul{list-style:none;padding:0;margin:0}
-li{padding:9px;border-bottom:1px solid #333;font-size:13px}
-li.ok{color:#5ad676} li.fail{color:#e85555} li.pend{color:#e8b442}
-button{background:#3a5;border:none;color:#fff;padding:6px 12px;border-radius:6px;font-size:12px;margin-left:8px}
+.row{background:#1a1a2a;border:1px solid #333;border-radius:8px;padding:10px;margin:10px 0}
+.row img{max-width:100%;max-height:160px;border-radius:6px;display:block;margin-bottom:8px}
+.row input[type=text]{width:100%;padding:8px;border:1px solid #444;border-radius:6px;background:#222236;color:#eee;box-sizing:border-box}
+.row select{width:100%;padding:8px;border:1px solid #444;border-radius:6px;background:#222236;color:#eee;box-sizing:border-box;margin-top:6px}
+.row .newtag{margin-top:6px;display:none}
+.row button{margin-top:8px;width:100%;padding:10px;border:none;border-radius:6px;background:#3a5;color:#fff;font-size:14px}
+.row button:disabled{background:#455}
+.row.done{opacity:.6}
+.row .st{font-size:12px;margin-top:6px}
+.st.ok{color:#5ad676}.st.fail{color:#e85555}.st.pend{color:#e8b442}
 </style>
 </head>
 <body>
@@ -28,8 +34,8 @@ button{background:#3a5;border:none;color:#fff;padding:6px 12px;border-radius:6px
   <label style="margin-top:8px;display:block">Token</label>
   <input id="tok" type="password" placeholder="token">
 </div>
-<label class="pick">选择 / 拍照<input type="file" accept="image/*" multiple></label>
-<ul id="list"></ul>
+<label class="pick">选择 / 拍照<input type="file" accept="image/*" multiple id="file"></label>
+<div id="stage"></div>
 <script src="app.js"></script>
 </body>
 </html>

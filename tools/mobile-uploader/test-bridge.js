@@ -46,6 +46,14 @@ function cleanup(){ srv.close(); try { fs.unlinkSync(path.join(sibDir,"leak.txt"
     let ib = JSON.parse(fs.readFileSync(path.join(tmpRoot, "_inbox.json"), "utf8"));
     assert.strictEqual(ib.length, 1, "inbox 1 got " + ib.length);
     assert.strictEqual(ib[0].status, "pending", "pending");
+    assert.strictEqual(ib[0].tag, "日常", "default tag 日常 got " + ib[0].tag);
+    assert.strictEqual(ib[0].name, "a.jpg", "name a.jpg got " + ib[0].name);
+    // --- /albums (new): existing daily album names + auth ---
+    r = await req("GET", "/albums", null, "t-ok");
+    assert.strictEqual(r.code, 200, "/albums 200 got " + r.code);
+    assert.ok(Array.isArray(JSON.parse(r.body).albums), "/albums array got " + r.body);
+    r = await req("GET", "/albums", null, "t-bad");
+    assert.strictEqual(r.code, 401, "/albums 401 bad token got " + r.code);
     r = await req("GET", "/status", null, "t-ok");
     assert.strictEqual(JSON.parse(r.body).pending, 1, "status pending 1");
     r = await req("POST", "/upload", { name: "b.jpg", data: "dGVzdA==" }, null);
@@ -99,7 +107,7 @@ function cleanup(){ srv.close(); try { fs.unlinkSync(path.join(sibDir,"leak.txt"
     ib = JSON.parse(fs.readFileSync(path.join(tmpRoot, "_inbox.json"), "utf8"));
     assert.strictEqual(ib.length, 1, "#4 fresh inbox 1 got " + ib.length);
 
-    console.log("bridge OK (13 checks)");
+    console.log("bridge OK (18 checks)");
     cleanup();
     process.exit(0);
   } catch (e) {
