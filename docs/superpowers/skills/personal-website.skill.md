@@ -19,7 +19,7 @@
 
 **触发**：用户在对话里发图 / 视频 / 给本地路径，或说「加内容 / 更新网站」。
 
-1. 接收素材（对话附件或本地路径）。**或从待上传批次读**：若用户说「处理待上传」（或 `D:\DS harnessw\work station\待上传\_inbox.json` 存在且有 `status:"pending"` 项），读该清单 → 对每个 pending 项，把 `待上传\<file>` 当作收到的素材，**用清单里的 `tag` 直接定相册、`name` 定文件名**（跳过 step 2 分类 + step 3 定名——分类由用户在上传 app 里选标签完成了）：**先按扩展名分视频/图片**——视频（`.mp4/.mov/.mkv/.avi/.webm`）：`tag`=`作品`→`content/works/video/`，否则→`content/daily/<tag>/`；图片：`tag`=`作品`→`content/works/image/`，否则→`content/daily/<tag>/`（文件夹不存在就**新建**，即新相册）；`name` 缺失用 `origName`；**`tag` 缺失（或为空）→ 按名字判断分类归位**（同 step 2 启发式：作品类→`works/image/`，日常→归到最贴切的现有相册；一组明显同主题→新建相册），并在告知时说明归到了哪个相册、可纠错。然后走 step 4（压缩，用 `name` 做最终名）→ step 5（归位到该相册）→ step 6（写说明，`name` 做一句话）。每项处理完**更新 `_inbox.json` 里该项 `status`**（成功=`processed`，压缩失败=`failed` 并记 stderr 关键行）。全部处理完报「处理了 N 项，M 成功 K 失败」。**清单空或 JSON 损坏 → 告知用户「待上传清单为空或损坏」，不静默跳过**。**归档原图**：处理成功（含补处理的旧批次）后，把仍留在 `待上传\` 的原图（`待上传\<file>`）移到 `待上传\已处理\` 归档（不删除、留底；`_inbox.json` 该项 `file` 同步改为 `已处理\<名>`），避免 `待上传\` 无限堆积几十 MB 原图。**设为封面**：若该项带 `cover:true` 且目标是现有相册（非新建）→ 归位放好后写 `content/daily/<相册>/_cover.txt`（内容=该图片最终基名，不含扩展名），该图即成相册封面（`build.js` 与桥接 `/albums` 都认 `_cover.txt`）。
+1. 接收素材（对话附件或本地路径）。**或从待上传批次读**：若用户说「处理待上传」（或 `D:\DS harnessw\work station\待上传\_inbox.json` 存在且有 `status:"pending"` 项），读该清单 → 对每个 pending 项，把 `待上传\<file>` 当作收到的素材，**用清单里的 `tag` 直接定相册、`name` 定文件名**（跳过 step 2 分类 + step 3 定名——分类由用户在上传 app 里选标签完成了）：**先按扩展名分视频/图片**——视频（`.mp4/.mov/.mkv/.avi/.webm`）：`tag`=`作品`→`content/works/video/`，否则→`content/daily/<tag>/`；图片：`tag`=`作品`→`content/works/image/`，否则→`content/daily/<tag>/`（文件夹不存在就**新建**，即新相册）；`name` 缺失用 `origName`；**`tag` 缺失（或为空）→ 按名字判断分类归位**（同 step 2 启发式：作品类→`works/image/`，日常→归到最贴切的现有相册；一组明显同主题→新建相册），并在告知时说明归到了哪个相册、可纠错。然后走 step 4（压缩，用 `name` 做最终名）→ step 5（归位到该相册）→ step 6（写说明，`name` 做一句话）。每项处理完**更新 `_inbox.json` 里该项 `status`**（成功=`processed`，压缩失败=`failed` 并记 stderr 关键行）。全部处理完报「处理了 N 项，M 成功 K 失败」。**清单空或 JSON 损坏 → 告知用户「待上传清单为空或损坏」，不静默跳过**。**该步骤已自动化**：用户可点监控窗右上「🔄 一键处理」按钮、或跑 `tools\process-uploads.bat`（node `tools\process-uploads.js`）——自动完成 分类→压缩→归位→原图归档→配文补齐→构建，结果写 `待上传\_process-report.json`；agent 在用户要求时复核结果或代跑，替代手工逐项。**归档原图**：处理成功（含补处理的旧批次）后，把仍留在 `待上传\` 的原图（`待上传\<file>`）移到 `待上传\已处理\` 归档（不删除、留底；`_inbox.json` 该项 `file` 同步改为 `已处理\<名>`），避免 `待上传\` 无限堆积几十 MB 原图。**设为封面**：若该项带 `cover:true` 且目标是现有相册（非新建）→ 归位放好后写 `content/daily/<相册>/_cover.txt`（内容=该图片最终基名，不含扩展名），该图即成相册封面（`build.js` 与桥接 `/albums` 都认 `_cover.txt`）。
    - **手机端指令 / 发布请求**：上传 app 里「🚀 发布网站（带备注）」和「📤 仅发指令」按钮会把指令写进 `D:\DS harnessw\work station\待上传\_requests.json`（条目 `{id, intent:'publish'|'command', text, ts, status:'pending'}`，最新在前）。**用户回话时**若该文件有 `status:"pending"` 项，把每条当作用户的显式指令：`publish` → 用户要求发布，`text` 是随附的备注 / 额外提示词（发布前按 `text` 的要求核对内容与范围）；`command` → `text` 就是要执行的文字指令。执行完把该项 `status` 改为 `processed` 并写回（UTF-8 无 BOM）。
 2. **判断分类**（自主判断，判完告知用户）：
    - → `content/daily/`：生活日常、旅游、玩具、美食、校园 / 工作日记。
@@ -60,6 +60,7 @@
 ## 阶段 3 · 发布
 
 **触发**：用户说「发布 / 上线」。
+> 或**手机端发来发布请求**：`待上传\_requests.json` 里有 `status:"pending"` 项（🚀 发布网站 = `intent:"publish"`，可带备注 `text`；📤 仅发指令 = `intent:"command"`）→ 当作**用户显式指令**：发布请求先按备注补处理，再走本阶段；任何请求处理后把该项 `status` 改 `processed`。
 
 > **单批发布**：内容 + 更新历史 + 版本号合成**一个 commit、一次 push** 上线（与 `发布上线.bat` 完全同一套流程；bat 是手动上线入口，双击即按此流程跑）。避免「内容已上传、版本号未同步」的分批错位。
 

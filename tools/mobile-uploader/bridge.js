@@ -1,32 +1,35 @@
 // bridge.js — mobile-uploader bridge: pure node HTTP server (no deps)
-// POST   /upload {origName,name,data(base64),tag}   legacy base64 path (fallback)
-// POST   /upload_raw?name&tag&origName              binary body (fast path, progress-tracked)
-// GET    /albums                                    [{name, cover(thumb rel under content/.thumbs)}]
-// GET    /thumb?p=<rel>                             serve thumbnail webp (album covers)
-// GET    /history                                   inbox items newest-first {id,name,tag,status,ts,size}
-// GET    /status                                    summary {total,pending,processed,failed}
-// GET    /info                                      {ips, port, token} for QR codes
-// GET    /monitor-data                              {inflight, recent, requests} polled by monitor page
-// GET    /monitor                                   desktop 监控窗 (QR + live uploads + delete)
-// POST   /request {intent,text}                     手机端指令/发布请求 → 待上传/_requests.json
-// GET    /requests                                  pending 指令列表（最新在前）
-// DELETE /monitor-item?id=<id>                      remove staging file + inbox entry
-// GET    /                                          serve app/ (PWA)
+// Multi-site: supports routing uploads/albums/thumbs per-site via ?site=<key>
+// POST   /upload {origName,name,data(base64),tag,site}   legacy base64 path (fallback)
+// POST   /upload_raw?name&tag&origName&site              binary body (fast path, progress-tracked)
+// GET    /albums?site=<key>                              [{name, cover}] + fixedTags
+// GET    /thumb?p=<rel>&site=<key>                       serve thumbnail
+// GET    /history?site=<key>                             inbox items newest-first
+// GET    /status?site=<key>                              summary
+// GET    /info                                           {ips, port, token} for QR codes
+// GET    /sites                                          [{key, name}] list of configured sites
+// GET    /monitor-data                                   {inflight, recent, requests} polled by monitor
+// GET    /monitor                                        desktop 监控窗 (QR + live uploads + delete)
+// POST   /request {intent,text,site}                     手机端指令/发布请求
+// GET    /requests?site=<key>                            pending 指令列表
+// DELETE /monitor-item?id=<id>&site=<key>                remove staging file + inbox entry
+// GET    /                               serve app/ (PWA)
 // Mutations require: Authorization: Bearer <token>
 const http = require("http"), fs = require("fs"), path = require("path"), crypto = require("crypto"), os = require("os");
+const cp = require("child_process");
 
 const MAX_BODY = 12 * 1024 * 1024;   // base64 cap (legacy path)
 const MAX_RAW  = 200 * 1024 * 1024;  // raw cap (videos OK)
 
 // ---- live upload tracker (feeds the desktop monitor window) ----
-const inflight = new Map(); // id -> {id,name,received,total}
-const recent = [];          // [{id,name,tag,received,ts}] newest first
+const inflight = new Map(); // id -> {id,name,received,total,site}
+const recent = [];          // [{id,name,tag,received,ts,site}] newest first
 const RECENT_MAX = 30;
-function trackStart(id, name, total){ inflight.set(id, { id, name, received: 0, total: total || 0, ts: Date.now() }); }
+function trackStart(id, name, total, siteName){ inflight.set(id, { id, name, received: 0, total: total || 0, ts: Date.now(), site: siteName || "" }); }
 function trackAdd(id, n){ const t = inflight.get(id); if (t) t.received += n; }
-function trackDone(id, name, tag, received){
+function trackDone(id, name, tag, received, siteName){
   inflight.delete(id);
-  recent.unshift({ id, name, tag, received, ts: Date.now() });
+  recent.unshift({ id, name, tag, received, ts: Date.now(), site: siteName || "" });
   if (recent.length > RECENT_MAX) recent.length = RECENT_MAX;
 }
 
@@ -50,7 +53,7 @@ function readInbox(root){
 function writeInbox(root, arr){
   fs.writeFileSync(path.join(root, "_inbox.json"), JSON.stringify(arr, null, 2), "utf8");
 }
-function readReq(root){ // 手机端发来的指令/发布请求（待上传/_requests.json）
+function readReq(root){ // 手机端发来的指令/发布请求
   const p = path.join(root, "_requests.json");
   try { const arr = JSON.parse(fs.readFileSync(p, "utf8")); return Array.isArray(arr) ? arr : []; }
   catch { return []; }
@@ -82,6 +85,39 @@ function lanIPs(){
 }
 function json(res, code, obj){ res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" }); res.end(JSON.stringify(obj)); }
 
+// ---- build multi-site config map (backward compatible with old single-site format) ----
+function buildSites(cfg){
+  if (cfg.sites && typeof cfg.sites === "object") {
+    const sites = {};
+    for (const [key, sc] of Object.entries(cfg.sites)) {
+      sites[key] = {
+        key,
+        name: sc.name || key,
+        siteRoot: sc.siteRoot || path.resolve(__dirname, "..", ".."),
+        uploadRoot: sc.uploadRoot,
+        albumsMode: sc.albumsMode || "dirs",
+        albumsDir: sc.albumsDir || "content/daily",
+        thumbsDir: sc.thumbsDir || "content/.thumbs",
+        fixedTags: sc.fixedTags || []
+      };
+    }
+    return sites;
+  }
+  // Old single-site format — wrap in "personal" site for backward compat
+  return {
+    personal: {
+      key: "personal",
+      name: "个人网站",
+      siteRoot: cfg.siteRoot || path.resolve(__dirname, "..", ".."),
+      uploadRoot: cfg.uploadRoot,
+      albumsMode: "dirs",
+      albumsDir: "content/daily",
+      thumbsDir: "content/.thumbs",
+      fixedTags: ["作品", "日常"]
+    }
+  };
+}
+
 const MONITOR_HTML = `<!DOCTYPE html>
 <html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -98,6 +134,7 @@ h2{font-size:14px;margin:14px 0 4px;color:#9aa}
 .item{display:flex;align-items:center;gap:10px;background:#1a1a2a;border:1px solid #333;border-radius:8px;padding:8px 10px;margin:8px 0}
 .item .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .st{font-size:12px;white-space:nowrap}
+.item .badge{font-size:10px;background:#345;border-radius:4px;padding:2px 6px;color:#adf;white-space:nowrap}
 .bar{height:5px;background:#333;border-radius:3px;overflow:hidden;flex:1;min-width:80px}
 .bar i{display:block;height:100%;background:#5ad676;transition:width .2s}
 .ok{color:#5ad676}.bad{color:#e85555}.pend{color:#e8b442}
@@ -110,6 +147,7 @@ button.rm{background:#8a3c3c}
 </style></head><body>
 <h1>📲 上传监控</h1>
 <div class="sub" id="sub">连接：</div>
+  <div style="margin:10px 0"><button id="procBtn" style="background:#4CAF50;color:#fff;border:0;border-radius:6px;padding:8px 16px;font:inherit;cursor:pointer">🔄 一键处理</button><span id="procSt" style="font-size:12px;color:#9aa;margin-left:10px"></span></div>
 <div class="qrs" id="qrs"></div>
 <div id="list"></div>
 <h2 id="reqh">📌 来自手机的指令</h2><div id="req"></div>
@@ -129,9 +167,11 @@ function qrCard(url, label){
   var t = document.createElement("div"); t.className = "tip"; t.textContent = url; cell.appendChild(t);
   document.getElementById("qrs").appendChild(cell);
 }
-function del(id){
+function del(id, site){
   if (!confirm("删除这条已上传的内容？")) return;
-  fetch(base + "/monitor-item?id=" + encodeURIComponent(id), { method: "DELETE" })
+  var qs = "?id=" + encodeURIComponent(id);
+  if (site) qs += "&site=" + encodeURIComponent(site);
+  fetch(base + "/monitor-item" + qs, { method: "DELETE" })
     .then(function(r){ return r.json(); }).then(function(j){ if (j && j.ok) toast("已删除该上传"); }).catch(function(){});
 }
 function render(d){
@@ -144,6 +184,7 @@ function render(d){
     var i = document.createElement("i"); var pct = it.total ? Math.min(100, Math.round(it.received / it.total * 100)) : 0; i.style.width = pct + "%";
     bar.appendChild(i);
     var st = document.createElement("div"); st.className = "st pend"; st.textContent = "上传中 " + pct + "%";
+    if (it.site) { var bd = document.createElement("span"); bd.className = "badge"; bd.textContent = it.site; row.appendChild(bd); }
     row.appendChild(nm); row.appendChild(bar); row.appendChild(st); list.appendChild(row);
   });
   if (!d.inflight.length){ var h = document.createElement("div"); h.className = "empty"; h.textContent = "— 当前没有上传中 —"; list.appendChild(h); }
@@ -151,7 +192,8 @@ function render(d){
     var row = document.createElement("div"); row.className = "item";
     var nm = document.createElement("div"); nm.className = "nm"; nm.textContent = it.name + "（" + fmt(it.received) + "）";
     var st = document.createElement("div"); st.className = "st ok"; st.textContent = "已收到 · " + it.tag;
-    var rm = document.createElement("button"); rm.className = "rm"; rm.textContent = "删除"; rm.onclick = function(){ del(it.id); };
+    var rm = document.createElement("button"); rm.className = "rm"; rm.textContent = "删除"; rm.onclick = function(){ del(it.id, it.site); };
+    if (it.site) { var bd = document.createElement("span"); bd.className = "badge"; bd.textContent = it.site; row.appendChild(bd); }
     row.appendChild(nm); row.appendChild(st); row.appendChild(rm); list.appendChild(row);
   });
   var reqh = document.getElementById("reqh"), req = document.getElementById("req");
@@ -165,6 +207,7 @@ function render(d){
     var nm = document.createElement("div"); nm.className = "nm";
     nm.textContent = (it.intent === "publish" ? "🚀 发布请求" : "📝 指令") + "：" + it.text;
     var st = document.createElement("div"); st.className = "st pend"; st.textContent = "待处理";
+    if (it.site) { var bd = document.createElement("span"); bd.className = "badge"; bd.textContent = it.site; row.appendChild(bd); }
     row.appendChild(nm); row.appendChild(st); req.appendChild(row);
   });
 }
@@ -178,23 +221,67 @@ fetch(base + "/info").then(function(r){ return r.json(); }).then(function(j){
   } else { qrCard("", "(获取本机地址失败)"); }
 }).catch(function(){});
 setInterval(function(){
-  fetch(base + "/monitor-data").then(function(r){ return r.json(); }).then(render).catch(function(){});
+  fetch(base + "/monitor-data").then(function(r){ return r.json(); }).then(function(d){
+    render(d);
+    var ps = document.getElementById("procSt"), pb = document.getElementById("procBtn");
+    if (ps && pb){
+      if (d.lastOp && d.lastOp.ts){
+        pb.disabled = false;
+        ps.textContent = d.lastOp.fatal ? "上次：❌ 致命 " + d.lastOp.fatal
+          : "上次：" + d.lastOp.ts + " — 归位 " + (d.lastOp.placed || []).length + " · 未识别 " + (d.lastOp.unclassified || []).length + " · 失败 " + (d.lastOp.failed || []).length
+            + (d.lastOp.build ? " · 构建 " + (d.lastOp.build.build || "?") : "");
+      } else { ps.textContent = ""; }
+    }
+  }).catch(function(){});
 }, 1000);
 setInterval(function(){
   fetch(base + "/monitor-data").then(function(r){ return r.json(); }).then(function(d){
-    d.recent.forEach(function(it){ if (!seen[it.id]){ seen[it.id] = 1; toast("✓ 上传完成：" + it.name); } });
+    d.recent.forEach(function(it){ if (!seen[it.id]){ seen[it.id] = 1; toast("✓ 上传完成：" + it.name + (it.site ? "（" + it.site + "）" : "")); } });
   }).catch(function(){});
 }, 1500);
+
+document.getElementById("procBtn").addEventListener("click", function(){
+  var pb = this, ps = document.getElementById("procSt");
+  pb.disabled = true; ps.textContent = "启动中…";
+  fetch(base + "/process").then(function(r){ return r.json(); }).then(function(j){
+    if (j && j.ok){ ps.textContent = "处理中…完成后自动显示结果"; }
+    else { pb.disabled = false; ps.textContent = (j && j.msg) || "启动失败"; }
+  }).catch(function(){ pb.disabled = false; ps.textContent = "桥接未连接"; });
+});
 </script>
 </body></html>`;
 
 function startServer(cfg){
-  const token = cfg.token, uploadRoot = cfg.uploadRoot, bindPort = cfg.bindPort || 0;
+  const token = cfg.token, bindPort = cfg.bindPort || 0;
   const maxRaw = cfg.maxRaw || MAX_RAW;
-  const siteRoot = cfg.siteRoot || path.resolve(__dirname, "..", ".."); // personal-website repo root
+  const SITES = buildSites(cfg);
+  const defaultSiteKey = cfg.defaultSite || Object.keys(SITES)[0];
+
+  // ---- 一键处理状态：待上传/_process-report.json 懒读缓存 ----
+  let procRunning = false, opReportTs = 0, opReport = null;
+  function readOpReport(root){
+    if (!root) return null;
+    const p = path.join(root, "_process-report.json");
+    try {
+      const st = fs.statSync(p);
+      if (st.mtimeMs !== opReportTs){ opReportTs = st.mtimeMs; opReport = JSON.parse(fs.readFileSync(p, "utf8").replace(/^\uFEFF/, "")); }
+    } catch { opReport = null; opReportTs = 0; }
+    return opReport;
+  }
+
+  // Resolve site config from request: ?site=<key> or X-Site header or default
+  function resolveSite(req){
+    const u = (() => { try { return new URL(req.url, "http://x"); } catch { return null; } })();
+    let key = null;
+    if (u) key = u.searchParams.get("site");
+    if (!key) key = req.headers["x-site"];
+    if (!key || !SITES[key]) key = defaultSiteKey;
+    return SITES[key];
+  }
+
   const srv = http.createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Site");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
 
@@ -210,39 +297,61 @@ function startServer(cfg){
       json(res, 200, { ips: lanIPs(), port, token });
       return;
     }
-    // GET /albums — [{name, cover}] covers = content/.thumbs rel of first image
-    if (req.method === "GET" && req.url.split("?")[0] === "/albums"){
-      if (!authed){ return deny(401, "unauthorized"); }
-      let albums = [];
-      try {
-        const dailyDir = path.join(siteRoot, "content", "daily");
-        for (const name of fs.readdirSync(dailyDir)) {
-          try { if (!fs.statSync(path.join(dailyDir, name)).isDirectory()) continue; } catch { continue; }
-          let cover = null;
-          try {
-            const imgs = fs.readdirSync(path.join(dailyDir, name)).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
-            let first = imgs[0];
-            // 相册封面：album 内 _cover.txt 写图片基名可指定，否则默认第一张
-            try {
-              const ct = fs.readFileSync(path.join(dailyDir, name, "_cover.txt"), "utf8").trim().replace(/\.[^.]+$/, "");
-              const hit = imgs.find(f => f.replace(/\.[^.]+$/, "") === ct);
-              if (hit) first = hit;
-            } catch {}
-            if (first) cover = "daily/" + name + "/" + first.replace(/\.[^.]+$/, "") + ".webp";
-          } catch {}
-          albums.push({ name, cover });
-        }
-      } catch {}
-      albums.sort((a, b) => a.name.localeCompare(b.name, "zh"));
-      json(res, 200, { albums });
+
+    // GET /sites — list of configured sites (for the app to build site selector)
+    if (req.method === "GET" && req.url.split("?")[0] === "/sites"){
+      json(res, 200, {
+        sites: Object.values(SITES).map(s => ({ key: s.key, name: s.name })),
+        default: defaultSiteKey
+      });
       return;
     }
-    // GET /thumb?p= — serve a thumbnail (containment: content/.thumbs/<p>)
+
+    // GET /albums?site=<key> — [{name, cover}] + fixedTags
+    if (req.method === "GET" && req.url.split("?")[0] === "/albums"){
+      if (!authed){ return deny(401, "unauthorized"); }
+      const sc = resolveSite(req);
+      let albums = [];
+      if (sc.albumsMode === "profile") {
+        // Couple-site: read album names from profile.json
+        try {
+          const profile = JSON.parse(fs.readFileSync(path.join(sc.siteRoot, "content", "profile.json"), "utf8"));
+          const al = (profile.photos && profile.photos.albums) || [];
+          albums = al.map(a => ({ name: a.title || a.name || "未命名", cover: null }));
+        } catch {}
+      } else {
+        // Personal-site: list directories in albumsDir (content/daily)
+        try {
+          const dailyDir = path.join(sc.siteRoot, sc.albumsDir);
+          for (const name of fs.readdirSync(dailyDir)) {
+            try { if (!fs.statSync(path.join(dailyDir, name)).isDirectory()) continue; } catch { continue; }
+            let cover = null;
+            try {
+              const imgs = fs.readdirSync(path.join(dailyDir, name)).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+              let first = imgs[0];
+              try {
+                const ct = fs.readFileSync(path.join(dailyDir, name, "_cover.txt"), "utf8").trim().replace(/\.[^.]+$/, "");
+                const hit = imgs.find(f => f.replace(/\.[^.]+$/, "") === ct);
+                if (hit) first = hit;
+              } catch {}
+              if (first) cover = sc.albumsDir.replace(/^content\//, "") + "/" + name + "/" + first.replace(/\.[^.]+$/, "") + ".webp";
+            } catch {}
+            albums.push({ name, cover });
+          }
+        } catch {}
+        albums.sort((a, b) => a.name.localeCompare(b.name, "zh"));
+      }
+      json(res, 200, { albums, fixedTags: sc.fixedTags });
+      return;
+    }
+
+    // GET /thumb?p=<rel>&site=<key> — serve a thumbnail
     if (req.method === "GET" && req.url.split("?")[0] === "/thumb"){
       const u = url(); if (!u) return deny(400, "bad uri");
       let p; try { p = decodeURIComponent(u.searchParams.get("p") || ""); } catch { return deny(400, "bad uri"); }
       if (!p){ json(res, 404, { error: "no thumb" }); return; }
-      const base = path.join(siteRoot, "content", ".thumbs");
+      const sc = resolveSite(req);
+      const base = path.join(sc.siteRoot, sc.thumbsDir);
       const fp = path.resolve(base, p);
       if (fp !== base && !fp.startsWith(base + path.sep)){ return deny(400, "bad path"); }
       try {
@@ -254,24 +363,49 @@ function startServer(cfg){
       json(res, 404, { error: "no thumb" });
       return;
     }
-    // GET /history — inbox newest-first
+
+    // GET /history?site=<key> — inbox newest-first
     if (req.method === "GET" && req.url.split("?")[0] === "/history"){
       if (!authed){ return deny(401, "unauthorized"); }
-      const r = readInbox(uploadRoot);
+      const sc = resolveSite(req);
+      const r = readInbox(sc.uploadRoot);
       if (!r.ok){ return json(res, 500, { error: r.error }); }
       const items = r.arr.slice().reverse().map(e => {
         let size = null;
-        try { const s = fs.statSync(path.join(uploadRoot, e.file)); if (s.isFile()) size = s.size; } catch {}
-        return { id: e.id, name: e.name || e.file, tag: e.tag, status: e.status, ts: e.ts, size };
+        try { const s = fs.statSync(path.join(sc.uploadRoot, e.file)); if (s.isFile()) size = s.size; } catch {}
+        return { id: e.id, name: e.name || e.file, tag: e.tag, status: e.status, ts: e.ts, size, site: e.site || sc.key };
       });
       json(res, 200, { items });
       return;
     }
-    // GET /monitor-data — polling feed for the monitor window
+
+    // GET /monitor-data — polling feed for the monitor window (merges ALL sites)
     if (req.method === "GET" && req.url.split("?")[0] === "/monitor-data"){
-      json(res, 200, { inflight: [...inflight.values()], recent, requests: readReq(uploadRoot).slice(-8).reverse() });
+      const allReqs = [];
+      for (const sc of Object.values(SITES)) {
+        try { allReqs.push(...readReq(sc.uploadRoot)); } catch {}
+      }
+      const sc0 = SITES[defaultSiteKey];
+      json(res, 200, { inflight: [...inflight.values()], recent, requests: allReqs.slice(-8).reverse(), lastOp: sc0 ? readOpReport(sc0.uploadRoot) : null });
       return;
     }
+
+    // GET /process — 一键处理（分类/压缩/归位/配文/构建），后台异步跑 tools/process-uploads.js
+    if (req.method === "GET" && req.url.split("?")[0] === "/process"){
+      if (!authed){ return deny(401, "unauthorized"); }
+      if (procRunning){ json(res, 200, { ok: false, running: true, msg: "上一轮处理还没结束" }); return; }
+      const pj = path.join(path.resolve(__dirname, "..", ".."), "tools", "process-uploads.js");
+      if (!fs.existsSync(pj)){ json(res, 200, { ok: false, msg: "缺少 tools/process-uploads.js" }); return; }
+      procRunning = true;
+      try {
+        const s = cp.spawn(process.execPath, [pj], { cwd: path.dirname(pj), detached: true, stdio: "ignore" });
+        s.on("exit", () => { procRunning = false; opReport = null; opReportTs = 0; });
+        s.unref();
+      } catch (e) { procRunning = false; json(res, 200, { ok: false, msg: String(e.message) }); return; }
+      json(res, 200, { ok: true, msg: "已启动一键处理，完成后自动显示结果" });
+      return;
+    }
+
     // GET /monitor — the desktop 监控窗 page
     if (req.method === "GET" && req.url.split("?")[0] === "/monitor"){
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
@@ -297,13 +431,14 @@ function startServer(cfg){
         try { j = JSON.parse(body); } catch { return deny(400, "bad json"); }
         if (!j || !j.name || typeof j.data !== "string"){ return deny(400, "missing name/data"); }
         if (j.data.length > MAX_BODY){ return deny(413, "too large"); }
+        const sc = j.site && SITES[j.site] ? SITES[j.site] : SITES[defaultSiteKey];
         const id = tsId() + "_" + crypto.randomBytes(3).toString("hex");
         const fname = `${id}_${safeName(j.name)}`;
         try {
           const buf = Buffer.from(j.data, "base64");
-          fs.writeFileSync(path.join(uploadRoot, fname), buf);
-          appendInbox(uploadRoot, { id, file: fname, origName: j.origName || j.name, name: j.name, tag: j.tag || "日常", ts: id, status: "pending", ...(j.cover ? { cover: true } : {}) });
-          trackDone(id, j.name, j.tag || "日常", buf.length);
+          fs.writeFileSync(path.join(sc.uploadRoot, fname), buf);
+          appendInbox(sc.uploadRoot, { id, file: fname, origName: j.origName || j.name, name: j.name, tag: j.tag || "日常", ts: id, status: "pending", site: sc.key, ...(j.cover ? { cover: true } : {}) });
+          trackDone(id, j.name, j.tag || "日常", buf.length, sc.name);
           json(res, 200, { ok: true, id });
         } catch (e){ json(res, 500, { error: String(e) }); }
       });
@@ -318,10 +453,11 @@ function startServer(cfg){
       const tag = u.searchParams.get("tag") || "日常";
       const origName = u.searchParams.get("origName") || name;
       const cover = u.searchParams.get("cover") === "1";
+      const sc = resolveSite(req);
       const id = tsId() + "_" + crypto.randomBytes(3).toString("hex");
       const fname = `${id}_${safeName(name)}`;
       const total = parseInt(req.headers["content-length"] || "0", 10);
-      trackStart(id, name, total);
+      trackStart(id, name, total, sc.name);
       const chunks = []; let size = 0, tooBig = false;
       req.on("data", c => {
         if (tooBig) return;
@@ -336,9 +472,9 @@ function startServer(cfg){
         if (tooBig) return;
         const buf = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         try {
-          fs.writeFileSync(path.join(uploadRoot, fname), buf);
-          appendInbox(uploadRoot, { id, file: fname, origName, name, tag, ts: id, status: "pending", ...(cover ? { cover: true } : {}) });
-          trackDone(id, name, tag, buf.length);
+          fs.writeFileSync(path.join(sc.uploadRoot, fname), buf);
+          appendInbox(sc.uploadRoot, { id, file: fname, origName, name, tag, ts: id, status: "pending", site: sc.key, ...(cover ? { cover: true } : {}) });
+          trackDone(id, name, tag, buf.length, sc.name);
           json(res, 200, { ok: true, id });
         } catch (e){
           inflight.delete(id);
@@ -348,7 +484,7 @@ function startServer(cfg){
       return;
     }
 
-    // POST /request {intent,text} — 手机端把「发布」请求/备注/指令发到桌面（落 待上传/_requests.json）
+    // POST /request {intent,text,site} — 手机端把「发布」请求/备注/指令发到桌面
     if (req.method === "POST" && req.url.split("?")[0] === "/request"){
       if (!authed){ return deny(401, "unauthorized"); }
       let body = "", tooBig = false;
@@ -366,19 +502,22 @@ function startServer(cfg){
         let j; try { j = JSON.parse(body); } catch { return deny(400, "bad json"); }
         const text = String(j.text || "").trim();
         if (!text){ return deny(400, "empty text"); }
+        const sc = j.site && SITES[j.site] ? SITES[j.site] : SITES[defaultSiteKey];
         const id = tsId() + "_" + crypto.randomBytes(3).toString("hex");
-        const arr = readReq(uploadRoot);
-        arr.push({ id, intent: j.intent || "command", text, ts: id, status: "pending" });
+        const arr = readReq(sc.uploadRoot);
+        arr.push({ id, intent: j.intent || "command", text, ts: id, status: "pending", site: sc.key });
         if (arr.length > 50) arr.splice(0, arr.length - 50);
-        writeReq(uploadRoot, arr);
+        writeReq(sc.uploadRoot, arr);
         json(res, 200, { ok: true, id });
       });
       return;
     }
-    // GET /requests — 查指令（最新在前；监控窗经 /monitor-data 即拿最新几条）
+
+    // GET /requests?site=<key> — 查指令（最新在前）
     if (req.method === "GET" && req.url.split("?")[0] === "/requests"){
       if (!authed){ return deny(401, "unauthorized"); }
-      json(res, 200, { items: readReq(uploadRoot).slice().reverse() });
+      const sc = resolveSite(req);
+      json(res, 200, { items: readReq(sc.uploadRoot).slice().reverse() });
       return;
     }
 
@@ -387,13 +526,14 @@ function startServer(cfg){
       const u = url(); if (!u) return deny(400, "bad uri");
       const id = u.searchParams.get("id");
       if (!id){ return deny(400, "missing id"); }
-      const r = readInbox(uploadRoot);
+      const sc = resolveSite(req);
+      const r = readInbox(sc.uploadRoot);
       if (!r.ok){ return json(res, 500, { error: r.error }); }
       const idx = r.arr.findIndex(e => e.id === id);
       if (idx < 0){ return json(res, 404, { error: "not found" }); }
-      try { fs.unlinkSync(path.join(uploadRoot, r.arr[idx].file)); } catch {}
+      try { fs.unlinkSync(path.join(sc.uploadRoot, r.arr[idx].file)); } catch {}
       r.arr.splice(idx, 1);
-      writeInbox(uploadRoot, r.arr);
+      writeInbox(sc.uploadRoot, r.arr);
       const ri = recent.findIndex(x => x.id === id); if (ri >= 0) recent.splice(ri, 1);
       inflight.delete(id);
       json(res, 200, { ok: true });
@@ -402,7 +542,8 @@ function startServer(cfg){
 
     if (req.method === "GET" && req.url.split("?")[0] === "/status"){
       if (!authed){ return deny(401, "unauthorized"); }
-      const r = readInbox(uploadRoot);
+      const sc = resolveSite(req);
+      const r = readInbox(sc.uploadRoot);
       let sum;
       if (r.ok) {
         const inbox = r.arr;
@@ -449,14 +590,22 @@ if (require.main === module) {
   let cfg;
   try { cfg = JSON.parse(fs.readFileSync(cfgPath, "utf8")); }
   catch (e) { console.error("无法读取配置 " + cfgPath + ": " + e.message); process.exit(1); }
-  if (!cfg.token || !cfg.uploadRoot) { console.error("配置缺 token 或 uploadRoot"); process.exit(1); }
+  if (!cfg.token) { console.error("配置缺 token"); process.exit(1); }
+  const SITES = buildSites(cfg);
+  // Ensure uploadRoot directories exist
+  for (const sc of Object.values(SITES)) {
+    if (sc.uploadRoot) {
+      try { fs.mkdirSync(sc.uploadRoot, { recursive: true }); } catch {}
+    }
+  }
   const srv = startServer(cfg);
   srv.on("listening", () => {
     const a = srv.address();
-    console.log("bridge listening http://0.0.0.0:" + a.port + " (uploadRoot=" + cfg.uploadRoot + ")");
+    const siteList = Object.values(SITES).map(s => s.name + "(" + s.key + ")").join(", ");
+    console.log("bridge listening http://0.0.0.0:" + a.port + " sites: " + siteList);
     console.log("monitor window: http://127.0.0.1:" + a.port + "/monitor");
     if (cfg.openMonitor !== false){
-      try { require("child_process").exec('cmd /c start "" "http://127.0.0.1:' + a.port + '/monitor"'); } catch {}
+      try { cp.exec('cmd /c start "" "http://127.0.0.1:' + a.port + '/monitor"'); } catch {}
     }
   });
 }

@@ -228,6 +228,14 @@ function cleanup(){ srv.close(); try { fs.unlinkSync(path.join(sibDir,"leak.txt"
     r = await req("GET", "/monitor-data", null, null);
     ok(JSON.parse(r.body).requests.length >= 2, "monitor-data includes requests");
 
+    // --- /process: 一键处理启动路由 ---
+    r = await req("GET", "/process", null, "t-bad");
+    eq(r.code, 401, "process 401");
+    r = await req("GET", "/process", null, "t-ok");
+    ok(r.code === 200 && r.body.indexOf('"ok"') >= 0, "process 200");
+    r = await req("GET", "/monitor-data", null, null);
+    ok("lastOp" in JSON.parse(r.body), "monitor-data lastOp field");
+
     console.log("bridge OK (" + checks + " checks)");
     cleanup();
     process.exit(0);
