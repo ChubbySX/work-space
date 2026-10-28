@@ -156,6 +156,37 @@ function legacy(file, name, tag, wantCover, ok, fail){
   fr.readAsDataURL(file);
 }
 
+// ---- 给电脑发指令 / 请求发布（发到桥接 → 落 待上传/_requests.json，桌面端监听/我来读）----
+const $cmdTxt = document.getElementById("cmdTxt");
+const $cmdBtn = document.getElementById("cmdBtn");
+const $cmdNoteBtn = document.getElementById("cmdNoteBtn");
+const $cmdSt = document.getElementById("cmdSt");
+function sendCmd(intent){
+  const text = $cmdTxt.value.trim();
+  if (!api()){ $cmdSt.className = "st fail"; $cmdSt.textContent = "先填桥接地址"; return; }
+  if (!$tok.value){ $cmdSt.className = "st fail"; $cmdSt.textContent = "先填 Token（扫二维码链接会自动带）"; return; }
+  $cmdBtn.disabled = true; $cmdNoteBtn.disabled = true;
+  $cmdSt.className = "st pend"; $cmdSt.textContent = (intent === "publish" ? "正在发送发布请求…" : "正在发送指令…");
+  fetch(api() + "/request", {
+    method: "POST",
+    headers: Object.assign({ "Content-Type": "application/json" }, httphdr()),
+    body: JSON.stringify({ intent, text })
+  }).then(r => r.json().then(j => ({ code: r.status, j })))
+    .then(({ code, j }) => {
+      $cmdBtn.disabled = false; $cmdNoteBtn.disabled = false;
+      if (code === 200 && j && j.ok){
+        $cmdSt.className = "st ok";
+        $cmdSt.textContent = intent === "publish" ? "✓ 发布请求（带备注）已发给电脑，回对话框说一声就处理" : "✓ 指令已发给电脑";
+        $cmdTxt.value = "";
+      } else {
+        $cmdSt.className = "st fail"; $cmdSt.textContent = "✗ " + ((j && j.error) || code);
+      }
+    })
+    .catch(() => { $cmdBtn.disabled = false; $cmdNoteBtn.disabled = false; $cmdSt.className = "st fail"; $cmdSt.textContent = "✗ 连不上桥接（地址或 Token 不对？）"; });
+}
+$cmdBtn.addEventListener("click", () => sendCmd("publish"));
+$cmdNoteBtn.addEventListener("click", () => sendCmd("command"));
+
 // ---- 批量工具栏：相册应用到全部 / 批量命名 / 全部上传 ----
 function refreshBar(){
   const rows = [...$stage.querySelectorAll(".row:not(.done)")];

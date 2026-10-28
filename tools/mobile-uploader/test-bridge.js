@@ -205,6 +205,29 @@ function cleanup(){ srv.close(); try { fs.unlinkSync(path.join(sibDir,"leak.txt"
     ib = JSON.parse(fs.readFileSync(path.join(tmpRoot, "_inbox.json"), "utf8"));
     eq(ib.length, 0, "inbox empty after delete");
 
+    // --- /request + /requests: 手机端发指令/发布请求（落 _requests.json）---
+    r = await req("POST", "/request", { text: "试试" }, "t-bad");
+    eq(r.code, 401, "request bad token 401");
+    r = await req("POST", "/request", { text: "   " }, "t-ok");
+    eq(r.code, 400, "request empty text 400");
+    r = await req("POST", "/request", { intent: "publish", text: "发布现在的内容，把重点照片处理下" }, "t-ok");
+    eq(r.code, 200, "request publish 200");
+    r = await req("POST", "/request", { text: "记得配文" }, "t-ok");
+    eq(r.code, 200, "request note 200");
+    const reqs = JSON.parse(fs.readFileSync(path.join(tmpRoot, "_requests.json"), "utf8"));
+    ok(Array.isArray(reqs) && reqs.length === 2, "requests file 2 entries");
+    eq(reqs[0].intent, "publish", "request intent publish");
+    ok(reqs.every(x => x.id && x.text && x.status === "pending" && x.ts), "request fields");
+    r = await req("GET", "/requests", null, "t-ok");
+    eq(r.code, 200, "requests 200");
+    const ritems = JSON.parse(r.body).items;
+    eq(ritems.length, 2, "requests 2 items");
+    eq(ritems[0].text, "记得配文", "requests newest first");
+    r = await req("GET", "/requests", null, "t-bad");
+    eq(r.code, 401, "requests 401");
+    r = await req("GET", "/monitor-data", null, null);
+    ok(JSON.parse(r.body).requests.length >= 2, "monitor-data includes requests");
+
     console.log("bridge OK (" + checks + " checks)");
     cleanup();
     process.exit(0);

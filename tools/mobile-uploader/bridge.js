@@ -6,8 +6,10 @@
 // GET    /history                                   inbox items newest-first {id,name,tag,status,ts,size}
 // GET    /status                                    summary {total,pending,processed,failed}
 // GET    /info                                      {ips, port, token} for QR codes
-// GET    /monitor-data                              {inflight, recent} polled by monitor page
+// GET    /monitor-data                              {inflight, recent, requests} polled by monitor page
 // GET    /monitor                                   desktop 监控窗 (QR + live uploads + delete)
+// POST   /request {intent,text}                     手机端指令/发布请求 → 待上传/_requests.json
+// GET    /requests                                  pending 指令列表（最新在前）
 // DELETE /monitor-item?id=<id>                      remove staging file + inbox entry
 // GET    /                                          serve app/ (PWA)
 // Mutations require: Authorization: Bearer <token>
@@ -48,6 +50,12 @@ function readInbox(root){
 function writeInbox(root, arr){
   fs.writeFileSync(path.join(root, "_inbox.json"), JSON.stringify(arr, null, 2), "utf8");
 }
+function readReq(root){ // 手机端发来的指令/发布请求（待上传/_requests.json）
+  const p = path.join(root, "_requests.json");
+  try { const arr = JSON.parse(fs.readFileSync(p, "utf8")); return Array.isArray(arr) ? arr : []; }
+  catch { return []; }
+}
+function writeReq(root, arr){ fs.writeFileSync(path.join(root, "_requests.json"), JSON.stringify(arr, null, 2), "utf8"); }
 function appendInbox(root, entry){
   const r = readInbox(root);
   let inbox;
@@ -73,6 +81,7 @@ const MONITOR_HTML = `<!DOCTYPE html>
 <title>上传监控</title><style>
 body{margin:0;font:14px/1.5 system-ui,"Microsoft YaHei",sans-serif;background:#222236;color:#eee;padding:16px;box-sizing:border-box}
 h1{font-size:16px;margin:0 0 4px}
+h2{font-size:14px;margin:14px 0 4px;color:#9aa}
 .sub{color:#9aa;font-size:12px;margin-bottom:12px}
 .qrs{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:14px}
 .qr{background:#1a1a2a;border:1px solid #333;border-radius:10px;padding:10px;text-align:center}
@@ -96,6 +105,7 @@ button.rm{background:#8a3c3c}
 <div class="sub" id="sub">连接：</div>
 <div class="qrs" id="qrs"></div>
 <div id="list"></div>
+<h2 id="reqh">📌 来自手机的指令</h2><div id="req"></div>
 <div id="toasts"></div>
 <script src="vendor/qrcode.js"></script>
 <script>
@@ -118,7 +128,7 @@ function del(id){
     .then(function(r){ return r.json(); }).then(function(j){ if (j && j.ok) toast("已删除该上传"); }).catch(function(){});
 }
 function render(d){
-  document.getElementById("sub").textContent = "上传中 " + d.inflight.length + " · 最近 " + d.recent.length + " 项";
+  document.getElementById("sub").textContent = "上传中 " + d.inflight.length + " · 最近 " + d.recent.length + " 项" + (d.requests && d.requests.length ? " · 指令 " + d.requests.length + " 条" : "");
   var list = document.getElementById("list"); list.innerHTML = "";
   d.inflight.forEach(function(it){
     var row = document.createElement("div"); row.className = "item";
@@ -136,6 +146,19 @@ function render(d){
     var st = document.createElement("div"); st.className = "st ok"; st.textContent = "已收到 · " + it.tag;
     var rm = document.createElement("button"); rm.className = "rm"; rm.textContent = "删除"; rm.onclick = function(){ del(it.id); };
     row.appendChild(nm); row.appendChild(st); row.appendChild(rm); list.appendChild(row);
+  });
+  var reqh = document.getElementById("reqh"), req = document.getElementById("req");
+  if (!req) return;
+  var reqs = d.requests || [];
+  reqh.style.display = reqs.length ? "" : "none";
+  req.innerHTML = "";
+  if (!reqs.length){ var e = document.createElement("div"); e.className = "empty"; e.textContent = "— 手机还没发过指令 —"; req.appendChild(e); }
+  reqs.forEach(function(it){
+    var row = document.createElement("div"); row.className = "item";
+    var nm = document.createElement("div"); nm.className = "nm";
+    nm.textContent = (it.intent === "publish" ? "🚀 发布请求" : "📝 指令") + "：" + it.text;
+    var st = document.createElement("div"); st.className = "st pend"; st.textContent = "待处理";
+    row.appendChild(nm); row.appendChild(st); req.appendChild(row);
   });
 }
 // baseline: 记住当前已存在的 recent ids（不弹 toast），之后新增的才提示
@@ -239,7 +262,7 @@ function startServer(cfg){
     }
     // GET /monitor-data — polling feed for the monitor window
     if (req.method === "GET" && req.url.split("?")[0] === "/monitor-data"){
-      json(res, 200, { inflight: [...inflight.values()], recent });
+      json(res, 200, { inflight: [...inflight.values()], recent, requests: readReq(uploadRoot).slice(-8).reverse() });
       return;
     }
     // GET /monitor — the desktop 监控窗 page
@@ -315,6 +338,40 @@ function startServer(cfg){
           json(res, 500, { error: String(e) });
         }
       });
+      return;
+    }
+
+    // POST /request {intent,text} — 手机端把「发布」请求/备注/指令发到桌面（落 待上传/_requests.json）
+    if (req.method === "POST" && req.url.split("?")[0] === "/request"){
+      if (!authed){ return deny(401, "unauthorized"); }
+      let body = "", tooBig = false;
+      req.on("data", c => {
+        if (tooBig) return;
+        body += c;
+        if (body.length > 8192){
+          tooBig = true;
+          res.writeHead(413, { "Content-Type": "application/json" }); res.end('{"error":"too large"}');
+          body = "";
+        }
+      });
+      req.on("end", () => {
+        if (tooBig) return;
+        let j; try { j = JSON.parse(body); } catch { return deny(400, "bad json"); }
+        const text = String(j.text || "").trim();
+        if (!text){ return deny(400, "empty text"); }
+        const id = tsId() + "_" + crypto.randomBytes(3).toString("hex");
+        const arr = readReq(uploadRoot);
+        arr.push({ id, intent: j.intent || "command", text, ts: id, status: "pending" });
+        if (arr.length > 50) arr.splice(0, arr.length - 50);
+        writeReq(uploadRoot, arr);
+        json(res, 200, { ok: true, id });
+      });
+      return;
+    }
+    // GET /requests — 查指令（最新在前；监控窗经 /monitor-data 即拿最新几条）
+    if (req.method === "GET" && req.url.split("?")[0] === "/requests"){
+      if (!authed){ return deny(401, "unauthorized"); }
+      json(res, 200, { items: readReq(uploadRoot).slice().reverse() });
       return;
     }
 

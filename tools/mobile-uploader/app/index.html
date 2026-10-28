@@ -40,6 +40,13 @@ label{font-size:12px;color:#9aa}
 .tabs{display:flex;gap:8px;margin:14px 0 4px}
 .tabs button{flex:1;padding:10px;border:1px solid #444;border-radius:8px;background:#1a1a2a;color:#9aa;font-size:14px}
 .tabs button.on{background:#3a5;color:#fff;border-color:#3a5;font-weight:600}
+.cmd{background:#1a1a2a;border:1px solid #333;border-radius:8px;padding:10px;margin:12px 0}
+.cmd textarea{width:100%;padding:8px;border:1px solid #444;border-radius:6px;background:#222236;color:#eee;box-sizing:border-box;resize:vertical;min-height:64px;font:inherit}
+.cmd .cmdrow{display:flex;gap:8px;margin-top:8px}
+.cmd button{flex:1;padding:11px;border:none;border-radius:6px;background:#3a5;color:#fff;font-size:15px;font-weight:600}
+.cmd button:disabled{background:#455}
+.cmd .cmdNoteBtn{background:#345;font-weight:400;font-size:13px}
+.cmd .st{font-size:12px;margin-top:6px;min-height:16px}
 .h-item .h-name{font-weight:600;font-size:14px}
 .h-item .h-meta{font-size:12px;color:#9aa;margin-top:2px}
 .empty{text-align:center;color:#9aa;padding:30px 0;font-size:13px}
@@ -58,6 +65,15 @@ label{font-size:12px;color:#9aa}
   <input id="prefix" placeholder="批量前缀，如 周末">
   <button id="nameAll">批量命名</button>
   <button id="allBtn" class="allbtn" disabled>全部上传（0）</button>
+</div>
+<div class="cmd">
+  <label>给电脑发指令 / 请求发布</label>
+  <textarea id="cmdTxt" placeholder="把额外的提示词、指令、要求写在这里，比如：发布现在的内容、把某张照片归到新相册、给某某配个文案…（留空也可以，只发发布）"></textarea>
+  <div class="cmdrow">
+    <button id="cmdBtn">🚀 发布网站（带备注）</button>
+    <button id="cmdNoteBtn" class="cmdNoteBtn">📤 仅发指令</button>
+  </div>
+  <div class="st" id="cmdSt"></div>
 </div>
 <div class="tabs">
   <button id="tabUp" class="on">⬆ 上传</button>
