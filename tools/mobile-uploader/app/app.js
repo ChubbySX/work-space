@@ -74,9 +74,14 @@ function buildRow(file){
   const newTag = document.createElement("input");
   newTag.className = "newtag"; newTag.placeholder = "新相册名（会新建到 日常/ 下）"; newTag.style.display = "none";
   const cov = document.createElement("span"); cov.className = "cov"; cov.style.display = "none";
-  cl.appendChild(newTag); cl.appendChild(cov); row.appendChild(cl);
+  const chk = document.createElement("label"); chk.className = "covchk"; chk.style.display = "none";
+  const chkIn = document.createElement("input"); chkIn.type = "checkbox";
+  chk.appendChild(chkIn); chk.appendChild(document.createTextNode("设封面"));
+  cl.appendChild(newTag); cl.appendChild(chk); cl.appendChild(cov); row.appendChild(cl);
   sel.addEventListener("change", () => {
     newTag.style.display = (sel.value === "__new__") ? "block" : "none";
+    chk.style.display = (sel.value && sel.value !== "__new__") ? "inline-flex" : "none";
+    if (sel.value === "__new__") chkIn.checked = false;
     showCover(row, sel);
   });
 
@@ -98,6 +103,9 @@ function submit(file, sel, newTag, nameIn, prog, btn, st, finalName){
   if (!tag){ st.className = "st fail"; st.textContent = "请先选择相册"; return; }
   if (tag === "__new__"){ tag = newTag.value.trim(); if (!tag){ st.className = "st fail"; st.textContent = "请填新相册名"; return; } }
   const name = finalName();
+  const row = btn.closest(".row");
+  const chkIn = row ? row.querySelector(".covchk input") : null;
+  const wantCover = !!(chkIn && chkIn.checked && tag && tag !== "__new__");
   const bar = prog.querySelector("i");
   const ok = msg => { rowDone(st, btn, "ok", "✓ " + msg); if (bar) bar.style.width = "100%"; };
   const fail = msg => { st.className = "st fail"; st.textContent = "✗ " + msg; btn.disabled = false; btn.textContent = "重试"; refreshBar(); };
@@ -105,8 +113,10 @@ function submit(file, sel, newTag, nameIn, prog, btn, st, finalName){
   st.className = "st pend"; st.textContent = "0%"; if (bar) bar.style.width = "0%";
 
   const xhr = new XMLHttpRequest();
-  xhr.open("POST", api() + "/upload_raw?origName=" + encodeURIComponent(file.name)
-    + "&name=" + encodeURIComponent(name) + "&tag=" + encodeURIComponent(tag));
+  let qs = "?origName=" + encodeURIComponent(file.name)
+    + "&name=" + encodeURIComponent(name) + "&tag=" + encodeURIComponent(tag);
+  if (wantCover) qs += "&cover=1";
+  xhr.open("POST", api() + "/upload_raw" + qs);
   xhr.setRequestHeader("Authorization", "Bearer " + $tok.value);
   xhr.upload.onprogress = e => {
     if (e.lengthComputable && e.total){
@@ -120,7 +130,7 @@ function submit(file, sel, newTag, nameIn, prog, btn, st, finalName){
       if (j && j.ok) ok("已收到（" + tag + " · " + name + "）");
       else fail((j && j.error) || "HTTP " + xhr.status);
     } else if (xhr.status === 404 || xhr.status === 405){
-      legacy(file, name, tag, ok, fail); // 旧桥接没有 /upload_raw → 回退 base64
+      legacy(file, name, tag, wantCover, ok, fail); // 旧桥接没有 /upload_raw → 回退 base64
     } else {
       fail(xhr.status + (xhr.responseText ? " " + xhr.responseText.slice(0, 60) : ""));
     }
@@ -130,14 +140,14 @@ function submit(file, sel, newTag, nameIn, prog, btn, st, finalName){
   xhr.send(file); // 直接发 File：流式上传，监控窗能看到实时进度
 }
 function rowDone(st, btn, cls, msg){ st.className = "st " + cls; st.textContent = msg; btn.disabled = true; btn.textContent = "完成"; if (st._up){ uploading--; st._up = null; } }
-function legacy(file, name, tag, ok, fail){
+function legacy(file, name, tag, wantCover, ok, fail){
   const fr = new FileReader();
   fr.onload = () => {
     const data = String(fr.result).split(",")[1];
     fetch(api() + "/upload", {
       method: "POST",
       headers: Object.assign({ "Content-Type": "application/json" }, httphdr()),
-      body: JSON.stringify({ origName: file.name, name, tag, data })
+      body: JSON.stringify({ origName: file.name, name, tag, data, ...(wantCover ? { cover: true } : {}) })
     }).then(r => r.json().then(j => ({ code: r.status, j })))
       .then(({ code, j }) => { if (code === 200 && j && j.ok) ok("已收到（" + tag + " · " + name + "）"); else fail((j && j.error) || code); })
       .catch(e => fail(String(e)));

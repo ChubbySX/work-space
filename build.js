@@ -133,10 +133,22 @@ function scanDaily() {
       const { title, date } = parseName(f);
       const { desc } = sidecar(full); // 读“专辑名.txt”
       const albumFiles = imgs.map((x) => rel(path.join(full, x)));
+      const albumDescs = imgs.map((x) => (sidecar(path.join(full, x)).desc || "").trim());
+      // 相册封面：专辑内 _cover.txt 写图片基名（不含扩展名）可指定；否则默认第一张
+      let coverIdx = 0;
+      const coverTxt = path.join(full, "_cover.txt");
+      if (isFile(coverTxt)) {
+        try {
+          const want = readText(coverTxt).trim().replace(/\.[^.]+$/, "");
+          const i = imgs.findIndex((x) => x.replace(/\.[^.]+$/, "") === want);
+          if (i >= 0) coverIdx = i;
+        } catch {}
+      }
       out.push({
         type: "album",
         files: albumFiles,
-        thumb: thumbFor(albumFiles[0]),
+        descs: albumDescs,
+        thumb: thumbFor(albumFiles[coverIdx]),
         title,
         date,
         desc,

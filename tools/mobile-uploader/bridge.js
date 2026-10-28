@@ -190,7 +190,14 @@ function startServer(cfg){
           try { if (!fs.statSync(path.join(dailyDir, name)).isDirectory()) continue; } catch { continue; }
           let cover = null;
           try {
-            const first = fs.readdirSync(path.join(dailyDir, name)).find(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+            const imgs = fs.readdirSync(path.join(dailyDir, name)).filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f));
+            let first = imgs[0];
+            // 相册封面：album 内 _cover.txt 写图片基名可指定，否则默认第一张
+            try {
+              const ct = fs.readFileSync(path.join(dailyDir, name, "_cover.txt"), "utf8").trim().replace(/\.[^.]+$/, "");
+              const hit = imgs.find(f => f.replace(/\.[^.]+$/, "") === ct);
+              if (hit) first = hit;
+            } catch {}
             if (first) cover = "daily/" + name + "/" + first.replace(/\.[^.]+$/, "") + ".webp";
           } catch {}
           albums.push({ name, cover });
@@ -265,7 +272,7 @@ function startServer(cfg){
         try {
           const buf = Buffer.from(j.data, "base64");
           fs.writeFileSync(path.join(uploadRoot, fname), buf);
-          appendInbox(uploadRoot, { id, file: fname, origName: j.origName || j.name, name: j.name, tag: j.tag || "日常", ts: id, status: "pending" });
+          appendInbox(uploadRoot, { id, file: fname, origName: j.origName || j.name, name: j.name, tag: j.tag || "日常", ts: id, status: "pending", ...(j.cover ? { cover: true } : {}) });
           trackDone(id, j.name, j.tag || "日常", buf.length);
           json(res, 200, { ok: true, id });
         } catch (e){ json(res, 500, { error: String(e) }); }
@@ -280,6 +287,7 @@ function startServer(cfg){
       if (!name){ return deny(400, "missing name"); }
       const tag = u.searchParams.get("tag") || "日常";
       const origName = u.searchParams.get("origName") || name;
+      const cover = u.searchParams.get("cover") === "1";
       const id = tsId() + "_" + crypto.randomBytes(3).toString("hex");
       const fname = `${id}_${safeName(name)}`;
       const total = parseInt(req.headers["content-length"] || "0", 10);
@@ -299,7 +307,7 @@ function startServer(cfg){
         const buf = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
         try {
           fs.writeFileSync(path.join(uploadRoot, fname), buf);
-          appendInbox(uploadRoot, { id, file: fname, origName, name, tag, ts: id, status: "pending" });
+          appendInbox(uploadRoot, { id, file: fname, origName, name, tag, ts: id, status: "pending", ...(cover ? { cover: true } : {}) });
           trackDone(id, name, tag, buf.length);
           json(res, 200, { ok: true, id });
         } catch (e){

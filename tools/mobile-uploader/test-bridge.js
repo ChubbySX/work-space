@@ -141,6 +141,11 @@ function cleanup(){ srv.close(); try { fs.unlinkSync(path.join(sibDir,"leak.txt"
     eq(ib[0].name, "raw.jpg", "raw name");
     eq(ib[0].tag, "手工艺人", "raw tag set");
     assert.deepStrictEqual(fs.readFileSync(path.join(tmpRoot, ib[0].file)), Buffer.from("RAWBYTES"), "raw bytes roundtrip"); checks++;
+    wipe();
+    r = await req("POST", "/upload_raw?name=cv.jpg&tag=" + encodeURIComponent("手工艺人") + "&cover=1", null, "t-ok", Buffer.from("COVER"));
+    eq(r.code, 200, "raw cover 200");
+    ib = JSON.parse(fs.readFileSync(path.join(tmpRoot, "_inbox.json"), "utf8"));
+    eq(ib[0].cover, true, "raw cover flag stored");
     r = await req("POST", "/upload_raw?name=", null, "t-ok", Buffer.from("abc"));
     eq(r.code, 400, "raw missing name 400");
     wipe();

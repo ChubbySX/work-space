@@ -19,7 +19,7 @@
 
 **触发**：用户在对话里发图 / 视频 / 给本地路径，或说「加内容 / 更新网站」。
 
-1. 接收素材（对话附件或本地路径）。**或从待上传批次读**：若用户说「处理待上传」（或 `D:\DS harnessw\work station\待上传\_inbox.json` 存在且有 `status:"pending"` 项），读该清单 → 对每个 pending 项，把 `待上传\<file>` 当作收到的素材，**用清单里的 `tag` 直接定相册、`name` 定文件名**（跳过 step 2 分类 + step 3 定名——分类由用户在上传 app 里选标签完成了）：**先按扩展名分视频/图片**——视频（`.mp4/.mov/.mkv/.avi/.webm`）：`tag`=`作品`→`content/works/video/`，否则→`content/daily/<tag>/`；图片：`tag`=`作品`→`content/works/image/`，否则→`content/daily/<tag>/`（文件夹不存在就**新建**，即新相册）；`name` 缺失用 `origName`；**`tag` 缺失（或为空）→ 按名字判断分类归位**（同 step 2 启发式：作品类→`works/image/`，日常→归到最贴切的现有相册；一组明显同主题→新建相册），并在告知时说明归到了哪个相册、可纠错。然后走 step 4（压缩，用 `name` 做最终名）→ step 5（归位到该相册）→ step 6（写说明，`name` 做一句话）。每项处理完**更新 `_inbox.json` 里该项 `status`**（成功=`processed`，压缩失败=`failed` 并记 stderr 关键行）。全部处理完报「处理了 N 项，M 成功 K 失败」。**清单空或 JSON 损坏 → 告知用户「待上传清单为空或损坏」，不静默跳过**。**归档原图**：处理成功（含补处理的旧批次）后，把仍留在 `待上传\` 的原图（`待上传\<file>`）移到 `待上传\已处理\` 归档（不删除、留底；`_inbox.json` 该项 `file` 同步改为 `已处理\<名>`），避免 `待上传\` 无限堆积几十 MB 原图。
+1. 接收素材（对话附件或本地路径）。**或从待上传批次读**：若用户说「处理待上传」（或 `D:\DS harnessw\work station\待上传\_inbox.json` 存在且有 `status:"pending"` 项），读该清单 → 对每个 pending 项，把 `待上传\<file>` 当作收到的素材，**用清单里的 `tag` 直接定相册、`name` 定文件名**（跳过 step 2 分类 + step 3 定名——分类由用户在上传 app 里选标签完成了）：**先按扩展名分视频/图片**——视频（`.mp4/.mov/.mkv/.avi/.webm`）：`tag`=`作品`→`content/works/video/`，否则→`content/daily/<tag>/`；图片：`tag`=`作品`→`content/works/image/`，否则→`content/daily/<tag>/`（文件夹不存在就**新建**，即新相册）；`name` 缺失用 `origName`；**`tag` 缺失（或为空）→ 按名字判断分类归位**（同 step 2 启发式：作品类→`works/image/`，日常→归到最贴切的现有相册；一组明显同主题→新建相册），并在告知时说明归到了哪个相册、可纠错。然后走 step 4（压缩，用 `name` 做最终名）→ step 5（归位到该相册）→ step 6（写说明，`name` 做一句话）。每项处理完**更新 `_inbox.json` 里该项 `status`**（成功=`processed`，压缩失败=`failed` 并记 stderr 关键行）。全部处理完报「处理了 N 项，M 成功 K 失败」。**清单空或 JSON 损坏 → 告知用户「待上传清单为空或损坏」，不静默跳过**。**归档原图**：处理成功（含补处理的旧批次）后，把仍留在 `待上传\` 的原图（`待上传\<file>`）移到 `待上传\已处理\` 归档（不删除、留底；`_inbox.json` 该项 `file` 同步改为 `已处理\<名>`），避免 `待上传\` 无限堆积几十 MB 原图。**设为封面**：若该项带 `cover:true` 且目标是现有相册（非新建）→ 归位放好后写 `content/daily/<相册>/_cover.txt`（内容=该图片最终基名，不含扩展名），该图即成相册封面（`build.js` 与桥接 `/albums` 都认 `_cover.txt`）。
 2. **判断分类**（自主判断，判完告知用户）：
    - → `content/daily/`：生活日常、旅游、玩具、美食、校园 / 工作日记。
    - → `content/works/{video|image|doc}/`：建模渲染、完成度高的创作、正式作品。
@@ -64,6 +64,7 @@
 
 1. 若阶段 2 未跑或有新内容 → 先跑阶段 2。
 2. `git add .`
+2.5 发布前校验：`"%NODE%" tools\preflight.js`（内容完整性 / 根目录临时文件 / 待上传 pending / 配文与缩略图 / JSON 合法 / 构建新鲜度；exit 1 → 停下处理，**不进发布**）。
 3. 备份并分析：
    - `copy /Y content\changelog.json content\changelog.json.bak`
    - `copy /Y content\version.json content\version.json.bak`
@@ -79,6 +80,7 @@
    - 取时间戳 `TS`（PowerShell: `Get-Date -Format yyyy-MM-dd_HHmm`）。
    - `git commit -m "更新内容 <TS>"`（**内容 + 更新历史 + 版本号一个 commit**）。
    - **调用 `github-push` 技能推送**（探活 `github.com:443` + 重试；返回失败 → 进失败处理回滚）——**唯一一次推送**，成功后内容与版本号同时上线。
+   - push 成功后跑 **发布后自检**：`"%NODE%" tools\postcheck.js`（探测线上 GitHub Pages 是否同步到本地版本号；Pages 有 1~2 分钟部署延迟，脚本自动重试约 7×15s；版本一致 → ✅ 告诉用户「线上已同步」）。
 
 ## 失败处理（沿用 bat 现有健壮逻辑）
 
