@@ -115,7 +115,27 @@ function cleanup(){ srv.close(); try { fs.unlinkSync(path.join(sibDir,"leak.txt"
     ib = JSON.parse(fs.readFileSync(path.join(tmpRoot, "_inbox.json"), "utf8"));
     assert.strictEqual(ib.length, 1, "#4 fresh inbox 1 got " + ib.length);
 
-    console.log("bridge OK (30 checks)");
+    // --- /upload_raw (new): binary body, no base64 overhead ---
+    wipe();
+    r = await req("POST", "/upload_raw?name=raw.jpg&tag=" + encodeURIComponent("手工艺人"), null, "t-bad", Buffer.from("abc"));
+    assert.strictEqual(r.code, 401, "raw bad token 401 got " + r.code);
+    r = await req("POST", "/upload_raw?name=raw.jpg&tag=" + encodeURIComponent("手工艺人"), null, "t-ok", Buffer.from("RAWBYTES"));
+    assert.strictEqual(r.code, 200, "raw 200 got " + r.code);
+    const rj = JSON.parse(r.body);
+    assert.ok(rj.ok && rj.id, "raw resp {ok,id} got " + r.body);
+    assert.ok(fs.existsSync(path.join(tmpRoot, rj.id + "_raw.jpg")), "raw file written");
+    ib = JSON.parse(fs.readFileSync(path.join(tmpRoot, "_inbox.json"), "utf8"));
+    assert.strictEqual(ib.length, 1, "raw inbox 1 got " + ib.length);
+    assert.strictEqual(ib[0].name, "raw.jpg", "raw name got " + ib[0].name);
+    assert.strictEqual(ib[0].tag, "手工艺人", "raw tag got " + ib[0].tag);
+    assert.deepStrictEqual(fs.readFileSync(path.join(tmpRoot, ib[0].file)), Buffer.from("RAWBYTES"), "raw bytes roundtrip");
+    r = await req("POST", "/upload_raw?name=", null, "t-ok", Buffer.from("abc"));
+    assert.strictEqual(r.code, 400, "raw missing name 400 got " + r.code);
+    wipe();
+    r = await req("POST", "/upload_raw?name=big.bin", null, "t-ok", Buffer.alloc(40 * 1024 * 1024 + 1024, 65));
+    assert.strictEqual(r.code, 413, "raw oversize 413 got " + r.code);
+
+    console.log("bridge OK (40 checks)");
     cleanup();
     process.exit(0);
   } catch (e) {

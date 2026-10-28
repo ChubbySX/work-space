@@ -5,7 +5,8 @@
 // GET / -> serve app/ files
 const http = require("http"), fs = require("fs"), path = require("path"), crypto = require("crypto");
 
-const MAX_BODY = 12 * 1024 * 1024; // 12MB cap on base64 body
+const MAX_BODY = 12 * 1024 * 1024; // 12MB cap on base64 body (≈9MB raw)
+const MAX_RAW  = 40 * 1024 * 1024; // 40MB raw cap for /upload_raw (binary, no base64 overhead)
 
 function safeName(n){
   const base = path.basename(String(n)).replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, "_");
@@ -27,6 +28,18 @@ function readInbox(root){
 }
 function writeInbox(root, arr){
   fs.writeFileSync(path.join(root, "_inbox.json"), JSON.stringify(arr, null, 2), "utf8");
+}
+// appendInbox(root, entry): push one entry + write back atomically on the event loop (no await/yield)
+function appendInbox(root, entry){
+  const r = readInbox(root);
+  let inbox;
+  if (r.ok) { inbox = r.arr; }
+  else { // corrupt inbox: back up for recovery, start fresh
+    try { fs.renameSync(path.join(root, "_inbox.json"), path.join(root, "_inbox.json.corrupt-" + tsId())); } catch {}
+    inbox = [];
+  }
+  inbox.push(entry);
+  writeInbox(root, inbox);
 }
 
 function startServer(cfg){
@@ -85,18 +98,47 @@ function startServer(cfg){
         const fname = `${id}_${sn}`;
         try {
           fs.writeFileSync(path.join(uploadRoot, fname), Buffer.from(j.data, "base64"));
-          // CONCURRENCY NOTE: readInbox+push+writeInbox use SYNCHRONOUS fs — this RMW runs
-          // atomically on the single-threaded event loop (no await/yield), so concurrent uploads
-          // cannot interleave or lose entries. Do NOT switch to async fs without a lock.
-          const r = readInbox(uploadRoot);
-          let inbox;
-          if (r.ok) { inbox = r.arr; }
-          else { // corrupt inbox: back up for recovery, start fresh
-            try { fs.renameSync(path.join(uploadRoot, "_inbox.json"), path.join(uploadRoot, "_inbox.json.corrupt-" + tsId())); } catch {}
-            inbox = [];
-          }
-          inbox.push({ id, file: fname, origName: j.origName || j.name, name: j.name, tag: j.tag || "日常", ts: id, status: "pending" });
-          writeInbox(uploadRoot, inbox);
+          appendInbox(uploadRoot, { id, file: fname, origName: j.origName || j.name, name: j.name, tag: j.tag || "日常", ts: id, status: "pending" });
+          res.writeHead(200, {"Content-Type":"application/json"});
+          res.end(JSON.stringify({ ok: true, id }));
+        } catch (e){
+          res.writeHead(500, {"Content-Type":"application/json"});
+          res.end(JSON.stringify({ error: String(e) }));
+        }
+      });
+      return;
+    }
+
+    // POST /upload_raw — binary body (no base64 overhead, ~33% fewer bytes; accepts bigger files)
+    // Params via query: name, tag (default 日常), origName (default name). Body = raw file bytes.
+    if (req.method === "POST" && req.url.split("?")[0] === "/upload_raw"){
+      if (!authed){ return deny(401, '{"error":"unauthorized"}'); }
+      let q;
+      try { q = new URL(req.url, "http://x").searchParams; } catch { return deny(400, '{"error":"bad uri"}'); }
+      const name = (q.get("name") || "").trim();
+      if (!name){ return deny(400, '{"error":"missing name"}'); }
+      const tag = q.get("tag") || "日常";
+      const origName = q.get("origName") || name;
+      const chunks = []; let size = 0, tooBig = false;
+      req.on("data", c => {
+        if (tooBig) return; // drain: discard further data after 413 sent
+        size += c.length;
+        if (size > MAX_RAW){
+          tooBig = true;
+          res.writeHead(413, {"Content-Type":"application/json"});
+          res.end('{"error":"too large"}');
+          chunks.length = 0;
+        } else { chunks.push(c); }
+      });
+      req.on("end", () => {
+        if (tooBig) return;
+        const buf = chunks.length === 1 ? chunks[0] : Buffer.concat(chunks);
+        const id = tsId() + "_" + crypto.randomBytes(3).toString("hex");
+        const sn = safeName(name);
+        const fname = `${id}_${sn}`;
+        try {
+          fs.writeFileSync(path.join(uploadRoot, fname), buf);
+          appendInbox(uploadRoot, { id, file: fname, origName, name, tag, ts: id, status: "pending" });
           res.writeHead(200, {"Content-Type":"application/json"});
           res.end(JSON.stringify({ ok: true, id }));
         } catch (e){
