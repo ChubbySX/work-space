@@ -71,6 +71,13 @@ function lanIPs(){
   const out = [];
   for (const ifs of Object.values(os.networkInterfaces()))
     for (const i of ifs || []) if (i.family === "IPv4" && !i.internal) out.push(i.address);
+  try {
+    const r = cp.execFileSync("C:\\Program Files\\Tailscale\\tailscale.exe", ["ip", "-4"], { encoding: "utf8", timeout: 3000 });
+    r.split(/\r?\n/).forEach(line => {
+      line = line.trim();
+      if (/^100\.\d+\.\d+\.\d+$/.test(line)) out.push(line);
+    });
+  } catch (e) {}
   return [...new Set(out)];
 }
 function json(res, code, obj){ res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" }); res.end(JSON.stringify(obj)); }
