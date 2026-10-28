@@ -1,134 +1,230 @@
-// app.js — PWA uploader: preview + rename + tag, then POST /upload {origName, name, tag, data}
+// app.js — phone uploader (PWA): preview / rename / album / batch name / progress / retry / history
 const $url = document.getElementById("url");
 const $tok = document.getElementById("tok");
 const $file = document.getElementById("file");
 const $stage = document.getElementById("stage");
+const $hist = document.getElementById("hist");
+const $tabUp = document.getElementById("tabUp");
+const $tabHist = document.getElementById("tabHist");
+const $prefix = document.getElementById("prefix");
+const $nameAll = document.getElementById("nameAll");
+const $applyAll = document.getElementById("applyAll");
+const $allBtn = document.getElementById("allBtn");
+
+// 扫码即连：二维码链接里带了 ?t=token，扫开后自动填好地址和 token
+const tParam = new URLSearchParams(location.search).get("t");
 $url.value = localStorage.getItem("mu_url") || location.origin;
-$tok.value = localStorage.getItem("mu_tok") || "";
+$tok.value = tParam || localStorage.getItem("mu_tok") || "";
 function save(){ localStorage.setItem("mu_url", $url.value); localStorage.setItem("mu_tok", $tok.value); }
 $url.addEventListener("change", () => { save(); loadAlbums(); });
 $tok.addEventListener("change", () => { save(); loadAlbums(); });
+const httphdr = () => ({ "Authorization": "Bearer " + $tok.value });
+const api = () => $url.value.replace(/\/+$/, "");
 
-let ALBUMS = [];
+let ALBUMS = []; // [{name, cover}]，cover 是 content/.thumbs 的相对路径
 function loadAlbums(){
-  const base = $url.value.replace(/\/$/, "");
-  if (!base || !$tok.value) return;
-  fetch(base + "/albums", { headers: { "Authorization": "Bearer " + $tok.value } })
-    .then(r => r.json()).then(j => { if (j && j.albums) { ALBUMS = j.albums; rebuildSelects(); } })
-    .catch(() => {}); // optional: 未连上 /albums 时 select 退回 日常/作品 兜底
+  if (!api() || !$tok.value) return;
+  fetch(api() + "/albums", { headers: httphdr() })
+    .then(r => r.json())
+    .then(j => { if (j && j.albums){ ALBUMS = j.albums; rebuildSelects(); } })
+    .catch(() => {});
 }
 function tagOptions(sel){
   const cur = sel.value;
   sel.innerHTML = "";
-  // 占位：必选（避免静默落到不该去的相册）；ALBUMS 空 = /albums 没连上（旧 bridge）→ 只给 日常/作品 兜底
   const ph = document.createElement("option");
   ph.value = ""; ph.textContent = ALBUMS.length ? "选择相册 / 作品…" : "选择相册…（未连上相册列表，仅 日常/作品）";
   ph.disabled = true; ph.selected = true; sel.appendChild(ph);
-  // 作品 + 日常内每一个相册（ALBUMS 来自 /albums = content/daily/* 实时读出）
   const fixed = ALBUMS.length ? ["作品"] : ["作品", "日常"];
-  for (const t of [...new Set([...fixed, ...ALBUMS])]){
-    const o = document.createElement("option"); o.value = t; o.textContent = t; sel.appendChild(o);
-  }
+  const names = [...new Set([...fixed, ...ALBUMS.map(a => a.name)])];
+  for (const t of names){ const o = document.createElement("option"); o.value = t; o.textContent = t; sel.appendChild(o); }
   const o = document.createElement("option"); o.value = "__new__"; o.textContent = "＋ 新建相册…"; sel.appendChild(o);
   if (cur) sel.value = cur;
 }
-function rebuildSelects(){
-  for (const sel of $stage.querySelectorAll("select")) tagOptions(sel);
+function rebuildSelects(){ for (const sel of $stage.querySelectorAll(".row select")) tagOptions(sel); }
+
+// 相册封面缩略图（桥接 /thumb 提供）
+function coverOf(tag){
+  const a = ALBUMS.find(x => x.name === tag);
+  return (a && a.cover) ? a.cover : null;
+}
+function showCover(row, sel){
+  const cov = row.querySelector(".cov"); if (!cov) return;
+  const c = coverOf(sel.value);
+  if (c){ cov.innerHTML = '<img src="' + api() + '/thumb?p=' + encodeURIComponent(c) + '" alt="cover">'; cov.style.display = "inline-block"; }
+  else cov.style.display = "none";
+}
+
+function buildRow(file){
+  const row = document.createElement("div"); row.className = "row";
+  if (/^video\//.test(file.type)){
+    const v = document.createElement("video"); v.src = URL.createObjectURL(file); v.muted = true; v.controls = true; row.appendChild(v);
+    row.dataset.isVideo = "1";
+  } else {
+    const img = document.createElement("img"); img.src = URL.createObjectURL(file); row.appendChild(img);
+  }
+  const nameIn = document.createElement("input");
+  nameIn.className = "name"; nameIn.placeholder = "重命名（留空用原名）";
+  nameIn.value = file.name.replace(/\.[^.]+$/, "");
+  row.appendChild(nameIn);
+
+  const sel = document.createElement("select"); tagOptions(sel); row.appendChild(sel);
+
+  const cl = document.createElement("div"); cl.className = "cl";
+  const newTag = document.createElement("input");
+  newTag.className = "newtag"; newTag.placeholder = "新相册名（会新建到 日常/ 下）"; newTag.style.display = "none";
+  const cov = document.createElement("span"); cov.className = "cov"; cov.style.display = "none";
+  cl.appendChild(newTag); cl.appendChild(cov); row.appendChild(cl);
+  sel.addEventListener("change", () => {
+    newTag.style.display = (sel.value === "__new__") ? "block" : "none";
+    showCover(row, sel);
+  });
+
+  const prog = document.createElement("div"); prog.className = "prog"; prog.innerHTML = "<i></i>"; row.appendChild(prog);
+
+  const btn = document.createElement("button"); btn.className = "up"; btn.textContent = "上传"; row.appendChild(btn);
+  const st = document.createElement("div"); st.className = "st"; st.textContent = "待上传"; row.appendChild(st);
+
+  const extOf = () => { const m = file.name.match(/\.[^.]+$/); return m ? m[1].toLowerCase() : (/^video\//.test(file.type) ? "mp4" : "jpg"); };
+  const finalName = () => (nameIn.value.trim() || file.name.replace(/\.[^.]+$/, "")) + "." + extOf();
+  btn.onclick = () => submit(file, sel, newTag, nameIn, prog, btn, st, finalName);
+  $stage.prepend(row);
+  showCover(row, sel);
+}
+
+let uploading = 0;
+function submit(file, sel, newTag, nameIn, prog, btn, st, finalName){
+  let tag = sel.value;
+  if (!tag){ st.className = "st fail"; st.textContent = "请先选择相册"; return; }
+  if (tag === "__new__"){ tag = newTag.value.trim(); if (!tag){ st.className = "st fail"; st.textContent = "请填新相册名"; return; } }
+  const name = finalName();
+  const bar = prog.querySelector("i");
+  const ok = msg => { rowDone(st, btn, "ok", "✓ " + msg); if (bar) bar.style.width = "100%"; };
+  const fail = msg => { st.className = "st fail"; st.textContent = "✗ " + msg; btn.disabled = false; btn.textContent = "重试"; refreshBar(); };
+  btn.disabled = true; btn.textContent = "上传中…"; uploading++;
+  st.className = "st pend"; st.textContent = "0%"; if (bar) bar.style.width = "0%";
+
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", api() + "/upload_raw?origName=" + encodeURIComponent(file.name)
+    + "&name=" + encodeURIComponent(name) + "&tag=" + encodeURIComponent(tag));
+  xhr.setRequestHeader("Authorization", "Bearer " + $tok.value);
+  xhr.upload.onprogress = e => {
+    if (e.lengthComputable && e.total){
+      const p = Math.min(99, Math.round(e.loaded / e.total * 100));
+      st.textContent = p + "%"; if (bar) bar.style.width = p + "%";
+    }
+  };
+  xhr.onload = () => {
+    if (xhr.status === 200){
+      let j = null; try { j = JSON.parse(xhr.responseText); } catch {}
+      if (j && j.ok) ok("已收到（" + tag + " · " + name + "）");
+      else fail((j && j.error) || "HTTP " + xhr.status);
+    } else if (xhr.status === 404 || xhr.status === 405){
+      legacy(file, name, tag, ok, fail); // 旧桥接没有 /upload_raw → 回退 base64
+    } else {
+      fail(xhr.status + (xhr.responseText ? " " + xhr.responseText.slice(0, 60) : ""));
+    }
+  };
+  xhr.onerror = () => fail("网络错误");
+  xhr.timeout = 120000; xhr.ontimeout = () => fail("超时");
+  xhr.send(file); // 直接发 File：流式上传，监控窗能看到实时进度
+}
+function rowDone(st, btn, cls, msg){ st.className = "st " + cls; st.textContent = msg; btn.disabled = true; btn.textContent = "完成"; if (st._up){ uploading--; st._up = null; } }
+function legacy(file, name, tag, ok, fail){
+  const fr = new FileReader();
+  fr.onload = () => {
+    const data = String(fr.result).split(",")[1];
+    fetch(api() + "/upload", {
+      method: "POST",
+      headers: Object.assign({ "Content-Type": "application/json" }, httphdr()),
+      body: JSON.stringify({ origName: file.name, name, tag, data })
+    }).then(r => r.json().then(j => ({ code: r.status, j })))
+      .then(({ code, j }) => { if (code === 200 && j && j.ok) ok("已收到（" + tag + " · " + name + "）"); else fail((j && j.error) || code); })
+      .catch(e => fail(String(e)));
+  };
+  fr.onerror = () => fail("读取失败");
+  fr.readAsDataURL(file);
+}
+
+// ---- 批量工具栏：相册应用到全部 / 批量命名 / 全部上传 ----
+function refreshBar(){
+  const rows = [...$stage.querySelectorAll(".row:not(.done)")];
+  const pend = rows.filter(r => r.querySelector(".up").disabled);
+  $allBtn.disabled = !rows.length || pend.length > 0;
+  $allBtn.textContent = "全部上传（" + rows.length + "）";
+}
+function applyToAllRows(){
+  const v = $applyAll.value;
+  const nw = $applyAll.options[$applyAll.selectedIndex] && $applyAll.options[$applyAll.selectedIndex].text;
+  if (!v) return;
+  for (const row of $stage.querySelectorAll(".row")){
+    const sel = row.querySelector("select");
+    if (!sel || row.classList.contains("done")) continue;
+    sel.value = v;
+    const newTag = row.querySelector(".newtag");
+    if (newTag){
+      newTag.style.display = (v === "__new__") ? "block" : "none";
+      if (v === "__new__") newTag.value = nw.replace("＋ 新建相册…", "").trim() || "";
+      if (v !== "__new__") newTag.value = "";
+    }
+    showCover(row, sel);
+  }
+  refreshBar();
+}
+function nameAllRows(){
+  const pfx = $prefix.value.trim();
+  if (!pfx){ $prefix.focus(); return; }
+  const rows = [...$stage.querySelectorAll(".row")];
+  rows.forEach((row, i) => {
+    const nameIn = row.querySelector(".name");
+    if (nameIn && !nameIn.value && !row.classList.contains("done")) nameIn.value = pfx + "_" + String(i + 1).padStart(2, "0");
+  });
+}
+$nameAll.addEventListener("click", nameAllRows);
+$applyAll.addEventListener("change", applyToAllRows);
+$allBtn.addEventListener("click", () => {
+  for (const row of $stage.querySelectorAll(".row")){
+    const b = row.querySelector(".up");
+    if (b && !b.disabled) b.click();
+  }
+});
+
+// ---- 历史 tab ----
+$tabUp.addEventListener("click", () => { $stage.hidden = false; $hist.hidden = true; $tabUp.classList.add("on"); $tabHist.classList.remove("on"); });
+$tabHist.addEventListener("click", () => {
+  $stage.hidden = true; $hist.hidden = false;
+  $tabUp.classList.remove("on"); $tabHist.classList.add("on");
+  loadHist();
+});
+function loadHist(){
+  $hist.innerHTML = '<div class="empty">加载中…</div>';
+  fetch(api() + "/history", { headers: httphdr() })
+    .then(r => r.json())
+    .then(j => {
+      if (!j || !j.items){ $hist.innerHTML = '<div class="empty">读取失败</div>'; return; }
+      if (!j.items.length){ $hist.innerHTML = '<div class="empty">还没有上传记录</div>'; return; }
+      $hist.innerHTML = "";
+      for (const it of j.items){
+        const d = document.createElement("div"); d.className = "row h-item";
+        const n = document.createElement("div"); n.className = "h-name"; n.textContent = it.name;
+        const m = document.createElement("div"); m.className = "h-meta";
+        const tagTxt = it.tag || "日常";
+        const stTxt = it.status === "processed" ? "已处理" : it.status === "failed" ? "处理失败" : "等待处理";
+        m.textContent = tagTxt + " · " + stTxt + (it.size != null ? " · " + Math.max(1, Math.round(it.size / 1024)) + "KB" : "");
+        d.appendChild(n); d.appendChild(m); $hist.appendChild(d);
+      }
+    })
+    .catch(() => { $hist.innerHTML = '<div class="empty">连不上桥接，点“上传”确认地址已填对</div>'; });
 }
 
 $file.addEventListener("change", () => {
   save(); loadAlbums();
   for (const f of $file.files) buildRow(f);
   $file.value = "";
+  $tabUp.classList.add("on"); $tabHist.classList.remove("on");
+  $stage.hidden = false; $hist.hidden = true;
+  refreshBar();
 });
+$file.dispatchEvent(new Event("change"));
 
-// 批量工具栏：一个相册应用到全部行 + 一键全部上传（省掉逐张选相册/点提交）
-const $bar = document.createElement("div"); $bar.className = "toolbar";
-const $applyAll = document.createElement("select"); $applyAll.title = "把相册应用到全部行";
-const ph2 = document.createElement("option"); ph2.value = ""; ph2.textContent = "相册应用到全部…"; ph2.disabled = true; ph2.selected = true; $applyAll.appendChild(ph2);
-const $allBtn = document.createElement("button"); $allBtn.className = "allbtn"; $allBtn.textContent = "全部上传";
-$bar.appendChild($applyAll); $bar.appendChild($allBtn);
-$stage.append($bar);
-function refreshBar(){ const cur = $applyAll.value; tagOptions($applyAll); if (cur) $applyAll.value = cur; }
-$applyAll.addEventListener("change", () => {
-  const t = $applyAll.value;
-  if (!t || t.startsWith("__")){ $applyAll.value = ""; return; }
-  for (const row of $stage.querySelectorAll(".row")){
-    const sel = row.querySelector("select");
-    if (sel.value === "" || sel.value === "__new__"){
-      sel.value = t;
-      const n = row.querySelector(".newtag"); if (n) n.style.display = "none";
-    }
-  }
-  $applyAll.value = "";
-});
-$allBtn.addEventListener("click", () => {
-  for (const row of $stage.querySelectorAll(".row")){
-    if (row.classList.contains("done")) continue;
-    const btn = row.querySelector("button"); if (btn.disabled) continue;
-    btn.click();
-  }
-});
-
-function buildRow(file){
-  const row = document.createElement("div"); row.className = "row";
-  const img = document.createElement("img"); img.src = URL.createObjectURL(file); row.appendChild(img);
-  const nameIn = document.createElement("input"); nameIn.type = "text";
-  nameIn.value = file.name.replace(/\.[^.]+$/, ""); // prefilled without extension
-  nameIn.placeholder = "给个名（替代 " + file.name + "）";
-  row.appendChild(nameIn);
-  const sel = document.createElement("select"); row.appendChild(sel); tagOptions(sel);
-  const newTag = document.createElement("input"); newTag.type = "text"; newTag.className = "newtag";
-  newTag.placeholder = "新相册名（会新建到 日常/ 下）"; row.appendChild(newTag);
-  sel.addEventListener("change", () => { newTag.style.display = (sel.value === "__new__") ? "block" : "none"; });
-  const btn = document.createElement("button"); btn.textContent = "提交"; row.appendChild(btn);
-  const st = document.createElement("div"); st.className = "st pend"; st.textContent = "待提交"; row.appendChild(st);
-  btn.onclick = () => submit(row, file, nameIn, sel, newTag, btn, st);
-  $stage.prepend(row);
-}
-
-function submit(row, file, nameIn, sel, newTag, btn, st){
-  let tag = sel.value;
-  if (!tag){ st.className = "st fail"; st.textContent = "请先选择相册"; return; }
-  if (tag === "__new__"){ tag = newTag.value.trim(); if (!tag){ st.className = "st fail"; st.textContent = "请填新相册名"; return; } }
-  // name: user input or origName-without-ext, forced .jpg (compress_image.py outputs jpg)
-  const base = nameIn.value.trim() || file.name.replace(/\.[^.]+$/, "");
-  const name = base + ".jpg";
-  btn.disabled = true; st.className = "st pend"; st.textContent = "上传中…";
-  const api = $url.value.replace(/\/$/, "");
-  const fin = (code, j) => {
-    if (code === 200 && j && j.ok){ row.classList.add("done"); st.className = "st ok"; st.textContent = "✓ 已收到（" + tag + " · " + name + "）"; }
-    else { st.className = "st fail"; st.textContent = "✗ " + ((j && j.error) || code); btn.disabled = false; }
-  };
-  // 优先二进制 /upload_raw（省 ~33% 流量 + 支持更大文件）；旧 bridge 没有该端点（404/405）→ 回退 base64 /upload
-  const raw = () => {
-    const fr = new FileReader();
-    fr.onload = () => {
-      fetch(api + "/upload_raw?origName=" + encodeURIComponent(file.name) + "&name=" + encodeURIComponent(name) + "&tag=" + encodeURIComponent(tag), {
-        method: "POST",
-        headers: { "Authorization": "Bearer " + $tok.value, "Content-Type": "application/octet-stream" },
-        body: new Uint8Array(fr.result)
-      }).then(r => r.json().then(j => ({ code: r.status, j })))
-        .then(({ code, j }) => { if (code === 404 || code === 405){ legacy(); } else { fin(code, j); } })
-        .catch(e => fin(0, { error: String(e) }));
-    };
-    fr.onerror = () => fin(0, { error: "读取失败" });
-    fr.readAsArrayBuffer(file);
-  };
-  const legacy = () => {
-    const fr = new FileReader();
-    fr.onload = () => {
-      const data = fr.result.split(",")[1];
-      fetch(api + "/upload", {
-        method: "POST",
-        headers: { "Authorization": "Bearer " + $tok.value, "Content-Type": "application/json" },
-        body: JSON.stringify({ origName: file.name, name, tag, data })
-      }).then(r => r.json().then(j => ({ code: r.status, j })))
-        .then(({ code, j }) => fin(code, j))
-        .catch(e => fin(0, { error: String(e) }));
-    };
-    fr.onerror = () => fin(0, { error: "读取失败" });
-    fr.readAsDataURL(file);
-  };
-  raw();
-}
+loadAlbums();
