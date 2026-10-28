@@ -27,6 +27,16 @@ Set-Location -LiteralPath $Repo
 if (-not $Branch) { $Branch = (git rev-parse --abbrev-ref HEAD 2>$null).Trim() }
 if (-not $Branch) { $Branch = "main" }
 
+# 推送状态文件（供桥接面板 / 用户查看：%LOCALAPPDATA%\MobileBridge\_push-state.json）
+$pushStateDir = Join-Path $env:LOCALAPPDATA "MobileBridge"
+New-Item -ItemType Directory -Path $pushStateDir -Force | Out-Null
+$pushStateFile = Join-Path $pushStateDir "_push-state.json"
+function Write-PushState {
+  param([string]$state, [string]$msg, [bool]$ok)
+  $j = @{ ts = Get-Date -Format "HH:mm:ss"; state = $state; ok = $ok; msg = $msg } | ConvertTo-Json -Compress
+  try { [IO.File]::WriteAllText($pushStateFile, $j, (New-Object System.Text.UTF8Encoding($false))) } catch {}
+}
+
 # 配色（深色极简）
 $bg    = [System.Drawing.Color]::FromArgb(34,34,54)
 $white = [System.Drawing.Color]::FromArgb(235,235,245)
@@ -93,6 +103,11 @@ function Update-State {
   $bar.BackColor = $color
   $lblT.Text = $title
   $lblS.Text = $sub
+  $sn = "waiting"
+  if ($color -eq $blue)  { $sn = "pushing" }
+  elseif ($color -eq $green) { $sn = "ok" }
+  elseif ($color -eq $red)   { $sn = "fail" }
+  Write-PushState $sn ($title + " · " + $sub) ($color -eq $green)
   [System.Windows.Forms.Application]::DoEvents()
 }
 function Elapsed {
