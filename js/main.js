@@ -888,6 +888,7 @@
       if (card.classList.contains("is-collapsed")) {
         // 展开：先测量目标尺寸，再触发动画
         clearTimeout(expandTimer1); clearTimeout(expandTimer2);
+        hideBubble(true);
         card.classList.add("no-anim");
         card.classList.remove("is-collapsed");
         card.style.setProperty("--cw", card.offsetWidth + "px");
@@ -969,6 +970,20 @@
 
     // ====== 5秒后或首次页面交互后自动收起 + 气泡提示 ======
     var autoCollapsed = false;
+    var bubbleRef = null, bubbleShowTimer = null, bubbleHideTimer = null;
+    function hideBubble(removeNow) {
+      if (bubbleShowTimer) { clearTimeout(bubbleShowTimer); bubbleShowTimer = null; }
+      if (bubbleHideTimer) { clearTimeout(bubbleHideTimer); bubbleHideTimer = null; }
+      if (!bubbleRef) return;
+      var b = bubbleRef;
+      b.classList.remove("is-show");
+      bubbleRef = null;
+      if (removeNow) {
+        if (b.parentNode) b.parentNode.removeChild(b);
+      } else {
+        setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 400);
+      }
+    }
     function autoCollapse() {
       if (autoCollapsed) return;
       autoCollapsed = true;
@@ -977,16 +992,21 @@
       card.style.setProperty("--cw", card.offsetWidth + "px");
       card.style.setProperty("--ch", card.offsetHeight + "px");
       card.classList.add("is-collapsed");
-      // 弹出气泡，3 秒后消失
+      // 等卡片完全缩成球（collapse-to-ball 动画 1.1s）后再弹气泡，3 秒后消失
       var bubble = document.createElement("div");
       bubble.className = "music-bubble";
       bubble.textContent = "背景音乐调节设置藏在这里哦~";
       document.body.appendChild(bubble);
-      requestAnimationFrame(function () { bubble.classList.add("is-show"); });
-      setTimeout(function () {
-        bubble.classList.remove("is-show");
-        setTimeout(function () { if (bubble.parentNode) bubble.remove(); }, 400);
-      }, 3000);
+      bubbleRef = bubble;
+      bubbleShowTimer = setTimeout(function () {
+        bubbleShowTimer = null;
+        if (!bubbleRef) return;
+        bubble.classList.add("is-show");
+        bubbleHideTimer = setTimeout(function () {
+          bubbleHideTimer = null;
+          hideBubble(false);
+        }, 3000);
+      }, 1100);
     }
     // 开场动画结束后开始计时，5 秒后自动收起（= 开场结束 + 5 秒展示时间）
     document.addEventListener("intro-done", function (e) {
@@ -1860,8 +1880,8 @@
   function openCardStack(item) {
     if (!item || !item.files || !item.files.length) return;
     var CARD_W = 360, CARD_H = 460;
-    var MAX_W = Math.min(600, window.innerWidth * 0.88);
-    var MAX_H = Math.min(700, window.innerHeight * 0.72);
+    var MAX_W = Math.min(980, window.innerWidth * 0.9);
+    var MAX_H = Math.min(860, window.innerHeight * 0.8);
 
     var overlay = document.createElement("div");
     overlay.className = "card-stack-overlay";
@@ -1905,6 +1925,12 @@
     var zCounter = 10;
     var cards = []; // 保存已创建的卡片元素
 
+    // 相册内单张照片的展示名：去掉扩展名与可选日期前缀
+    function photoName(src) {
+      var b = String(src).split("/").pop().replace(/\.[^.]+$/, "");
+      return b.replace(/^\d{4}[-_.]\d{2}[-_.]\d{2}[_\s]*/, "").trim() || b;
+    }
+
     function makeCard(i) {
       var card = document.createElement("div");
       card.className = "stack-card";
@@ -1915,8 +1941,10 @@
       card.appendChild(img);
       var meta = document.createElement("div");
       meta.className = "stack-card-meta";
-      meta.innerHTML = "<b>" + esc(item.title || "") + "</b>" +
-        "<small>" + (i + 1) + "/" + item.files.length + (item.desc ? " · " + esc(item.desc) : "") + "</small>";
+      var ph = photoName(item.files[i]);
+      var cap = item.descs && item.descs[i] ? item.descs[i] : "";
+      meta.innerHTML = "<b>" + esc(ph) + "</b>" +
+        "<small>" + (i + 1) + "/" + item.files.length + (cap ? " · " + esc(cap) : "") + "</small>";
       card.appendChild(meta);
       card.addEventListener("click", function () { nextCard(); });
       return card;

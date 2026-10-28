@@ -12,6 +12,9 @@ h1{font-size:17px;margin:0 0 12px}
 .cfg{margin-bottom:12px}
 .cfg input{width:100%;padding:8px;border:1px solid #444;border-radius:6px;background:#1a1a2a;color:#eee;box-sizing:border-box;margin-top:4px}
 label{font-size:12px;color:#9aa}
+.sitesel{display:flex;gap:8px;margin-bottom:12px}
+.sitesel button{flex:1;padding:10px;border:1px solid #444;border-radius:8px;background:#1a1a2a;color:#9aa;font-size:14px;cursor:pointer}
+.sitesel button.on{background:#3a5;color:#fff;border-color:#3a5;font-weight:600}
 .pick{display:block;margin:14px 0;padding:18px;border:2px dashed #555;border-radius:10px;text-align:center;color:#9aa}
 .pick input{display:none}
 .row{background:#1a1a2a;border:1px solid #333;border-radius:8px;padding:10px;margin:10px 0}
@@ -54,6 +57,7 @@ label{font-size:12px;color:#9aa}
 </head>
 <body>
 <h1>📷 上传到网站</h1>
+<div class="sitesel" id="siteSel"></div>
 <div class="cfg">
   <label>桥接地址</label>
   <input id="url" placeholder="http://192.168.x.x:8390">

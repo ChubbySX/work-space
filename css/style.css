@@ -1904,7 +1904,7 @@ code {
   position: fixed;
   right: 90px;
   bottom: 92px;
-  background: var(--ink);
+  background: #2b1d12;
   color: #fff;
   padding: 10px 16px;
   border-radius: 14px 4px 14px 14px;
@@ -1929,7 +1929,7 @@ code {
   width: 0; height: 0;
   border-top: 5px solid transparent;
   border-bottom: 5px solid transparent;
-  border-left: 7px solid var(--ink);
+  border-left: 7px solid #2b1d12;
 }
 
 @media (max-width: 640px) {

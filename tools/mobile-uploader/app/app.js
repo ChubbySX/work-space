@@ -1,4 +1,5 @@
 // app.js — phone uploader (PWA): preview / rename / album / batch name / progress / retry / history
+// Multi-site: site selector at top, sends ?site=<key> with every request
 const $url = document.getElementById("url");
 const $tok = document.getElementById("tok");
 const $file = document.getElementById("file");
@@ -10,33 +11,80 @@ const $prefix = document.getElementById("prefix");
 const $nameAll = document.getElementById("nameAll");
 const $applyAll = document.getElementById("applyAll");
 const $allBtn = document.getElementById("allBtn");
+const $siteSel = document.getElementById("siteSel");
 
 // 扫码即连：二维码链接里带了 ?t=token，扫开后自动填好地址和 token
 const tParam = new URLSearchParams(location.search).get("t");
 $url.value = localStorage.getItem("mu_url") || location.origin;
 $tok.value = tParam || localStorage.getItem("mu_tok") || "";
 function save(){ localStorage.setItem("mu_url", $url.value); localStorage.setItem("mu_tok", $tok.value); }
-$url.addEventListener("change", () => { save(); loadAlbums(); });
-$tok.addEventListener("change", () => { save(); loadAlbums(); });
+$url.addEventListener("change", () => { save(); loadSites(); loadAlbums(); });
+$tok.addEventListener("change", () => { save(); loadSites(); loadAlbums(); });
 const httphdr = () => ({ "Authorization": "Bearer " + $tok.value });
 const api = () => $url.value.replace(/\/+$/, "");
 
-let ALBUMS = []; // [{name, cover}]，cover 是 content/.thumbs 的相对路径
+// ---- site selector ----
+let SITES = [];        // [{key, name}]
+let currentSite = localStorage.getItem("mu_site") || "";
+let FIXED_TAGS = ["作品", "日常"];  // default; updated from /albums response
+
+function loadSites(){
+  if (!api()) return;
+  fetch(api() + "/sites")
+    .then(r => r.json())
+    .then(j => {
+      if (j && j.sites && j.sites.length){
+        SITES = j.sites;
+        if (!currentSite || !SITES.find(s => s.key === currentSite)){
+          currentSite = j.default || SITES[0].key;
+          localStorage.setItem("mu_site", currentSite);
+        }
+        renderSiteSel();
+        loadAlbums();
+      }
+    })
+    .catch(() => {});
+}
+function renderSiteSel(){
+  $siteSel.innerHTML = "";
+  SITES.forEach(s => {
+    const btn = document.createElement("button");
+    btn.textContent = s.name;
+    btn.className = (s.key === currentSite) ? "on" : "";
+    btn.onclick = () => {
+      currentSite = s.key;
+      localStorage.setItem("mu_site", currentSite);
+      renderSiteSel();
+      loadAlbums();
+    };
+    $siteSel.appendChild(btn);
+  });
+}
+function siteQs(){ return currentSite ? "&site=" + encodeURIComponent(currentSite) : ""; }
+function siteQsLead(){ return currentSite ? "?site=" + encodeURIComponent(currentSite) : ""; }
+
+let ALBUMS = []; // [{name, cover}]
 function loadAlbums(){
   if (!api() || !$tok.value) return;
-  fetch(api() + "/albums", { headers: httphdr() })
+  fetch(api() + "/albums" + siteQsLead(), { headers: httphdr() })
     .then(r => r.json())
-    .then(j => { if (j && j.albums){ ALBUMS = j.albums; rebuildSelects(); } })
+    .then(j => {
+      if (j && j.albums){
+        ALBUMS = j.albums;
+        if (j.fixedTags && j.fixedTags.length) FIXED_TAGS = j.fixedTags;
+        else FIXED_TAGS = ["作品", "日常"];
+        rebuildSelects();
+      }
+    })
     .catch(() => {});
 }
 function tagOptions(sel){
   const cur = sel.value;
   sel.innerHTML = "";
   const ph = document.createElement("option");
-  ph.value = ""; ph.textContent = ALBUMS.length ? "选择相册 / 作品…" : "选择相册…（未连上相册列表，仅 日常/作品）";
+  ph.value = ""; ph.textContent = ALBUMS.length ? "选择相册 / 作品…" : "选择相册…（未连上相册列表）";
   ph.disabled = true; ph.selected = true; sel.appendChild(ph);
-  const fixed = ALBUMS.length ? ["作品"] : ["作品", "日常"];
-  const names = [...new Set([...fixed, ...ALBUMS.map(a => a.name)])];
+  const names = [...new Set([...FIXED_TAGS, ...ALBUMS.map(a => a.name)])];
   for (const t of names){ const o = document.createElement("option"); o.value = t; o.textContent = t; sel.appendChild(o); }
   const o = document.createElement("option"); o.value = "__new__"; o.textContent = "＋ 新建相册…"; sel.appendChild(o);
   if (cur) sel.value = cur;
@@ -51,7 +99,7 @@ function coverOf(tag){
 function showCover(row, sel){
   const cov = row.querySelector(".cov"); if (!cov) return;
   const c = coverOf(sel.value);
-  if (c){ cov.innerHTML = '<img src="' + api() + '/thumb?p=' + encodeURIComponent(c) + '" alt="cover">'; cov.style.display = "inline-block"; }
+  if (c){ cov.innerHTML = '<img src="' + api() + '/thumb?p=' + encodeURIComponent(c) + siteQs() + '" alt="cover">'; cov.style.display = "inline-block"; }
   else cov.style.display = "none";
 }
 
@@ -72,7 +120,7 @@ function buildRow(file){
 
   const cl = document.createElement("div"); cl.className = "cl";
   const newTag = document.createElement("input");
-  newTag.className = "newtag"; newTag.placeholder = "新相册名（会新建到 日常/ 下）"; newTag.style.display = "none";
+  newTag.className = "newtag"; newTag.placeholder = "新相册名（会新建到对应目录）"; newTag.style.display = "none";
   const cov = document.createElement("span"); cov.className = "cov"; cov.style.display = "none";
   const chk = document.createElement("label"); chk.className = "covchk"; chk.style.display = "none";
   const chkIn = document.createElement("input"); chkIn.type = "checkbox";
@@ -114,7 +162,7 @@ function submit(file, sel, newTag, nameIn, prog, btn, st, finalName){
 
   const xhr = new XMLHttpRequest();
   let qs = "?origName=" + encodeURIComponent(file.name)
-    + "&name=" + encodeURIComponent(name) + "&tag=" + encodeURIComponent(tag);
+    + "&name=" + encodeURIComponent(name) + "&tag=" + encodeURIComponent(tag) + siteQs();
   if (wantCover) qs += "&cover=1";
   xhr.open("POST", api() + "/upload_raw" + qs);
   xhr.setRequestHeader("Authorization", "Bearer " + $tok.value);
@@ -147,7 +195,7 @@ function legacy(file, name, tag, wantCover, ok, fail){
     fetch(api() + "/upload", {
       method: "POST",
       headers: Object.assign({ "Content-Type": "application/json" }, httphdr()),
-      body: JSON.stringify({ origName: file.name, name, tag, data, ...(wantCover ? { cover: true } : {}) })
+      body: JSON.stringify({ origName: file.name, name, tag, data, site: currentSite, ...(wantCover ? { cover: true } : {}) })
     }).then(r => r.json().then(j => ({ code: r.status, j })))
       .then(({ code, j }) => { if (code === 200 && j && j.ok) ok("已收到（" + tag + " · " + name + "）"); else fail((j && j.error) || code); })
       .catch(e => fail(String(e)));
@@ -156,7 +204,7 @@ function legacy(file, name, tag, wantCover, ok, fail){
   fr.readAsDataURL(file);
 }
 
-// ---- 给电脑发指令 / 请求发布（发到桥接 → 落 待上传/_requests.json，桌面端监听/我来读）----
+// ---- 给电脑发指令 / 请求发布 ----
 const $cmdTxt = document.getElementById("cmdTxt");
 const $cmdBtn = document.getElementById("cmdBtn");
 const $cmdNoteBtn = document.getElementById("cmdNoteBtn");
@@ -170,7 +218,7 @@ function sendCmd(intent){
   fetch(api() + "/request", {
     method: "POST",
     headers: Object.assign({ "Content-Type": "application/json" }, httphdr()),
-    body: JSON.stringify({ intent, text })
+    body: JSON.stringify({ intent, text, site: currentSite })
   }).then(r => r.json().then(j => ({ code: r.status, j })))
     .then(({ code, j }) => {
       $cmdBtn.disabled = false; $cmdNoteBtn.disabled = false;
@@ -187,7 +235,7 @@ function sendCmd(intent){
 $cmdBtn.addEventListener("click", () => sendCmd("publish"));
 $cmdNoteBtn.addEventListener("click", () => sendCmd("command"));
 
-// ---- 批量工具栏：相册应用到全部 / 批量命名 / 全部上传 ----
+// ---- 批量工具栏 ----
 function refreshBar(){
   const rows = [...$stage.querySelectorAll(".row:not(.done)")];
   const pend = rows.filter(r => r.querySelector(".up").disabled);
@@ -239,7 +287,7 @@ $tabHist.addEventListener("click", () => {
 });
 function loadHist(){
   $hist.innerHTML = '<div class="empty">加载中…</div>';
-  fetch(api() + "/history", { headers: httphdr() })
+  fetch(api() + "/history" + siteQsLead(), { headers: httphdr() })
     .then(r => r.json())
     .then(j => {
       if (!j || !j.items){ $hist.innerHTML = '<div class="empty">读取失败</div>'; return; }
@@ -255,7 +303,7 @@ function loadHist(){
         d.appendChild(n); d.appendChild(m); $hist.appendChild(d);
       }
     })
-    .catch(() => { $hist.innerHTML = '<div class="empty">连不上桥接，点“上传”确认地址已填对</div>'; });
+    .catch(() => { $hist.innerHTML = '<div class="empty">连不上桥接，点"上传"确认地址已填对</div>'; });
 }
 
 $file.addEventListener("change", () => {
@@ -268,4 +316,4 @@ $file.addEventListener("change", () => {
 });
 $file.dispatchEvent(new Event("change"));
 
-loadAlbums();
+loadSites();

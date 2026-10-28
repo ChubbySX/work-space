@@ -1,4 +1,5 @@
 @echo off
+chcp 936 >nul
 cd /d "%~dp0%"
 
 set "PY=C:\Users\23003\.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\python\python.exe"
