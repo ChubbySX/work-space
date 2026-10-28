@@ -9,6 +9,13 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+# 崩溃日志（任何未捕获异常都落盘，方便排查）
+$dashCrashLog = Join-Path (Join-Path $env:LOCALAPPDATA "MobileBridge") "dashboard-crash.log"
+$global:crashAppDomain = [System.AppDomain]::CurrentDomain
+$global:crashAppDomain.add_UnhandledException({ param($s, $e)
+  try { [IO.File]::WriteAllText($dashCrashLog, ((Get-Date -Format "yyyy-MM-dd HH:mm:ss") + "`r`n" + $e.ExceptionObject.ToString()), (New-Object System.Text.UTF8Encoding($false))) } catch {}
+}) | Out-Null
+
 # DPI 感知（同 github-push-gui）
 Add-Type -TypeDefinition @'
 using System.Runtime.InteropServices;
@@ -67,7 +74,9 @@ $f.TopMost = $true
 $W = 420; $H = 560
 $sa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 $f.Size = New-Object System.Drawing.Size($W, $H)
-$f.Location = New-Object System.Drawing.Point($sa.Right - $W - 20, $sa.Top + 20)
+$locX = $sa.Right - $W - 20
+$locY = $sa.Top + 20
+$f.Location = New-Object System.Drawing.Point($locX, $locY)
 
 $fontT  = New-Object System.Drawing.Font("Microsoft YaHei UI", 10, [System.Drawing.FontStyle]::Bold)
 $fontS  = New-Object System.Drawing.Font("Microsoft YaHei UI", 9)
@@ -90,7 +99,8 @@ $btnClose.FlatStyle = 'Flat'
 $btnClose.FlatAppearance.BorderSize = 0
 $btnClose.BackColor = $panel
 $btnClose.ForeColor = $dim
-$btnClose.Location = New-Object System.Drawing.Point($W - 108, 8)
+$locBtn = $W - 108
+$btnClose.Location = New-Object System.Drawing.Point($locBtn, 8)
 $btnClose.Size = New-Object System.Drawing.Size(94, 28)
 $f.Controls.Add($btnClose)
 
@@ -132,7 +142,8 @@ $lblPush.Font = $fontS
 $lblPush.ForeColor = $dim
 $lblPush.BackColor = $dark
 $lblPush.Location = New-Object System.Drawing.Point(14, 72)
-$lblPush.Size = New-Object System.Drawing.Size($W - 30, 40)
+$cw = $W - 30
+$lblPush.Size = New-Object System.Drawing.Size($cw, 40)
 $lblPush.Text = "发布：— 最近没有推送"
 $f.Controls.Add($lblPush)
 
@@ -152,7 +163,7 @@ $list.ForeColor = $text
 $list.Font = $fontM
 $list.BorderStyle = 'None'
 $list.Location = New-Object System.Drawing.Point(14, 138)
-$list.Size = New-Object System.Drawing.Size($W - 30, 112)
+$list.Size = New-Object System.Drawing.Size($cw, 112)
 $f.Controls.Add($list)
 
 # 事件日志
@@ -172,7 +183,7 @@ $log.Font = $fontM
 $log.BorderStyle = 'None'
 $log.ReadOnly = $true
 $log.Location = New-Object System.Drawing.Point(14, 278)
-$log.Size = New-Object System.Drawing.Size($W - 30, 250)
+$log.Size = New-Object System.Drawing.Size($cw, 250)
 $log.DetectUrls = $false
 $f.Controls.Add($log)
 $script:log = $log
@@ -184,7 +195,7 @@ $lblFoot.Font = New-Object System.Drawing.Font("Microsoft YaHei UI", 8)
 $lblFoot.ForeColor = $dim
 $lblFoot.BackColor = $dark
 $lblFoot.Location = New-Object System.Drawing.Point(14, 536)
-$lblFoot.Size = New-Object System.Drawing.Size($W - 30, 18)
+$lblFoot.Size = New-Object System.Drawing.Size($cw, 18)
 $f.Controls.Add($lblFoot)
 
 # ---------- 托盘 ----------
@@ -334,7 +345,7 @@ Add-Log "面板已启动（轮询 $baseUrl/monitor-data）" $gray
 $timer.Start()
 Test-Bridge
 Read-Push
-$f.Hide()
+# 启动即显示（右上角置顶小窗）；点 ✕ 收进托盘，双击托盘图标再展开
+$f.Show()
 
-# 无主窗体的消息循环：表单保持隐藏，从托盘图标展开
 [System.Windows.Forms.Application]::Run()
