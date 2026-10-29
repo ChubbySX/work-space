@@ -44,8 +44,21 @@ const CONC = Math.min(8, parseInt(flag("concurrency", "2"), 10) || 2);
 const STRICT_TAGS = flag("no-tags", false) !== true;
 
 // ---------- API 配置 ----------
-const BASE = process.env.AI_BASE_URL || "https://api2.yunshuzhilian.asia/v1";
-const MODEL = process.env.AI_MODEL || "deepseek-v4-flash";
+const isLocal = flag("local", false) === true || flag("local", false) === "true";
+const preferLocal = flag("prefer-local", false) === true || flag("prefer-local", false) === "true";
+const AI_ENGINE = (process.env.AI_ENGINE || "").trim().toLowerCase(); // 可被 env 指定: auto / local / api（process-uploads 用）
+let BASE = process.env.AI_BASE_URL || "https://api2.yunshuzhilian.asia/v1";
+let MODEL = process.env.AI_MODEL || "deepseek-v4-flash";
+const LOCAL_BASE = process.env.AI_LOCAL_BASE || "http://127.0.0.1:11434/v1";
+const LOCAL_MODEL = process.env.AI_LOCAL_MODEL || "qwen2.5:3b";
+function useLocal() { BASE = LOCAL_BASE; MODEL = LOCAL_MODEL; LOCAL_ACTIVE = true; }
+let LOCAL_ACTIVE = isLocal || AI_ENGINE === "local"; // 请求时是否视为本地（决定 key 头是否需要）
+async function localUp() {
+  try {
+    const r = await fetch(LOCAL_BASE.replace(/\/$/, "") + "/models", { signal: AbortSignal.timeout(1500) });
+    return r.ok;
+  } catch { return false; }
+}
 function readKey() {
   if (process.env.GLM12_API_KEY && process.env.GLM12_API_KEY.trim()) {
     return process.env.GLM12_API_KEY.trim();
@@ -125,13 +138,13 @@ function styleExamples(alb) {
 async function captionOne(it) {
   const desc = albumDesc(it.album) || "无";
   const ex = styleExamples(it.album);
-  const sys = "你是「ChubbySX 个人网站」的照片配文写手。每张照片给 1-2 句中文配文（具体、生活化、贴合文件名与相册语境，可带一点幽默或温情，不要\"这张照片\"开头，不要引号，不要解释）+ 换行 + 1-3 个 #标签。只输出配文和标签，不要其他内容。";
+  const sys = "你是「ChubbySX 个人网站」的照片配文写手。每张照片给 1-2 句中文配文（具体、生活化、贴合文件名称本身，可带一点幽默或温情，不要\"这张照片\"开头，不要引号，不要解释）+ 换行 + 1-3 个 #标签。只输出这一张照片的配文和标签，绝对不要输出别的照片的配文，不要罗列多条，不要加\"照片：\"前缀。";
   const user =
     "相册：" + it.album + "\n" +
     "相册简介：" + desc + "\n" +
-    "照片：" + it.base + "\n" +
-    (ex.length ? "风格参考：\n" + ex.map((e, i) => (i + 1) + ". " + e).join("\n") + "\n" : "") +
-    "\n请给出配文与标签。";
+    "照片文件名：" + it.base + "\n" +
+    (ex.length ? "以下是同相册其它照片的配文，只用于体会语气和长度，禁止照抄、禁止输出它们的内容：\n" + ex.map((e, i) => (i + 1) + ". " + e).join("\n") + "\n" : "") +
+    "\n只针对「" + it.base + "」这一张，给出 1-2 句配文 + 换行 + #标签。";
   const body = {
     model: MODEL,
     messages: [
@@ -147,7 +160,7 @@ async function captionOne(it) {
     try {
       const res = await fetch(BASE + "/chat/completions", {
         method: "POST",
-        headers: { "content-type": "application/json", authorization: "Bearer " + KEY },
+        headers: { "content-type": "application/json", ...(LOCAL_ACTIVE || !KEY ? {} : { authorization: "Bearer " + KEY }) },
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(120000),
       });
@@ -185,11 +198,24 @@ function parse(text) {
 
 // ---------- 主流程 ----------
 (async () => {
+  // Stage C：--local / --prefer-local / AI_ENGINE 决定引擎；本地可用优先
+  const wantLocal = isLocal || preferLocal || AI_ENGINE === "auto" || AI_ENGINE === "local";
+  let localActive = false;
+  if (wantLocal) {
+    const up = await localUp();
+    if (up) { localActive = true; useLocal(); console.log("ℹ 本地模型可用 → " + MODEL); }
+    else if (isLocal || AI_ENGINE === "local") {
+      console.error("✗ --local 模式但 Ollama 未启动（" + LOCAL_BASE + "）。先启动 Ollama 再跑。");
+      process.exitCode = 2;
+      return;
+    }
+    else console.log("ℹ 本地模型未运行（11434 无响应），回落云端 API");
+  }
   if (!targets.length) {
     console.log("ℹ 没有需要配文的照片（全部已有合格配文；--force 可强制重写）。");
     process.exit(0);
   }
-  if (!KEY && !DRY) {
+  if (!localActive && !KEY && !DRY) {
     console.error("✗ 找不到 API key：设 GLM12_API_KEY 环境变量，或把 key 写入 %LOCALAPPDATA%\\MobileBridge\\ai-key.json");
     process.exitCode = 3;
     return;

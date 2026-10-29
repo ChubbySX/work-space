@@ -206,16 +206,20 @@ function main() {
     }
   }
 
-  // ⑤b Stage B——AI 配文：新照片刚写了「文件名兜底」.txt，若配了 API key 则调 ai-caption.js
-  //     把它们升级为 1-2 句配文 + 标签；无 key / 断网 / 上游限流时保留兜底，不阻断流程。
-  //     环境变量 AI_CAPTION=off 可整体关闭。
+  // ⑤b Stage B/C——AI 配文：新照片刚写了「文件名兜底」.txt，若有 AI 引擎则升级为 1-2 句配文 + 标签。
+  //     AI_ENGINE=auto(默认, 本地 Ollama 在跑就走本地否则云端) / local(强制本地) / api(强制云端) / off(关闭)。
+  //     无 key / 断网 / 上游限流时保留兜底，不阻断流程。
   if (placedAny && process.env.AI_CAPTION !== "off") {
+    const eng = (process.env.AI_ENGINE || "auto").trim().toLowerCase();
+    const aiArgs = [path.join(REPO, "tools", "ai-caption.js"), "--repo", REPO];
+    if (eng === "local") aiArgs.push("--local");
+    else if (eng !== "api") aiArgs.push("--prefer-local");
     try {
-      const tail = run(NODE, [path.join(REPO, "tools", "ai-caption.js"), "--repo", REPO], REPO, 600000);
+      const tail = eng === "off" ? "" : run(NODE, aiArgs, REPO, 600000);
       const m = tail.match(/成功 (\d+)/);
-      out.aiCaption = { ok: true, changed: m ? Number(m[1]) : 0 };
+      out.aiCaption = { ok: true, engine: eng, changed: m ? Number(m[1]) : 0 };
     } catch (e) {
-      out.aiCaption = { ok: false, error: e.message };
+      out.aiCaption = { ok: false, engine: eng, error: e.message };
     }
   }
 
