@@ -259,6 +259,7 @@ function startServer(cfg){
 
   // ---- 一键处理状态：待上传/_process-report.json 懒读缓存 ----
   let procRunning = false, opReportTs = 0, opReport = null;
+  let polishRunning = false, polishReport = null;
   function readOpReport(root){
     if (!root) return null;
     const p = path.join(root, "_process-report.json");
@@ -403,6 +404,38 @@ function startServer(cfg){
         s.unref();
       } catch (e) { procRunning = false; json(res, 200, { ok: false, msg: String(e.message) }); return; }
       json(res, 200, { ok: true, msg: "已启动一键处理，完成后自动显示结果" });
+      return;
+    }
+
+    // GET /polish — 一键润色：把带 #draft 标记的本地草稿交给云端模型改写，后台异步跑 tools/ai-caption.js --polish
+    if (req.method === "GET" && req.url.split("?")[0] === "/polish"){
+      if (!authed){ return deny(401, "unauthorized"); }
+      if (polishRunning){ json(res, 200, { ok: false, running: true, msg: "上一轮润色还没结束" }); return; }
+      const pj = path.join(path.resolve(__dirname, "..", ".."), "tools", "ai-caption.js");
+      if (!fs.existsSync(pj)){ json(res, 200, { ok: false, msg: "缺少 tools/ai-caption.js" }); return; }
+      polishRunning = true;
+      try {
+        const s = cp.spawn(process.execPath, [pj, "--repo", path.resolve(__dirname, "..", ".."), "--polish"], { cwd: path.dirname(pj), detached: true, stdio: ["ignore", "pipe", "pipe"] });
+        let out = "";
+        const keep = (d) => { out = (out + d.toString()).slice(-4000); };
+        if (s.stdout) s.stdout.on("data", keep);
+        if (s.stderr) s.stderr.on("data", keep);
+        s.on("exit", (code) => {
+          polishRunning = false;
+          const okN = (out.match(/\[✓\]/g) || []).length;
+          const badN = (out.match(/\[✗\]/g) || []).length;
+          polishReport = { ts: Date.now(), ok: code === 0, code, done: okN, failed: badN, tail: out.slice(-1500) };
+        });
+        s.unref();
+      } catch (e) { polishRunning = false; json(res, 200, { ok: false, msg: String(e.message) }); return; }
+      json(res, 200, { ok: true, msg: "已启动润色，完成后自动显示结果" });
+      return;
+    }
+
+    // GET /polish-status — 查润色进度/结果（手机端轮询）
+    if (req.method === "GET" && req.url.split("?")[0] === "/polish-status"){
+      if (!authed){ return deny(401, "unauthorized"); }
+      json(res, 200, { running: polishRunning, report: polishReport });
       return;
     }
 

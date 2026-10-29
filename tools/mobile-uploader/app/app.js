@@ -235,6 +235,63 @@ function sendCmd(intent){
 $cmdBtn.addEventListener("click", () => sendCmd("publish"));
 $cmdNoteBtn.addEventListener("click", () => sendCmd("command"));
 
+// ---- 一键润色 AI 草稿（本地模型写的 #draft 交给云端改写）----
+const $polishBtn = document.getElementById("polishBtn");
+const $polishSt = document.getElementById("polishSt");
+let polishPoll = null;
+function stopPolishPoll(){ if (polishPoll){ clearInterval(polishPoll); polishPoll = null; } }
+function renderPolishReport(rep){
+  if (!rep) return;
+  const t = new Date(rep.ts);
+  const hh = String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
+  if (rep.done === 0 && rep.failed === 0){
+    $polishSt.className = "st";
+    $polishSt.textContent = hh + " 没有待润色的 AI 草稿";
+  } else if (rep.ok){
+    $polishSt.className = "st ok";
+    $polishSt.textContent = "✓ " + hh + " 润色完成：" + rep.done + " 张" + (rep.failed ? "，失败 " + rep.failed : "");
+  } else {
+    $polishSt.className = "st fail";
+    $polishSt.textContent = "✗ " + hh + " 润色异常（成功 " + rep.done + " / 失败 " + rep.failed + "）";
+  }
+}
+function pollPolish(){
+  return fetch(api() + "/polish-status", { headers: httphdr() })
+    .then(r => r.json())
+    .then(j => {
+      if (j && j.running){
+        $polishSt.className = "st pend"; $polishSt.textContent = "润色中…（云端模型逐张改写，耐心等）";
+        return false;
+      }
+      $polishBtn.disabled = false;
+      renderPolishReport(j && j.report);
+      return true;
+    })
+    .catch(() => false);
+}
+$polishBtn.addEventListener("click", () => {
+  if (!api()){ $polishSt.className = "st fail"; $polishSt.textContent = "先填桥接地址"; return; }
+  if (!$tok.value){ $polishSt.className = "st fail"; $polishSt.textContent = "先填 Token"; return; }
+  $polishBtn.disabled = true;
+  $polishSt.className = "st pend"; $polishSt.textContent = "正在启动润色…";
+  fetch(api() + "/polish", { headers: httphdr() })
+    .then(r => r.json())
+    .then(j => {
+      if (j && j.ok){
+        $polishSt.className = "st pend"; $polishSt.textContent = "润色中…";
+        stopPolishPoll();
+        polishPoll = setInterval(() => { pollPolish().then(done => { if (done) stopPolishPoll(); }); }, 3000);
+      } else {
+        $polishBtn.disabled = false;
+        $polishSt.className = "st fail";
+        $polishSt.textContent = "✗ " + ((j && j.msg) || "启动失败");
+      }
+    })
+    .catch(() => { $polishBtn.disabled = false; $polishSt.className = "st fail"; $polishSt.textContent = "✗ 连不上桥接"; });
+});
+// 进页面先看一眼有没有历史结果
+setTimeout(() => { if (api() && $tok.value) pollPolish(); }, 1200);
+
 // ---- 批量工具栏 ----
 function refreshBar(){
   const rows = [...$stage.querySelectorAll(".row:not(.done)")];

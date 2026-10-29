@@ -42,13 +42,15 @@ const LIMIT = parseInt(flag("limit", "0"), 10) || 0;
 const DRY = flag("dry-run", false) === true || flag("dry-run", false) === "true";
 const CONC = Math.min(8, parseInt(flag("concurrency", "2"), 10) || 2);
 const STRICT_TAGS = flag("no-tags", false) !== true;
+const POLISH = flag("polish", false) === true || flag("polish", false) === "true"; // 云端润色本地草稿
+const DRAFT_MARK = "#draft";
 
 // ---------- API 配置 ----------
 const isLocal = flag("local", false) === true || flag("local", false) === "true";
 const preferLocal = flag("prefer-local", false) === true || flag("prefer-local", false) === "true";
 const AI_ENGINE = (process.env.AI_ENGINE || "").trim().toLowerCase(); // 可被 env 指定: auto / local / api（process-uploads 用）
 let BASE = process.env.AI_BASE_URL || "https://api2.yunshuzhilian.asia/v1";
-let MODEL = process.env.AI_MODEL || "deepseek-v4-flash";
+let MODEL = process.env.AI_MODEL || "deepseek-v4.1-flash";
 const LOCAL_BASE = process.env.AI_LOCAL_BASE || "http://127.0.0.1:11434/v1";
 const LOCAL_MODEL = process.env.AI_LOCAL_MODEL || "qwen2.5vl:7b";
 let VISION = true;                                     // 本地模型能否读图；AI_LOCAL_VISION=0 可关
@@ -87,6 +89,8 @@ function isBareCaption(txt, base) {
   if (!noTags) return true;
   return noTags.toLowerCase() === base.toLowerCase() || noTags.length <= 4;
 }
+function isDraft(txt) { return (txt || "").includes(DRAFT_MARK); }
+function stripDraft(txt) { return (txt || "").replace(/\n?#draft\s*$/m, "").trim(); }
 
 // ---------- 扫描 ----------
 const needs = []; // {album, base, src, txtPath, bare}
@@ -100,8 +104,9 @@ function scan() {
       const base = baseOf(f);
       const txtPath = path.join(albDir, base + ".txt");
       const txt = readTxt(txtPath);
-      const bare = FORCE || isBareCaption(txt, base);
-      needs.push({ album: alb, base, src: path.join(albDir, f), txtPath, bare });
+      // --polish 只挑本地草稿（带 #draft 标记）；常规模式只补空缺
+      const bare = POLISH ? isDraft(txt) : (FORCE || isBareCaption(txt, base));
+      needs.push({ album: alb, base, src: path.join(albDir, f), txtPath, bare, existing: txt });
     }
   }
   return needs.filter((x) => x.bare);
@@ -176,13 +181,16 @@ async function captionLocalVision(it) {
       const j = await res.json();
       const text = ((j.message && j.message.content) || "").trim();
       if (!text) { lastErr = "空回复"; await sleep(2000); continue; }
-      return parse(text);
+      // 标记来源：本地视觉草稿，供 --polish 后续升级（build.js 会过滤掉不显示）
+      const body = parse(text);
+      return POLISH ? body : body + "\n#draft";
     } catch (e) { lastErr = String((e && e.message) || e); await sleep(2000); }
   }
   throw new Error(lastErr || "本地调用失败 ×3");
 }
 
 async function captionOne(it) {
+  if (POLISH) return polishOne(it);
   if (LOCAL_ACTIVE && VISION) return captionLocalVision(it);
   const desc = albumDesc(it.album) || "无";
   const ex = styleExamples(it.album);
@@ -231,6 +239,68 @@ async function captionOne(it) {
   throw new Error(lastErr || "调用失败 ×5");
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ---------- 云端润色（--polish）----------
+// 输入：本地草稿 + 照片 + 相册语境；输出：替换草稿的新配文，并去掉 #draft 标记。
+// 用云端模型（更强）但只轻度改：保留原意与标签，把空泛描写换成具体观察。
+async function polishOne(it) {
+  if (!KEY) throw new Error("润色需要云端 API key（--polish 不走本地模型）");
+  const desc = albumDesc(it.album) || "无";
+  const draftRaw = stripDraft(it.existing);
+  const draftTags = (draftRaw.match(/#[^\s#]+/g) || []).map((t) => t.slice(1)).filter((t) => t && t !== "draft");
+  const draft = draftRaw.replace(/#[^\s#]+/g, "").trim();
+  const sys = "你是中文文案编辑。用户有一张照片和一条\"本地小模型写的草稿配文\"，草稿往往空泛（比如只说繁华忙碌、目光所及皆美好）。" +
+    "你的任务：看着照片，把这条草稿改得具体、有观察感、像真人写的。" +
+    "硬性要求：必须把草稿里的空泛形容词（繁华、忙碌、美好、岁月、时光、青春、活力、越来越、祥和、宁静、格外醒目、灯火辉煌）换成照片里能看见的具体东西（招牌文字、建筑形状、车辆颜色、天气、路人的动作或衣服颜色、某样物的位置等）。" +
+    "绝对不许编造画面里没有的东西：看不清的细节就去写构图里能确认的（比如\"楼挡住了一半天空\"\"右边那排灯比左边亮\"），宁可写得朴素也不能瞎猜。" +
+    "保留原配文的语气。" +
+    "不要解释、不要复述指令。输出格式：一行 1-2 句配文，换行，原样带上用户给的标签。";
+  const user =
+    "相册：" + it.album + "\n" +
+    "相册简介：" + desc + "\n" +
+    "文件名：" + it.base + "\n" +
+    "草稿配文：" + draft + "\n" +
+    "必须原样保留的标签：" + (draftTags.length ? draftTags.map((t) => "#" + t).join(" ") : "（无）") + "\n" +
+    "\n看着照片，给出润色后的配文 + 标签。";
+  let imgB64 = "";
+  try { imgB64 = fs.readFileSync(it.src).toString("base64"); } catch (e) { throw new Error("读图失败: " + e.message); }
+  const body = {
+    model: MODEL,
+    messages: [
+      { role: "system", content: sys },
+      { role: "user", content: user, images: [imgB64] },
+    ],
+    temperature: 0.7,
+    max_tokens: 200,
+  };
+  let lastErr = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(BASE + "/chat/completions", {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: "Bearer " + KEY },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(280000),
+      });
+      if (res.status === 429) {
+        lastErr = "上游限流(429)：" + (await res.text()).slice(0, 120);
+        await sleep([5000, 10000, 20000][Math.min(attempt, 2)]);
+        continue;
+      }
+      if (!res.ok) { lastErr = "HTTP " + res.status + " " + (await res.text()).slice(0, 200); await sleep(2000); continue; }
+      const j = await res.json();
+      const text = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "").trim();
+      if (!text) { lastErr = "空回复"; await sleep(2000); continue; }
+      // 润色完即视为成稿（不加 #draft）；但必须保住原标签，模型常把标签换掉
+      const out = parse(text);
+      const m = out.match(/#[^\s#]+/g) || [];
+      const have = m.map((t) => t.slice(1));
+      const missing = draftTags.filter((t) => !have.includes(t));
+      return missing.length ? out + " " + missing.map((t) => "#" + t).join(" ") : out;
+    } catch (e) { lastErr = String((e && e.message) || e); await sleep(2000); }
+  }
+  throw new Error(lastErr || "润色失败 ×3");
+}
 function parse(text) {
   const lines = text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
   let cap = [], tags = [];
@@ -239,15 +309,24 @@ function parse(text) {
     else cap.push(ln);
   }
   let caption = cap.join(" ").trim().replace(/^["“”]+|["“”]+$/g, "");
-  if (!caption && tags.length) caption = tags.shift().replace(/^#/, "");
-  const tagStr = STRICT_TAGS && tags.length ? "\n" + tags.join("\n") : "";
+  // 标签清洗：模型常输出 "#标签#" 或行内混排的 "#a #b"，统一拆成规范形式
+  const cleanTags = [];
+  for (const t of tags) {
+    for (const m of t.match(/#[^\s#]+/g) || []) {
+      const tag = m.slice(1);
+      if (tag && tag !== "draft" && !cleanTags.includes(tag)) cleanTags.push(tag);
+    }
+  }
+  if (!caption && cleanTags.length) caption = cleanTags.shift();
+  const tagStr = cleanTags.length ? "\n" + cleanTags.map((t) => "#" + t).join(" ") : "";
   return caption + tagStr;
 }
 
 // ---------- 主流程 ----------
 (async () => {
   // Stage C：--local / --prefer-local / AI_ENGINE 决定引擎；本地可用优先
-  const wantLocal = isLocal || preferLocal || AI_ENGINE === "auto" || AI_ENGINE === "local";
+  // --polish 是云端任务，永远不启用本地引擎
+  const wantLocal = !POLISH && (isLocal || preferLocal || AI_ENGINE === "auto" || AI_ENGINE === "local");
   let localActive = false;
   if (wantLocal) {
     const up = await localUp();
@@ -260,7 +339,9 @@ function parse(text) {
     else console.log("ℹ 本地模型未运行（11434 无响应），回落云端 API");
   }
   if (!targets.length) {
-    console.log("ℹ 没有需要配文的照片（全部已有合格配文；--force 可强制重写）。");
+    console.log(POLISH
+      ? "ℹ 没有待润色的草稿（带 #draft 标记的配文）。"
+      : "ℹ 没有需要配文的照片（全部已有合格配文；--force 可强制重写）。");
     process.exit(0);
   }
   if (!localActive && !KEY && !DRY) {
@@ -268,7 +349,12 @@ function parse(text) {
     process.exitCode = 3;
     return;
   }
-  console.log("扫描: " + needs.length + " 张照片，需要配文: " + targets.length + "（相册 " + new Set(targets.map((t) => t.album)).size + " 个）  concurrency=" + CONC + "  dry=" + DRY);
+  if (POLISH && !KEY && !DRY) {
+    console.error("✗ 润色需要云端 API key（--polish 不走本地模型）");
+    process.exitCode = 3;
+    return;
+  }
+  console.log((POLISH ? "润色" : "扫描") + ": " + needs.length + " 张照片，" + (POLISH ? "待润色草稿: " : "需要配文: ") + targets.length + "（相册 " + new Set(targets.map((t) => t.album)).size + " 个）  concurrency=" + CONC + "  dry=" + DRY);
   let ok = 0, done = 0, fail = 0;
   const queue = targets.slice();
   async function worker() {

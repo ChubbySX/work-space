@@ -89,10 +89,11 @@ function sidecar(file) {
     if (isFile(t)) { desc = readText(t); break; }
   }
   // 从描述里提取 #标签（如 #机械 #建模），并从描述文本中移除
+  // #draft 是 AI 草稿标记（见 tools/ai-caption.js），只做状态用，不当标签也不显示
   const tags = [];
   if (desc) {
     const matches = desc.match(/#[^\s#]+/g);
-    if (matches) matches.forEach((t) => { const tag = t.slice(1); if (!tags.includes(tag)) tags.push(tag); });
+    if (matches) matches.forEach((t) => { const tag = t.slice(1); if (tag !== "draft" && !tags.includes(tag)) tags.push(tag); });
     desc = desc.replace(/#[^\s#]+/g, "").replace(/\s{2,}/g, " ").trim();
   }
   let poster = "";
