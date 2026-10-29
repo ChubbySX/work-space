@@ -648,8 +648,9 @@ function startServer(cfg){
       try { isFile = inside && fs.statSync(fp).isFile(); } catch { isFile = false; }
       if (isFile){
         const ext = path.extname(fp).toLowerCase();
-        const types = { ".html":"text/html; charset=utf-8", ".js":"text/javascript", ".css":"text/css", ".json":"application/json", ".png":"image/png", ".jpg":"image/jpeg", ".ico":"image/x-icon", ".webmanifest":"application/manifest+json" };
-        res.writeHead(200, { "Content-Type": types[ext] || "application/octet-stream" });
+        const types = { ".html":"text/html; charset=utf-8", ".js":"text/javascript; charset=utf-8", ".css":"text/css; charset=utf-8", ".json":"application/json; charset=utf-8", ".png":"image/png", ".jpg":"image/jpeg", ".ico":"image/x-icon", ".webmanifest":"application/manifest+json; charset=utf-8" };
+        // no-cache：手机浏览器很容易把旧 app.js 缓住，改了代码却看不到效果
+        res.writeHead(200, { "Content-Type": types[ext] || "application/octet-stream", "Cache-Control": "no-cache, must-revalidate" });
         fs.createReadStream(fp).pipe(res);
         return;
       }

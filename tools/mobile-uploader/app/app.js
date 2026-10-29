@@ -105,7 +105,9 @@ function showCover(row, sel){
 
 function buildRow(file){
   const row = document.createElement("div"); row.className = "row";
-  if (/^video\//.test(file.type)){
+  const fName = (file && file.name) || "";
+  const fType = (file && file.type) || "";
+  if (/^video\//.test(fType)){
     const v = document.createElement("video"); v.src = URL.createObjectURL(file); v.muted = true; v.controls = true; row.appendChild(v);
     row.dataset.isVideo = "1";
   } else {
@@ -113,7 +115,9 @@ function buildRow(file){
   }
   const nameIn = document.createElement("input");
   nameIn.className = "name"; nameIn.placeholder = "重命名（留空用原名）";
-  nameIn.value = file.name.replace(/\.[^.]+$/, "");
+  // 手机相册里选的图，file.name 有可能是空串（部分安卓 webview / 分享入口），
+  // 这里必须兜底，否则下面的 .replace 直接抛错，整行构建失败。
+  nameIn.value = fName.replace(/\.[^.]+$/, "");
   row.appendChild(nameIn);
 
   const sel = document.createElement("select"); tagOptions(sel); row.appendChild(sel);
@@ -138,11 +142,43 @@ function buildRow(file){
   const btn = document.createElement("button"); btn.className = "up"; btn.textContent = "上传"; row.appendChild(btn);
   const st = document.createElement("div"); st.className = "st"; st.textContent = "待上传"; row.appendChild(st);
 
-  const extOf = () => { const m = file.name.match(/\.[^.]+$/); return m ? m[1].toLowerCase() : (/^video\//.test(file.type) ? "mp4" : "jpg"); };
-  const finalName = () => (nameIn.value.trim() || file.name.replace(/\.[^.]+$/, "")) + "." + extOf();
-  btn.onclick = () => submit(file, sel, newTag, nameIn, prog, btn, st, finalName);
+  // 注意：手机上（尤其相册选的图片）file.name 可能是空字符串或缺失扩展名，
+  // 此时 m 为 null / m[1] 为 undefined，直接 toLowerCase() 会抛
+  // "Cannot read properties of null (reading 'toLowerCase')" —— 上传就静默失败。
+  const extOf = () => {
+    const nm = (file && file.name) || "";
+    const typ = (file && file.type) || "";
+    const m = nm.match(/\.[^.]+$/);
+    if (m && m[1]) return m[1].toLowerCase();
+    if (/^video\//.test(typ)) return "mp4";
+    if (/^image\/(jpeg|jpg)/.test(typ)) return "jpg";
+    if (/^image\/png/.test(typ)) return "png";
+    if (/^image\/webp/.test(typ)) return "webp";
+    if (/^image\/gif/.test(typ)) return "gif";
+    return "jpg";
+  };
+  const baseNameOf = (f) => {
+    const nm = (f && f.name) || "";
+    return nm.replace(/\.[^.]+$/, "");
+  };
+  const finalName = () => {
+    const typed = (nameIn.value || "").trim();
+    const base = typed || baseNameOf(file) || ("上传_" + Date.now());
+    return base + "." + extOf();
+  };
+  // 关键：事件绑定要在渲染动作（prepend/showCover）之前完成。
+  // 否则 showCover/coverOf 等任何一个抛错，都会让按钮永远没有 onclick（点了完全无反应）。
+  btn.onclick = () => {
+    try { submit(file, sel, newTag, nameIn, prog, btn, st, finalName); }
+    catch (e) {
+      st.className = "st fail";
+      st.textContent = "✗ 上传出错：" + ((e && e.message) || e);
+      btn.disabled = false; btn.textContent = "重试";
+      console.error("[upload] submit failed:", e);
+    }
+  };
   $stage.prepend(row);
-  showCover(row, sel);
+  try { showCover(row, sel); } catch (e) { console.error("[upload] showCover failed:", e); }
 }
 
 let uploading = 0;
@@ -161,7 +197,9 @@ function submit(file, sel, newTag, nameIn, prog, btn, st, finalName){
   st.className = "st pend"; st.textContent = "0%"; if (bar) bar.style.width = "0%";
 
   const xhr = new XMLHttpRequest();
-  let qs = "?origName=" + encodeURIComponent(file.name)
+  // file.name 在部分手机环境为空；origName 是服务端判类型/归档的关键线索，必须给值
+  const origName = (file && file.name) || name;
+  let qs = "?origName=" + encodeURIComponent(origName)
     + "&name=" + encodeURIComponent(name) + "&tag=" + encodeURIComponent(tag) + siteQs();
   if (wantCover) qs += "&cover=1";
   xhr.open("POST", api() + "/upload_raw" + qs);
@@ -195,7 +233,7 @@ function legacy(file, name, tag, wantCover, ok, fail){
     fetch(api() + "/upload", {
       method: "POST",
       headers: Object.assign({ "Content-Type": "application/json" }, httphdr()),
-      body: JSON.stringify({ origName: file.name, name, tag, data, site: currentSite, ...(wantCover ? { cover: true } : {}) })
+      body: JSON.stringify({ origName: (file && file.name) || name, name, tag, data, site: currentSite, ...(wantCover ? { cover: true } : {}) })
     }).then(r => r.json().then(j => ({ code: r.status, j })))
       .then(({ code, j }) => { if (code === 200 && j && j.ok) ok("已收到（" + tag + " · " + name + "）"); else fail((j && j.error) || code); })
       .catch(e => fail(String(e)));
