@@ -513,6 +513,44 @@ function startServer(cfg){
       return;
     }
 
+    // ---- AI key 配置接口（写入 %LOCALAPPDATA%\MobileBridge\ai-key.json，供 ai-caption.js 读取）----
+    const AIKEY_FILE = path.join(process.env.LOCALAPPDATA || "", "MobileBridge", "ai-key.json");
+    const readAiKey = function () {
+      try {
+        const s = fs.readFileSync(AIKEY_FILE, "utf8").trim();
+        if (!s) return "";
+        return s.startsWith("{") ? (JSON.parse(s).key || "").trim() : s.trim();
+      } catch { return ""; }
+    };
+
+    // GET /ai-key — 查状态（不回显完整 key）
+    if (req.method === "GET" && req.url.split("?")[0] === "/ai-key"){
+      if (!authed){ return deny(401, "unauthorized"); }
+      const k = readAiKey();
+      json(res, 200, { has: !!k, hint: k ? k.slice(0, 8) + "…" : "" });
+      return;
+    }
+
+    // POST /ai-key {key} 或 {clear:true} — 保存 / 清除 key
+    if (req.method === "POST" && req.url.split("?")[0] === "/ai-key"){
+      if (!authed){ return deny(401, "unauthorized"); }
+      let body = "", tooBig = false;
+      req.on("data", c => { if (tooBig) return; body += c; if (body.length > 8192){ tooBig = true; res.writeHead(413, { "Content-Type": "application/json" }); res.end('{"error":"too large"}'); body = ""; } });
+      req.on("end", () => {
+        if (tooBig) return;
+        let j; try { j = JSON.parse(body || "{}"); } catch { return deny(400, "bad json"); }
+        try {
+          if (j.clear){ try { fs.unlinkSync(AIKEY_FILE); } catch {} return json(res, 200, { ok: true, has: false }); }
+          const key = String(j.key || "").trim();
+          if (!key) return deny(400, "missing key");
+          fs.mkdirSync(path.dirname(AIKEY_FILE), { recursive: true });
+          fs.writeFileSync(AIKEY_FILE, JSON.stringify({ key }), "utf8");
+          json(res, 200, { ok: true, has: true, hint: key.slice(0, 8) + "…" });
+        } catch (e) { json(res, 500, { error: String(e && e.message || e) }); }
+      });
+      return;
+    }
+
     // GET /requests?site=<key> — 查指令（最新在前）
     if (req.method === "GET" && req.url.split("?")[0] === "/requests"){
       if (!authed){ return deny(401, "unauthorized"); }

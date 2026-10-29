@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 配文密钥设置</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #222236; color: #eee; font: 15px/1.6 "Microsoft YaHei UI", "Segoe UI", sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .card { background: #2b2b42; border: 1px solid #3a3a55; border-radius: 14px; padding: 26px 28px; width: 100%; max-width: 520px; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+  h1 { margin: 0 0 6px; font-size: 19px; }
+  .sub { color: #9aa0b5; font-size: 12.5px; margin-bottom: 18px; }
+  label { display: block; margin: 12px 0 5px; color: #cfd3e6; font-size: 13px; }
+  input[type=password], input[type=text] { width: 100%; padding: 9px 11px; border: 1px solid #444466; border-radius: 8px; background: #191927; color: #eee; font: inherit; }
+  .row { display: flex; gap: 10px; margin-top: 16px; }
+  button { flex: 1; padding: 10px; border: 0; border-radius: 9px; font-size: 15px; cursor: pointer; color: #101018; }
+  #save { background: #4ade80; } #save:hover { background: #5cee90; }
+  #clear { background: #f87171; } #clear:hover { background: #fb8b8b; }
+  #st { margin-top: 14px; font-size: 13px; min-height: 20px; }
+  .ok { color: #4ade80; } .err { color: #f87171; } .dim { color: #9aa0b5; }
+  .back { display: inline-block; margin-top: 14px; color: #9aa0b5; font-size: 12.5px; text-decoration: none; }
+  .back:hover { color: #fff; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🔑 AI 配文密钥</h1>
+  <div class="sub">用于 <b>ai-caption.js</b> 批量生成照片配文。密钥只保存在本机
+    <span class="dim">%LOCALAPPDATA%\MobileBridge\ai-key.json</span>，不进任何 git 仓库。</div>
+  <label for="key">API Key（api2.yunshuzhilian.asia / DeepSeek 兼容接口）</label>
+  <input type="password" id="key" placeholder="sk-...">
+  <div class="row">
+    <button id="save">保存</button>
+    <button id="clear">清除</button>
+  </div>
+  <div id="st"></div>
+  <a class="back" href="/">← 返回上传页</a>
+</div>
+<script>
+(function () {
+  var api = (location.pathname.replace(/\/[^/]*$/, "") || "/") === "/" ? "" : location.pathname.replace(/\/[^/]*$/, "");
+  var tok = new URLSearchParams(location.search).get("t") || localStorage.getItem("mu_tok") || "";
+  var base = location.origin + "/";
+  function hdr() { return { "content-type": "application/json", authorization: "Bearer " + tok }; }
+  var st = document.getElementById("st");
+  function msg(html, cls) { st.innerHTML = html; st.className = cls || ""; }
+
+  fetch(base + "ai-key", { headers: hdr() }).then(function (r) { return r.json(); }).then(function (d) {
+    if (d.has) msg('当前已配置：<span class="ok">' + d.hint + "</span>（覆盖保存即可更换）", "ok");
+    else msg('<span class="dim">当前未配置——保存后即生效。</span>', "dim");
+  }).catch(function () { msg('<span class="err">取不到状态，请先设置桥接 Token（?t=...）。</span>', "err"); });
+
+  document.getElementById("save").onclick = function () {
+    var key = document.getElementById("key").value.trim();
+    if (!key) { msg('<span class="err">请粘贴 API Key。</span>', "err"); return; }
+    fetch(base + "ai-key", { method: "POST", headers: hdr(), body: JSON.stringify({ key: key }) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d.ok) { document.getElementById("key").value = ""; msg('✅ 已保存（' + d.hint + "），ai-caption.js 立即可用。", "ok"); } else msg('<span class="err">保存失败：' + (d.error || "?") + "</span>", "err"); })
+      .catch(function () { msg('<span class="err">请求失败。</span>', "err"); });
+  };
+  document.getElementById("clear").onclick = function () {
+    fetch(base + "ai-key", { method: "POST", headers: hdr(), body: JSON.stringify({ clear: true }) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d.ok) msg('<span class="dim">已清除密钥。</span>', "dim"); else msg('<span class="err">' + (d.error || "失败") + "</span>", "err"); })
+      .catch(function () { msg('<span class="err">请求失败。</span>', "err"); });
+  };
+})();
+</script>
+</body>
+</html>

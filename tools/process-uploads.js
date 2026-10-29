@@ -206,6 +206,19 @@ function main() {
     }
   }
 
+  // ⑤b Stage B——AI 配文：新照片刚写了「文件名兜底」.txt，若配了 API key 则调 ai-caption.js
+  //     把它们升级为 1-2 句配文 + 标签；无 key / 断网 / 上游限流时保留兜底，不阻断流程。
+  //     环境变量 AI_CAPTION=off 可整体关闭。
+  if (placedAny && process.env.AI_CAPTION !== "off") {
+    try {
+      const tail = run(NODE, [path.join(REPO, "tools", "ai-caption.js"), "--repo", REPO], REPO, 600000);
+      const m = tail.match(/成功 (\d+)/);
+      out.aiCaption = { ok: true, changed: m ? Number(m[1]) : 0 };
+    } catch (e) {
+      out.aiCaption = { ok: false, error: e.message };
+    }
+  }
+
   // ⑥ 构建（有归位才跑）
   if (placedAny) {
     const b = {};
