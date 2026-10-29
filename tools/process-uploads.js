@@ -180,7 +180,7 @@ function main() {
       const finalBase = baseOf(path.basename(comp));          // 对齐压缩产物名（含改名）
       const ext = path.extname(comp) || "";
       fs.mkdirSync(target.dir, { recursive: true });
-      const fn = uniqueTarget(target.dir, finalBase, ext);
+      const fn = uniqueTarget(target.dir, finalBase, ext) + ext;
       fs.copyFileSync(comp, path.join(target.dir, fn));
       placedAny = true; if (isVideo) videoPlaced = true;
 

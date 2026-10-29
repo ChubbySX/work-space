@@ -425,6 +425,15 @@ function startServer(cfg){
           const okN = (out.match(/\[✓\]/g) || []).length;
           const badN = (out.match(/\[✗\]/g) || []).length;
           polishReport = { ts: Date.now(), ok: code === 0, code, done: okN, failed: badN, tail: out.slice(-1500) };
+          // 配文写回 .txt 后必须重建，否则 data.js 仍是旧草稿（网站/手机端看到的都是旧文案）
+          if (okN > 0){
+            try {
+              const bj = path.join(path.resolve(__dirname, "..", ".."), "build.js");
+              const bs = cp.spawn(process.execPath, [bj], { cwd: path.resolve(__dirname, "..", ".."), detached: true, stdio: "ignore" });
+              bs.on("exit", (bc) => { polishReport.rebuild = bc === 0 ? "ok" : ("fail(" + bc + ")"); });
+              bs.unref();
+            } catch (e){ polishReport.rebuild = "error: " + e.message; }
+          }
         });
         s.unref();
       } catch (e) { polishRunning = false; json(res, 200, { ok: false, msg: String(e.message) }); return; }
