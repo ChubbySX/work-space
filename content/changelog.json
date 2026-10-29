@@ -1,5 +1,9 @@
 [
   {
+    "date": "2026-10-29 08:48",
+    "summary": "1.新增日常照：上海.txt；2.更新项目：数据库运用于离子注入机器的实例.json；3.调整了 网页结构（index.html +1 -1）；站点数据（data.js +11 -1）"
+  },
+  {
     "date": "2026-10-28 18:05",
     "summary": "1.新增日常照：上海.txt、上海外滩.txt、云南的云.txt、云南的南.txt 等71张；2.调整了 网页样式（style.css +2 -2）；网页结构（index.html +4 -4）；站点数据（data.js +88 -1）；页面交互逻辑（main.js +38 -10）：新增 hideBubble()、photoName()、makeCard()；工具脚本（app.js +66 -18）：新增 .FIXED_TAGS、loadSites()，移除 .fixed；工具脚本（index.html +5 -1）：新增 .on；发布脚本（启动预览.bat +1 -0）；发布脚本（构建网站.bat +1 -0）"
   },
