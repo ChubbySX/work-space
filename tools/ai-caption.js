@@ -50,7 +50,8 @@ const AI_ENGINE = (process.env.AI_ENGINE || "").trim().toLowerCase(); // 可被 
 let BASE = process.env.AI_BASE_URL || "https://api2.yunshuzhilian.asia/v1";
 let MODEL = process.env.AI_MODEL || "deepseek-v4-flash";
 const LOCAL_BASE = process.env.AI_LOCAL_BASE || "http://127.0.0.1:11434/v1";
-const LOCAL_MODEL = process.env.AI_LOCAL_MODEL || "qwen2.5:3b";
+const LOCAL_MODEL = process.env.AI_LOCAL_MODEL || "qwen2.5vl:7b";
+let VISION = true;                                     // 本地模型能否读图；AI_LOCAL_VISION=0 可关
 function useLocal() { BASE = LOCAL_BASE; MODEL = LOCAL_MODEL; LOCAL_ACTIVE = true; }
 let LOCAL_ACTIVE = isLocal || AI_ENGINE === "local"; // 请求时是否视为本地（决定 key 头是否需要）
 async function localUp() {
@@ -135,7 +136,54 @@ function styleExamples(alb) {
 }
 
 // ---------- 调用 API ----------
+// 本地视觉模型：能直接读到照片，写「画面里真有的东西」，比只看文件名强得多。
+// 走 Ollama 原生 /api/chat（/v1 兼容层对 images 与 think 的支持都不稳）。
+async function captionLocalVision(it) {
+  const desc = albumDesc(it.album) || "无";
+  const ex = styleExamples(it.album);
+  const sys = "你是「ChubbySX 个人网站」的照片配文写手。先看清这张照片里真实存在的东西（场景、物件、光线、人物动作、细节），再据此写配文。" +
+    "写 1-2 句中文，具体、生活化、有观察感（说出你看见了什么，而不是泛泛的抒情形容词），可带一点幽默或温情。" +
+    "不要\"这张照片\"开头，不要引号，不要解释，不要复述指令。" +
+    "然后换行，给 1-3 个 #标签。只输出配文和标签，绝对不要输出别的照片的内容。";
+  const user =
+    "相册：" + it.album + "\n" +
+    "相册简介：" + desc + "\n" +
+    "文件名：" + it.base + "（文件名只是提示，以你在画面里看到的为准）\n" +
+    (ex.length ? "以下是同相册其它照片的配文，只用于体会语气和长度，禁止照抄、禁止输出它们的内容：\n" + ex.map((e, i) => (i + 1) + ". " + e).join("\n") + "\n" : "") +
+    "\n只针对这一张照片，写出你实际看到的画面 + 1-2 句配文，再换行给 #标签。";
+  let imgB64 = "";
+  try { imgB64 = fs.readFileSync(it.src).toString("base64"); } catch (e) { throw new Error("读图失败: " + e.message); }
+  const endpoint = LOCAL_BASE.replace(/\/+$/, "").replace(/\/v1$/, "") + "/api/chat";
+  const payload = {
+    model: MODEL,
+    stream: false,
+    options: { num_predict: 400, temperature: 0.75 },
+    messages: [
+      { role: "system", content: sys },
+      { role: "user", content: user, images: [imgB64] },
+    ],
+  };
+  let lastErr = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(300000),
+      });
+      if (!res.ok) { lastErr = "HTTP " + res.status + " " + (await res.text()).slice(0, 160); await sleep(2000); continue; }
+      const j = await res.json();
+      const text = ((j.message && j.message.content) || "").trim();
+      if (!text) { lastErr = "空回复"; await sleep(2000); continue; }
+      return parse(text);
+    } catch (e) { lastErr = String((e && e.message) || e); await sleep(2000); }
+  }
+  throw new Error(lastErr || "本地调用失败 ×3");
+}
+
 async function captionOne(it) {
+  if (LOCAL_ACTIVE && VISION) return captionLocalVision(it);
   const desc = albumDesc(it.album) || "无";
   const ex = styleExamples(it.album);
   const sys = "你是「ChubbySX 个人网站」的照片配文写手。每张照片给 1-2 句中文配文（具体、生活化、贴合文件名称本身，可带一点幽默或温情，不要\"这张照片\"开头，不要引号，不要解释）+ 换行 + 1-3 个 #标签。只输出这一张照片的配文和标签，绝对不要输出别的照片的配文，不要罗列多条，不要加\"照片：\"前缀。";
@@ -152,7 +200,7 @@ async function captionOne(it) {
       { role: "user", content: user },
     ],
     temperature: 0.8,
-    max_tokens: 200,
+    max_tokens: 400,
   };
   let lastErr = "";
   const backoff = [5000, 10000, 20000, 40000];
