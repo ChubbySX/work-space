@@ -314,7 +314,6 @@ window.SITE_DATA = {
     {
       "type": "album",
       "files": [
-        "content/daily/青岛在青理/e2e发布自测.jpg",
         "content/daily/青岛在青理/下雪了？.jpg",
         "content/daily/青岛在青理/体测完，我宝分发零食给大家回血.jpg",
         "content/daily/青岛在青理/体测的操场.jpg",
@@ -336,7 +335,6 @@ window.SITE_DATA = {
         "content/daily/青岛在青理/阴影与晚霞.jpg"
       ],
       "descs": [
-        "e2e发布自测",
         "第一场雪落下来，青岛的冬天正式打卡。",
         "体测完累瘫在草坪上，还好同学们带了零食给大家回血。",
         "体测当天的操场，跑道上是跑不完的八百米。",
@@ -357,11 +355,11 @@ window.SITE_DATA = {
         "趴在走廊窗户上往外望，这是我每天最放松的几分钟。",
         "阳光把影子拉得很长，晚霞在天边烧得正烈。"
       ],
-      "thumb": "content/.thumbs/daily/青岛在青理/e2e发布自测.webp",
+      "thumb": "content/.thumbs/daily/青岛在青理/下雪了？.webp",
       "title": "青岛在青理",
       "date": "",
       "desc": "校园随手拍",
-      "size": "20 张"
+      "size": "19 张"
     }
   ],
   "works": [
@@ -527,6 +525,10 @@ window.SITE_DATA = {
   ],
   "changelog": [
     {
+      "date": "2026-10-30 18:05",
+      "summary": "1.内容更新"
+    },
+    {
       "date": "2026-10-30 17:59",
       "summary": "1.新增日常照：e2e发布自测.jpg、e2e发布自测.txt、宏伟的图书馆，只在幼时的我梦里出现过.txt、最爱晴天的校园，这是我的一生吗？.txt 等5张；2.调整了 网页结构（index.html +1 -1）；站点数据（data.js +5 -3）"
     },
@@ -541,10 +543,6 @@ window.SITE_DATA = {
     {
       "date": "2026-10-28 18:05",
       "summary": "1.新增日常照：上海.txt、上海外滩.txt、云南的云.txt、云南的南.txt 等71张；2.调整了 网页样式（style.css +2 -2）；网页结构（index.html +4 -4）；站点数据（data.js +88 -1）；页面交互逻辑（main.js +38 -10）：新增 hideBubble()、photoName()、makeCard()；工具脚本（app.js +66 -18）：新增 .FIXED_TAGS、loadSites()，移除 .fixed；工具脚本（index.html +5 -1）：新增 .on；发布脚本（启动预览.bat +1 -0）；发布脚本（构建网站.bat +1 -0）"
-    },
-    {
-      "date": "2026-10-28 00:20",
-      "summary": "1.新增日常照：这是我的工位，和我劳碌犯困的师哥.jpg、这是我的工位，和我劳碌犯困的师哥.txt、我们都是“成功学长”.txt、回去当“成功学长”传授经验.txt 等36张；2.调整了 个人资料（profile.json +2 -2）；网页样式（style.css +52 -29）：新增 .lb-cap-title、.lb-cap-desc、.lb-cap-file、.lightbox-main、.lightbox-caption，移除 .hero-bird；网页结构（index.html +7 -7）；站点数据（data.js +40 -21）；页面交互逻辑（main.js +24 -37）：移除 .el"
     }
   ],
   "mapMarkers": [
@@ -619,5 +617,5 @@ window.SITE_DATA = {
       ]
     }
   ],
-  "version": "1.17.0.167"
+  "version": "1.18.0.167"
 };
