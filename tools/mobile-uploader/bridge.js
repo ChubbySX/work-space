@@ -148,6 +148,7 @@ button.rm{background:#8a3c3c}
 <h1>📲 上传监控</h1>
 <div class="sub" id="sub">连接：</div>
   <div style="margin:10px 0"><button id="procBtn" style="background:#4CAF50;color:#fff;border:0;border-radius:6px;padding:8px 16px;font:inherit;cursor:pointer">🔄 一键处理</button><span id="procSt" style="font-size:12px;color:#9aa;margin-left:10px"></span></div>
+  <div id="pubBox" style="display:none;margin:4px 0 10px;background:#1a1a2a;border:1px solid #3a5;border-radius:8px;padding:8px 12px;font-size:13px"><b>🚀 手机端自动发布：</b><span id="pubSt"></span></div>
 <div class="qrs" id="qrs"></div>
 <div id="list"></div>
 <h2 id="reqh">📌 来自手机的指令</h2><div id="req"></div>
@@ -232,6 +233,17 @@ setInterval(function(){
             + (d.lastOp.build ? " · 构建 " + (d.lastOp.build.build || "?") : "");
       } else { ps.textContent = ""; }
     }
+    var pub = d.publish || {}, pbx = document.getElementById("pubBox"), pst = document.getElementById("pubSt");
+    if (pbx && pst){
+      if (pub.running){ pbx.style.display = ""; pst.textContent = "处理/发布进行中…"; }
+      else if (pub.report){
+        pbx.style.display = "";
+        pst.textContent = pub.report.ok
+          ? "✅ 已上线" + (pub.report.version ? " v" + pub.report.version : "") + "（" + (pub.report.msg || "推送成功") + "）"
+          : "❌ " + (pub.report.msg || "发布失败") + "（内容已留本地，下次勾选发布会补推）";
+        pbx.style.borderColor = pub.report.ok ? "#3a5" : "#a55";
+      } else { pbx.style.display = "none"; }
+    }
   }).catch(function(){});
 }, 1000);
 setInterval(function(){
@@ -260,6 +272,8 @@ function startServer(cfg){
   // ---- 一键处理状态：待上传/_process-report.json 懒读缓存 ----
   let procRunning = false, opReportTs = 0, opReport = null;
   let polishRunning = false, polishReport = null;
+  let publishRunning = false, publishReport = null; // 手机端「推新至线上」自动发布（auto-publish.js）
+  let lastAutoRun = null; // { ts, publish, finished } 手机端自动处理最近一次运行（区分「已处理·本地」与「已上线」）
   function readOpReport(root){
     if (!root) return null;
     const p = path.join(root, "_process-report.json");
@@ -268,6 +282,44 @@ function startServer(cfg){
       if (st.mtimeMs !== opReportTs){ opReportTs = st.mtimeMs; opReport = JSON.parse(fs.readFileSync(p, "utf8").replace(/^\uFEFF/, "")); }
     } catch { opReport = null; opReportTs = 0; }
     return opReport;
+  }
+
+  // 手机自动发布：node tools/auto-publish.js --repo <siteRoot>（无人值守，失败不回滚）
+  function runPublish(repo, srcTail){
+    const tools = path.resolve(__dirname, "..", "..", "tools");
+    const apj = path.join(tools, "auto-publish.js");
+    if (!fs.existsSync(apj)){
+      publishReport = { ts: Date.now(), ok: false, code: 1, version: null, msg: "缺少 tools/auto-publish.js", tail: srcTail || "" };
+      return;
+    }
+    publishRunning = true;
+    publishReport = null;
+    try {
+      const s = cp.spawn(process.execPath, [apj, "--repo", repo], { cwd: tools, detached: true, stdio: ["ignore", "pipe", "pipe"] });
+      let out = "";
+      const keep = (d) => { out = (out + d.toString()).slice(-4000); };
+      if (s.stdout) s.stdout.on("data", keep);
+      if (s.stderr) s.stderr.on("data", keep);
+      s.on("exit", (code) => {
+        publishRunning = false;
+        const lines = out.trim().split(/\r?\n/).filter(Boolean);
+        const fin = lines[lines.length - 1] || "";
+        const okLine = /^PUBLISH_OK /.test(fin), failLine = /^PUBLISH_FAIL /.test(fin);
+        const ver = (fin.match(/version=([\d.]+)/) || [])[1] || null;
+        publishReport = {
+          ts: Date.now(),
+          ok: code === 0 && okLine,
+          code,
+          version: ver,
+          msg: failLine ? fin.replace(/^PUBLISH_FAIL ?/, "") : (okLine ? fin : out.trim().split(/\r?\n/).slice(-3).join(" | ")),
+          tail: out.slice(-1200) || (srcTail || "")
+        };
+      });
+      s.unref();
+    } catch (e) {
+      publishRunning = false;
+      publishReport = { ts: Date.now(), ok: false, code: 1, version: null, msg: String(e.message), tail: srcTail || "" };
+    }
   }
 
   // Resolve site config from request: ?site=<key> or X-Site header or default
@@ -387,7 +439,7 @@ function startServer(cfg){
         try { allReqs.push(...readReq(sc.uploadRoot)); } catch {}
       }
       const sc0 = SITES[defaultSiteKey];
-      json(res, 200, { inflight: [...inflight.values()], recent, requests: allReqs.slice(-8).reverse(), lastOp: sc0 ? readOpReport(sc0.uploadRoot) : null });
+      json(res, 200, { inflight: [...inflight.values()], recent, requests: allReqs.slice(-8).reverse(), lastOp: sc0 ? readOpReport(sc0.uploadRoot) : null, publish: { running: publishRunning, report: publishReport } });
       return;
     }
 
@@ -404,6 +456,39 @@ function startServer(cfg){
         s.unref();
       } catch (e) { procRunning = false; json(res, 200, { ok: false, msg: String(e.message) }); return; }
       json(res, 200, { ok: true, msg: "已启动一键处理，完成后自动显示结果" });
+      return;
+    }
+
+    // POST /auto-process?publish=0|1&site=<key> — 手机端「推新至线上」触发：
+    // 自动处理（同 /process），勾选 publish=1 时处理完成后自动发布上线（tools/auto-publish.js）
+    if (req.method === "POST" && req.url.split("?")[0] === "/auto-process"){
+      if (!authed){ return deny(401, "unauthorized"); }
+      if (procRunning){ json(res, 200, { ok: false, running: true, msg: "上一轮处理还没结束" }); return; }
+      const u = url(); if (!u) return deny(400, "bad uri");
+      const publish = u.searchParams.get("publish") === "1";
+      const sc = resolveSite(req);
+      const pj = path.join(path.resolve(__dirname, "..", ".."), "tools", "process-uploads.js");
+      if (!fs.existsSync(pj)){ json(res, 200, { ok: false, msg: "缺少 tools/process-uploads.js" }); return; }
+      procRunning = true;
+      lastAutoRun = { ts: Date.now(), publish, finished: false };
+      try {
+        const s = cp.spawn(process.execPath, [pj], { cwd: path.dirname(pj), detached: true, stdio: ["ignore", "pipe", "pipe"] });
+        let out = "";
+        const keep = (d) => { out = (out + d.toString()).slice(-4000); };
+        if (s.stdout) s.stdout.on("data", keep);
+        if (s.stderr) s.stderr.on("data", keep);
+        s.on("exit", (code) => {
+          procRunning = false; opReport = null; opReportTs = 0;
+          lastAutoRun.finished = true;
+          const rep = readOpReport(sc.uploadRoot);
+          const placed = rep && rep.placed ? rep.placed.length : 0;
+          const fatal = !!(rep && rep.fatal);
+          // 处理完且有内容归位 → 按勾选决定是否自动发布（失败不回滚，留待下次补推）
+          if (publish && !fatal && placed > 0) runPublish(sc.siteRoot, out);
+        });
+        s.unref();
+      } catch (e) { procRunning = false; json(res, 200, { ok: false, msg: String(e.message) }); return; }
+      json(res, 200, { ok: true, publish, msg: "已启动自动处理" + (publish ? "，完成后自动推送上线" : "（仅本地，不推送）") });
       return;
     }
 
@@ -445,6 +530,21 @@ function startServer(cfg){
     if (req.method === "GET" && req.url.split("?")[0] === "/polish-status"){
       if (!authed){ return deny(401, "unauthorized"); }
       json(res, 200, { running: polishRunning, report: polishReport });
+      return;
+    }
+
+    // GET /publish-status — 查「推新至线上」进度/结果（手机端轮询）
+    if (req.method === "GET" && req.url.split("?")[0] === "/publish-status"){
+      if (!authed){ return deny(401, "unauthorized"); }
+      const sc = resolveSite(req);
+      json(res, 200, {
+        phase: procRunning ? "processing" : (publishRunning ? "publishing" : "idle"),
+        running: procRunning || publishRunning,
+        publishRunning,
+        report: publishReport,
+        autoRun: lastAutoRun,
+        lastOp: readOpReport(sc.uploadRoot)   // 处理报告（区分「已处理·本地」与「已上线」）
+      });
       return;
     }
 

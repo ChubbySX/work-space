@@ -43,6 +43,7 @@ const DRY = flag("dry-run", false) === true || flag("dry-run", false) === "true"
 const CONC = Math.min(8, parseInt(flag("concurrency", "2"), 10) || 2);
 const STRICT_TAGS = flag("no-tags", false) !== true;
 const POLISH = flag("polish", false) === true || flag("polish", false) === "true"; // 云端润色本地草稿
+const TAGS_ONLY = flag("tags-only", false) === true || flag("tags-only", false) === "true"; // 名字当正文，AI 只补 #标签
 const DRAFT_MARK = "#draft";
 
 // ---------- API 配置 ----------
@@ -104,8 +105,11 @@ function scan() {
       const base = baseOf(f);
       const txtPath = path.join(albDir, base + ".txt");
       const txt = readTxt(txtPath);
-      // --polish 只挑本地草稿（带 #draft 标记）；常规模式只补空缺
-      const bare = POLISH ? isDraft(txt) : (FORCE || isBareCaption(txt, base));
+      // --polish 只挑本地草稿（带 #draft 标记）；--tags-only / 常规都只补「缺配文或纯文件名兜底」的照片
+      //（手写配文一律不碰，绝不降级正文）
+      let bare;
+      if (POLISH) bare = isDraft(txt);
+      else bare = FORCE || isBareCaption(txt, base);
       needs.push({ album: alb, base, src: path.join(albDir, f), txtPath, bare, existing: txt });
     }
   }
@@ -143,26 +147,38 @@ function styleExamples(alb) {
 // ---------- 调用 API ----------
 // 本地视觉模型：能直接读到照片，写「画面里真有的东西」，比只看文件名强得多。
 // 走 Ollama 原生 /api/chat（/v1 兼容层对 images 与 think 的支持都不稳）。
+// --tags-only：只看图给标签（正文=文件名），模型产出里取 # 标签即可（去重、去 #draft）。
+function extractTags(text) {
+  const seen = [];
+  for (const m of (text.match(/#[^\s#]+/g) || [])) {
+    const t = m.slice(1).replace(/#+$/, "");
+    if (t && t !== "draft" && !seen.includes(t)) seen.push(t);
+  }
+  return seen.map((t) => "#" + t).join(" ");
+}
 async function captionLocalVision(it) {
   const desc = albumDesc(it.album) || "无";
   const ex = styleExamples(it.album);
-  const sys = "你是「ChubbySX 个人网站」的照片配文写手。先看清这张照片里真实存在的东西（场景、物件、光线、人物动作、细节），再据此写配文。" +
-    "写 1-2 句中文，具体、生活化、有观察感（说出你看见了什么，而不是泛泛的抒情形容词），可带一点幽默或温情。" +
-    "不要\"这张照片\"开头，不要引号，不要解释，不要复述指令。" +
-    "然后换行，给 1-3 个 #标签。只输出配文和标签，绝对不要输出别的照片的内容。";
+  const sys = TAGS_ONLY
+    ? "你是「ChubbySX 个人网站」的图片标签员。看清这张照片里真实存在的东西（场景、物件、光线、人物动作、细节）。" +
+      "只输出 1-3 个 #中文标签（#英文可），用空格隔开，放在一行。不要任何解释、不要配文、不要标点以外的字符。"
+    : "你是「ChubbySX 个人网站」的照片配文写手。先看清这张照片里真实存在的东西（场景、物件、光线、人物动作、细节），再据此写配文。" +
+      "写 1-2 句中文，具体、生活化、有观察感（说出你看见了什么，而不是泛泛的抒情形容词），可带一点幽默或温情。" +
+      "不要\"这张照片\"开头，不要引号，不要解释，不要复述指令。" +
+      "然后换行，给 1-3 个 #标签。只输出配文和标签，绝对不要输出别的照片的内容。";
   const user =
     "相册：" + it.album + "\n" +
     "相册简介：" + desc + "\n" +
     "文件名：" + it.base + "（文件名只是提示，以你在画面里看到的为准）\n" +
     (ex.length ? "以下是同相册其它照片的配文，只用于体会语气和长度，禁止照抄、禁止输出它们的内容：\n" + ex.map((e, i) => (i + 1) + ". " + e).join("\n") + "\n" : "") +
-    "\n只针对这一张照片，写出你实际看到的画面 + 1-2 句配文，再换行给 #标签。";
+    (TAGS_ONLY ? "\n只针对这一张照片，列出 1-3 个最能代表画面内容的 #标签。" : "\n只针对这一张照片，写出你实际看到的画面 + 1-2 句配文，再换行给 #标签。");
   let imgB64 = "";
   try { imgB64 = fs.readFileSync(it.src).toString("base64"); } catch (e) { throw new Error("读图失败: " + e.message); }
   const endpoint = LOCAL_BASE.replace(/\/+$/, "").replace(/\/v1$/, "") + "/api/chat";
   const payload = {
     model: MODEL,
     stream: false,
-    options: { num_predict: 400, temperature: 0.75 },
+    options: { num_predict: TAGS_ONLY ? 100 : 400, temperature: TAGS_ONLY ? 0.5 : 0.75 },
     messages: [
       { role: "system", content: sys },
       { role: "user", content: user, images: [imgB64] },
@@ -181,6 +197,10 @@ async function captionLocalVision(it) {
       const j = await res.json();
       const text = ((j.message && j.message.content) || "").trim();
       if (!text) { lastErr = "空回复"; await sleep(2000); continue; }
+      if (TAGS_ONLY) {
+        const tags = extractTags(text);
+        return it.base + (tags ? "\n" + tags : "");
+      }
       // 标记来源：本地视觉草稿，供 --polish 后续升级（build.js 会过滤掉不显示）
       const body = parse(text);
       return POLISH ? body : body + "\n#draft";
@@ -192,6 +212,7 @@ async function captionLocalVision(it) {
 async function captionOne(it) {
   if (POLISH) return polishOne(it);
   if (LOCAL_ACTIVE && VISION) return captionLocalVision(it);
+  if (TAGS_ONLY) return captionTagsOnly(it);
   const desc = albumDesc(it.album) || "无";
   const ex = styleExamples(it.album);
   const sys = "你是「ChubbySX 个人网站」的照片配文写手。每张照片给 1-2 句中文配文（具体、生活化、贴合文件名称本身，可带一点幽默或温情，不要\"这张照片\"开头，不要引号，不要解释）+ 换行 + 1-3 个 #标签。只输出这一张照片的配文和标签，绝对不要输出别的照片的配文，不要罗列多条，不要加\"照片：\"前缀。";
@@ -239,6 +260,53 @@ async function captionOne(it) {
   throw new Error(lastErr || "调用失败 ×5");
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ---------- 云端 tags-only（--tags-only 且本地模型不可用）----------
+// 正文=文件名，云端模型只看图补 1-3 个 #标签；失败抛错（调用方保留文件名兜底）。
+async function captionTagsOnly(it) {
+  const desc = albumDesc(it.album) || "无";
+  const sys = "你是图片标签员。看清这张照片里真实存在的东西（场景、物件、光线、人物动作、细节）。" +
+    "只输出 1-3 个 #标签（#中文或#英文），用空格隔开，放在一行。不要任何解释、不要配文、不要别的照片的内容。";
+  const user =
+    "相册：" + it.album + "\n" +
+    "相册简介：" + desc + "\n" +
+    "文件名：" + it.base + "（文件名只是提示，以你在画面里看到的为准）\n" +
+    "\n只针对这一张照片，列出 1-3 个最能代表画面内容的 #标签。";
+  let imgB64 = "";
+  try { imgB64 = fs.readFileSync(it.src).toString("base64"); } catch (e) { throw new Error("读图失败: " + e.message); }
+  const body = {
+    model: MODEL,
+    messages: [
+      { role: "system", content: sys },
+      { role: "user", content: user, images: [imgB64] },
+    ],
+    temperature: 0.5,
+    max_tokens: 100,
+  };
+  let lastErr = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(BASE + "/chat/completions", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(LOCAL_ACTIVE || !KEY ? {} : { authorization: "Bearer " + KEY }) },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(120000),
+      });
+      if (res.status === 429) {
+        lastErr = "上游限流(429)：" + (await res.text()).slice(0, 120);
+        await sleep(5000);
+        continue;
+      }
+      if (!res.ok) { lastErr = "HTTP " + res.status + " " + (await res.text()).slice(0, 200); await sleep(2000); continue; }
+      const j = await res.json();
+      const text = ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "").trim();
+      if (!text) { lastErr = "空回复"; await sleep(2000); continue; }
+      const tags = extractTags(text);
+      return it.base + (tags ? "\n" + tags : "");
+    } catch (e) { lastErr = String(e && e.message || e); await sleep(2000); }
+  }
+  throw new Error(lastErr || "云端补标签失败 ×3");
+}
 
 // ---------- 云端润色（--polish）----------
 // 输入：本地草稿 + 照片 + 相册语境；输出：替换草稿的新配文，并去掉 #draft 标记。
@@ -341,7 +409,9 @@ function parse(text) {
   if (!targets.length) {
     console.log(POLISH
       ? "ℹ 没有待润色的草稿（带 #draft 标记的配文）。"
-      : "ℹ 没有需要配文的照片（全部已有合格配文；--force 可强制重写）。");
+      : TAGS_ONLY
+        ? "ℹ 没有需要补标签的照片（全部已有 #标签；--force 可强制重补）。"
+        : "ℹ 没有需要配文的照片（全部已有合格配文；--force 可强制重写）。");
     process.exit(0);
   }
   if (!localActive && !KEY && !DRY) {
@@ -354,7 +424,7 @@ function parse(text) {
     process.exitCode = 3;
     return;
   }
-  console.log((POLISH ? "润色" : "扫描") + ": " + needs.length + " 张照片，" + (POLISH ? "待润色草稿: " : "需要配文: ") + targets.length + "（相册 " + new Set(targets.map((t) => t.album)).size + " 个）  concurrency=" + CONC + "  dry=" + DRY);
+  console.log((POLISH ? "润色" : TAGS_ONLY ? "补标签" : "扫描") + ": " + needs.length + " 张照片，" + (POLISH ? "待润色草稿: " : TAGS_ONLY ? "待补标签: " : "需要配文: ") + targets.length + "（相册 " + new Set(targets.map((t) => t.album)).size + " 个）  concurrency=" + CONC + "  dry=" + DRY);
   let ok = 0, done = 0, fail = 0;
   const queue = targets.slice();
   async function worker() {

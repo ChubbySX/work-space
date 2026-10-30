@@ -206,12 +206,12 @@ function main() {
     }
   }
 
-  // ⑤b Stage B/C——AI 配文：新照片刚写了「文件名兜底」.txt，若有 AI 引擎则升级为 1-2 句配文 + 标签。
+  // ⑤b Stage B/C——AI 补标签：新照片刚写了「文件名兜底」.txt（正文=文件名），AI 只补 #标签。
   //     AI_ENGINE=auto(默认, 本地 Ollama 在跑就走本地否则云端) / local(强制本地) / api(强制云端) / off(关闭)。
-  //     无 key / 断网 / 上游限流时保留兜底，不阻断流程。
+  //     无 key / 断网 / 上游限流时保留兜底（正文=文件名），不阻断流程。
   if (placedAny && process.env.AI_CAPTION !== "off") {
     const eng = (process.env.AI_ENGINE || "auto").trim().toLowerCase();
-    const aiArgs = [path.join(REPO, "tools", "ai-caption.js"), "--repo", REPO];
+    const aiArgs = [path.join(REPO, "tools", "ai-caption.js"), "--repo", REPO, "--tags-only"];
     if (eng === "local") aiArgs.push("--local");
     else if (eng !== "api") aiArgs.push("--prefer-local");
     try {

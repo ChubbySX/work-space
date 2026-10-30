@@ -182,6 +182,8 @@ function buildRow(file){
 }
 
 let uploading = 0;
+let batchOk = 0;       // 本批成功上传张数（决定是否自动处理）
+let autoFired = false; // 本批是否已触发自动处理
 function submit(file, sel, newTag, nameIn, prog, btn, st, finalName){
   let tag = sel.value;
   if (!tag){ st.className = "st fail"; st.textContent = "请先选择相册"; return; }
@@ -191,9 +193,9 @@ function submit(file, sel, newTag, nameIn, prog, btn, st, finalName){
   const chkIn = row ? row.querySelector(".covchk input") : null;
   const wantCover = !!(chkIn && chkIn.checked && tag && tag !== "__new__");
   const bar = prog.querySelector("i");
-  const ok = msg => { rowDone(st, btn, "ok", "✓ " + msg); if (bar) bar.style.width = "100%"; };
-  const fail = msg => { st.className = "st fail"; st.textContent = "✗ " + msg; btn.disabled = false; btn.textContent = "重试"; refreshBar(); };
-  btn.disabled = true; btn.textContent = "上传中…"; uploading++;
+  const ok = msg => { rowDone(st, btn, "ok", "✓ " + msg); if (bar) bar.style.width = "100%"; batchOk++; maybeAuto(); };
+  const fail = msg => { st.className = "st fail"; st.textContent = "✗ " + msg; btn.disabled = false; btn.textContent = "重试"; refreshBar(); maybeAuto(); };
+  btn.disabled = true; btn.textContent = "上传中…"; uploading++; st._up = 1; // st._up: rowDone 据此减计数（修复 uploading 永不归零）
   st.className = "st pend"; st.textContent = "0%"; if (bar) bar.style.width = "0%";
 
   const xhr = new XMLHttpRequest();
@@ -330,6 +332,84 @@ $polishBtn.addEventListener("click", () => {
 // 进页面先看一眼有没有历史结果
 setTimeout(() => { if (api() && $tok.value) pollPolish(); }, 1200);
 
+// ---- 页面级开关「推新至线上」+ 自动处理/发布 ----
+const $pubChk = document.getElementById("pubChk");
+const $pubLbl = document.getElementById("pubLbl");
+const $autoSt = document.getElementById("autoSt");
+let autoPoll = null;
+
+// 开关默认不勾选（仅本地）；记住用户选择
+$pubChk.checked = localStorage.getItem("mu_publish") === "1";
+function drawPub(){ if ($pubLbl) $pubLbl.classList.toggle("on", $pubChk.checked); }
+$pubChk.addEventListener("change", () => {
+  localStorage.setItem("mu_publish", $pubChk.checked ? "1" : "0");
+  drawPub();
+});
+drawPub();
+
+function stopAutoPoll(){ if (autoPoll){ clearInterval(autoPoll); autoPoll = null; } }
+function setAutoSt(cls, txt){ if ($autoSt){ $autoSt.className = "st" + (cls ? " " + cls : ""); $autoSt.textContent = txt; } }
+
+// 本批全部传完且至少 1 张成功 → 自动触发一次处理（按开关决定是否推送上线）
+function maybeAuto(){
+  if (uploading > 0 || batchOk === 0 || autoFired) return;
+  if (!api() || !$tok.value) return;
+  autoFired = true;
+  const publish = $pubChk.checked ? 1 : 0;
+  fetch(api() + "/auto-process?publish=" + publish + siteQs(), { method: "POST", headers: httphdr() })
+    .then(r => r.json())
+    .then(j => {
+      if (!j || !j.ok){
+        if (j && j.running){ setTimeout(maybeAuto, 5000); return; } // 上一轮还在跑，稍后重试
+        setAutoSt("fail", "✗ 自动处理未启动：" + ((j && j.msg) || "未知错误"));
+        autoFired = false;
+        return;
+      }
+      setAutoSt("pend", j.publish ? "🚀 自动处理中…完成后推送上线" : "🔄 自动处理中…（仅本地）");
+      startAutoPoll();
+    })
+    .catch(() => { setAutoSt("fail", "✗ 连不上桥接，自动处理未启动"); autoFired = false; });
+}
+
+// 状态轮询：处理中 → 已处理·本地 / 已上线 / 推送失败
+function renderAutoStatus(j){
+  if (!j) return;
+  if (j.running){
+    setAutoSt("pend", j.phase === "publishing" ? "🚀 处理完成，正在推送上线…" : "🔄 自动处理中…");
+    return;
+  }
+  const rep = j.report, ar = j.autoRun;
+  if (rep && rep.ts){
+    stopAutoPoll();
+    const t = new Date(rep.ts);
+    const hh = String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
+    if (rep.ok) setAutoSt("ok", "✅ " + hh + " 已上线" + (rep.version ? " v" + rep.version : "") + (rep.msg ? " · " + rep.msg : ""));
+    else setAutoSt("fail", "⚠ " + hh + " " + (rep.msg || "推送失败") + "（内容已留本地，下次勾选发布时会补推）");
+    return;
+  }
+  if (ar){
+    if (!ar.finished){ setAutoSt("pend", ar.publish ? "🚀 自动处理中…完成后推送上线" : "🔄 自动处理中…（仅本地）"); return; }
+    if (ar.publish) return; // 发布收尾中，等 report
+    // publish=0：处理完不推送 → 显示「已处理 · 本地」
+    stopAutoPoll();
+    const n = (j.lastOp && j.lastOp.placed && j.lastOp.placed.length) || 0;
+    setAutoSt("ok", "✅ 已处理 · 本地" + (n ? "（归位 " + n + " 项）" : "") + "，未推送");
+  }
+}
+function pollAuto(){
+  return fetch(api() + "/publish-status" + siteQsLead(), { headers: httphdr() })
+    .then(r => r.json())
+    .then(j => { renderAutoStatus(j); return !j.running; })
+    .catch(() => { setAutoSt("fail", "✗ 桥接断开"); stopAutoPoll(); return true; });
+}
+function startAutoPoll(){
+  stopAutoPoll();
+  autoPoll = setInterval(() => { pollAuto().then(done => { if (done) stopAutoPoll(); }); }, 3000);
+  pollAuto();
+}
+// 进页面先看一眼上次的结果
+setTimeout(() => { if (api() && $tok.value) pollAuto(); }, 1200);
+
 // ---- 批量工具栏 ----
 function refreshBar(){
   const rows = [...$stage.querySelectorAll(".row:not(.done)")];
@@ -403,6 +483,7 @@ function loadHist(){
 
 $file.addEventListener("change", () => {
   save(); loadAlbums();
+  batchOk = 0; autoFired = false; // 新一批：重置批计数，允许再次自动触发
   for (const f of $file.files) buildRow(f);
   $file.value = "";
   $tabUp.classList.add("on"); $tabHist.classList.remove("on");

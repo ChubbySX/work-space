@@ -40,6 +40,10 @@ label{font-size:12px;color:#9aa}
 .toolbar button{padding:9px 12px;border:none;border-radius:6px;background:#345;color:#fff;font-size:13px}
 .toolbar .allbtn{background:#3a5;font-weight:600;white-space:nowrap}
 .toolbar .allbtn:active{background:#2d8f49}
+.pubchk{display:inline-flex;align-items:center;gap:7px;padding:9px 10px;border:1px solid #444;border-radius:6px;background:#1a1a2a;color:#cde;font-size:13px;cursor:pointer;white-space:nowrap}
+.pubchk input{accent-color:#3a5;margin:0;width:auto;height:auto}
+.pubchk.on{border-color:#3a5;background:rgba(70,170,85,.14);color:#8ee09c}
+#autoSt{font-size:12px;margin:8px 0 0;color:#9aa}
 .tabs{display:flex;gap:8px;margin:14px 0 4px}
 .tabs button{flex:1;padding:10px;border:1px solid #444;border-radius:8px;background:#1a1a2a;color:#9aa;font-size:14px}
 .tabs button.on{background:#3a5;color:#fff;border-color:#3a5;font-weight:600}
@@ -69,7 +73,9 @@ label{font-size:12px;color:#9aa}
   <input id="prefix" placeholder="批量前缀，如 周末">
   <button id="nameAll">批量命名</button>
   <button id="allBtn" class="allbtn" disabled>全部上传（0）</button>
+  <label class="pubchk" id="pubLbl" title="勾选后：本批传完自动处理并推送到 GitHub 上线；不勾选：只处理存到本地网站"><input type="checkbox" id="pubChk">推新至线上</label>
 </div>
+<div class="st" id="autoSt"></div>
 <div class="cmd">
   <label>给电脑发指令 / 请求发布</label>
   <textarea id="cmdTxt" placeholder="把额外的提示词、指令、要求写在这里，比如：发布现在的内容、把某张照片归到新相册、给某某配个文案…（留空也可以，只发发布）"></textarea>
